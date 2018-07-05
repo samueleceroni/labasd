@@ -1,10 +1,12 @@
-IDIR =../include
 CC=gcc
 CFLAGS=-I$(IDIR)
 
+IDIR =../include
 BDIR=bin
 ODIR=obj
 TDIR=test
+
+DIRS=$(BDIR) $(ODIR)
 
 _DEPS = lib1718.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
@@ -18,9 +20,12 @@ MAIN = $(patsubst %,$(ODIR)/%,$(_MAIN))
 _TEST = test.o
 TEST = $(patsubst %,$(ODIR)/%,$(_TEST))
 
-$(ODIR)/%.o: %.c $(DEPS)
+$(DIRS):
+	mkdir -p $@
+
+$(ODIR)/%.o: %.c $(DEPS) $(DIRS)/
 	$(CC) -c -o $@ $< $(CFLAGS)
-$(ODIR)/test.o: $(TDIR)/test.c
+$(ODIR)/test.o: $(TDIR)/test.c $(DIRS)/
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 labasd: $(OBJ) $(MAIN)
