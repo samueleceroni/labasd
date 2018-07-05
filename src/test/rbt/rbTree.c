@@ -34,6 +34,7 @@ void rbtPrintKeys(tree T);
 int nodeSearch(node temp, int key);
 void nodePrintKeys(node temp);
 void rbInsertFixup(tree T, node z);
+node createNode(int key);
 
 
 /* return nonzero if key is present in tree */
@@ -41,6 +42,16 @@ int rbtSearch(tree T, int key){
     if (!T)
         return 0;
     return nodeSearch(T->root, key);
+}
+
+node createNode(int key){
+    node x;
+    if (!(x = (node) malloc (sizeof(struct rbtNode)))){
+        return NULL;
+    }
+    x->key = key;
+    x->key = -1;
+    return x; 
 }
 
 /* insert a new element into a tree */
