@@ -1,6 +1,13 @@
+#for mac users
 *.DS_Store
+
+#for vim users
+*.swp
+
+#ignore binaries
 src/bin/*
 src/obj/*.o
-*.swp
-src/test/test.c
 src/test/rbt/*.out
+
+#ignore test.c
+src/test/test.c
