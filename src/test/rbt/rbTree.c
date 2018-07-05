@@ -5,25 +5,22 @@
 #define RED 1
 #define BLACK 0
 
+
 struct rbtNode {
     struct rbtNode *p;      // pointer to the father
     struct rbtNode *left;   // left son, smaller elements
     struct rbtNode *right;  // right son, greater elements
     bool color;
-    int key;    
+    int key;
 };
 
-struct rbTree{
+struct rbTree {
     struct rbtNode *root;
     char *indexTree;
 };
 
 typedef struct rbtNode *node;
 typedef struct rbTree * tree;
-
-
-
-
 
 
 void leftRotate(tree T, node x);
@@ -38,33 +35,32 @@ node createNode(int key);
 
 
 /* return nonzero if key is present in tree */
-int rbtSearch(tree T, int key){
+int rbtSearch(tree T, int key) {
     if (!T)
         return 0;
     return nodeSearch(T->root, key);
 }
 
-node createNode(int key){
+node createNode(int key) {
     node x;
-    if (!(x = (node) malloc (sizeof(struct rbtNode)))){
+    if (!(x = (node)malloc(sizeof(struct rbtNode)))) {
         return NULL;
     }
     x->key = key;
-    x->key = -1;
-    return x; 
+    return x;
 }
 
 /* insert a new element into a tree */
 /* note *t is actual tree */
-void rbtInsert(tree T, node z){
+void rbtInsert(tree T, node z) {
     node y = NULL;
     node x = T->root;
-    while (x != NULL){
+    while (x != NULL) {
         y = x;
-        if (z -> key < x -> key)
-            x = x -> left;
+        if (z->key < x->key)
+            x = x->left;
         else
-            x = x -> right;
+            x = x->right;
     }
     z->p = y;
     if (y == NULL)
@@ -81,17 +77,13 @@ void rbtInsert(tree T, node z){
 }
 
 /* print all keys of the tree in order */
-void rbtPrintKeys(tree T){
+void rbtPrintKeys(tree T) {
     if (!T)
         return;
     nodePrintKeys(T->root);
 }
 
-
-// hidden functions
-// =========================================================================
-
-int nodeSearch(node temp, int key){
+int nodeSearch(node temp, int key) {
     // no result
     if (!temp)
         return 0;
@@ -102,20 +94,20 @@ int nodeSearch(node temp, int key){
         // key is greater than current key: I have to look into the right child
         if (temp->key > key)
             return nodeSearch(temp->right, key);
-        // key is smaller than current key: I have to look into the left child
+    // key is smaller than current key: I have to look into the left child
         else
             return nodeSearch(temp->left, key);
 }
 
-void nodePrintKeys(node temp){
+void nodePrintKeys(node temp) {
     if (!temp)
         return;
     nodePrintKeys(temp->left);
-    printf("%d", temp->key);
+    printf("%d\t", temp->key);
     nodePrintKeys(temp->right);
 }
 
-void leftRotate(tree T, node x){
+void leftRotate(tree T, node x) {
     node y = x->right;
     x->right = y->left;
     if (y->left != NULL)
@@ -132,7 +124,7 @@ void leftRotate(tree T, node x){
     x->p = y;
 }
 
-void rightRotate(tree T, node x){
+void rightRotate(tree T, node x) {
     node y = x->left;
     x->left = y->right;
     if (y->right != NULL)
@@ -144,28 +136,28 @@ void rightRotate(tree T, node x){
         // x was the left son of his father
         if (x == x->p->left)
             x->p->left = y;
-        // x was the right son of his father
+    // x was the right son of his father
         else
             x->p->right = y;
     y->right = x;
     x->p = y;
 }
 
-void rbInsertFixup(tree T, node z){
+void rbInsertFixup(tree T, node z) {
     node y;
 
-    while (z->p->color == RED){
-        if (z->p == z->p->p->left){
-            y=z->p->p->right;
-            if(y->color == RED){
+    while (z->p && z->p->color == RED) {
+        if (z->p == z->p->p->left) {
+            y = z->p->p->right;
+            if (y && y->color == RED) {
                 z->p->color = BLACK;
-                y->color=BLACK;
+                y->color = BLACK;
                 z->p->p->color = RED;
                 z = z->p->p;
             }
-            else{
-                if(z == z->p->right){
-                    z=z->p;
+            else {
+                if (z == z->p->right) {
+                    z = z->p;
                     leftRotate(T, z);
                 }
                 z->p->color = BLACK;
@@ -173,17 +165,17 @@ void rbInsertFixup(tree T, node z){
                 rightRotate(T, z->p->p);
             }
         }
-        else{
-            y=z->p->p->left;
-            if(y->color == RED){
+        else {
+            y = z->p->p->left;
+            if (y && y->color == RED) {
                 z->p->color = BLACK;
-                y->color=BLACK;
+                y->color = BLACK;
                 z->p->p->color = RED;
                 z = z->p->p;
             }
-            else{
-                if(z == z->p->left){
-                    z=z->p;
+            else {
+                if (z == z->p->left) {
+                    z = z->p;
                     rightRotate(T, z);
                 }
                 z->p->color = BLACK;
@@ -195,4 +187,23 @@ void rbInsertFixup(tree T, node z){
     T->root->color = BLACK;
 }
 
-int main(){};
+int main() {
+    //  #define _CRT_SECURE_NO_WARNINGS
+    //  #define _CRT_SECURE_NO_WARNINGS_GLOBALS
+    int temp;
+    tree T;
+    if (!(T = (tree)malloc(sizeof(struct rbTree)))) {
+        return -1;
+    }
+    T->root = NULL;
+    T->indexTree = NULL;
+    while (true) {
+        rbtPrintKeys(T);
+        printf("\n");
+        printf("Number: ");
+        fflush(stdin);
+        scanf("%d", &temp);
+        rbtInsert(T, createNode(temp));
+        system("clear");
+    }
+};
