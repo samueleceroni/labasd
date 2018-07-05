@@ -24,7 +24,7 @@ bool executeQuery(char*);
 
 //Bst struct definition
 struct STRUCT_BST {
-    //TODO
+	//TODO
 };
 typedef struct STRUCT_BST BST;
 //Bst functions definition
@@ -43,7 +43,7 @@ bool bst_insert(BST, char*, char**);
 
 //Table struct definition
 struct STRUCT_TABLE {
-    //TODO
+	//TODO
 };
 typedef struct STRUCT_TABLE TABLE;
 //Table functions definition
