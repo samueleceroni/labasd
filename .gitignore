@@ -1,6 +1,6 @@
 *.DS_Store
-./src/bin/*
-./src/obj/*
+src/bin/*
+src/obj/*
 *.swp
-./src/test/test.c
-./src/test/rbt/*.out
+src/test/test.c
+src/test/rbt/*.out
