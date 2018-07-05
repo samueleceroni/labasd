@@ -3,3 +3,4 @@
 ./src/obj/*
 *.swp
 ./src/test/test.c
+./src/test/rbt/*.out
