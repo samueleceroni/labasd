@@ -34,6 +34,9 @@ labasd: $(OBJ) $(MAIN)
 test: $(OBJ) $(TEST)
 	$(CC) -o $(BDIR)/$@ $^ $(CFLAGS)
 
+lib: lib1718.c
+	$(CC) -c -o $(ODIR)/lib1718.o $^ $(CFLAGS)
+
 .PHONY: clean
 
 clean:

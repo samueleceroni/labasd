@@ -1,8 +1,3 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-
 #define bool int
 #define true 1
 #define false 0
@@ -15,41 +10,76 @@ Output:
 */
 bool executeQuery(char*);
 
-//Defines
-#define EQUAL 0
-#define GREATER 1
-#define LESSER 2
-#define GREATER_EQUAL 3
-#define LESSER_EQUAL 4
+//Record
+typedef struct Record {
+	char** columns;
+	char** values;
+} Record;
 
-//Bst struct definition
-struct STRUCT_BST {
+Record* createRecord(char** columns, char** values);
+
+//ListOfRecord
+typedef struct ListOfRecord {
+	Record record;
+	struct ListOfRecord* next;
+} ListOfRecord;
+
+void freeListOfRecord(ListOfRecord* l);
+
+//Bst
+typedef struct Bst {
+	char* key;
+	int type;
+	int count;
+	ListOfRecord* records;
+
 	//TODO
-};
-typedef struct STRUCT_BST BST;
-//Bst functions definition
+} Bst;
 
-//PARAMS:
-//BST = tree, char* = key to search, int = type of search (equal, greater, ...)
-//RETURN VAL:
-//Generic pointer to the list of rows found
-void* bst_query(BST, char*, int);
+typedef struct ListOfBst {
+	Bst bst;
+	struct ListOfBst* next;
+} ListOfBst;
 
-//PARAMS:
-//BST = tree, char* = key to insert, char** = pointer to list of fields
-//RETURN VAL:
-//true = succeded, false = failed
-bool bst_insert(BST, char*, char**);
+ListOfRecord* bstQuery(Bst* bst, char* key, int selector);
+void bstInsert(Bst* bst, char* key, char** values);
 
-//Table struct definition
-struct STRUCT_TABLE {
+//Table
+typedef struct Table {
+	char* name;
+	char* columns;
+	ListOfRecord* records;
+	ListOfBst* bsts[3];
 	//TODO
-};
-typedef struct STRUCT_TABLE TABLE;
-//Table functions definition
+} Table;
 
-//PARAMS:
-//TABLE = table to do the query, char* = query string
-//RETURN VAL:
-//true = succeded, false = failed
-bool table_query(TABLE, char*);
+//List of table
+typedef struct ListOfTable {
+	Table table;
+	struct ListOfTable* next;
+} ListOfTable;
+
+Table* searchTable(ListOfTable* l, char* tableName);
+Table* loadTable(char* tableName);
+void insertTable(ListOfTable* l, Table* t);
+
+Table* createTable(char* tableName, char** columns);
+void insertIntoTable(Table* t, Record* r);
+
+//Parser
+typedef struct ParseResult {
+	bool success;
+	char* tableName;
+	int queryType;
+	int querySelector;
+	char** columns;
+	char** fieldValues;
+} ParseResult;
+
+ParseResult* parseQuery(char* queryString);
+void freeParseResult(ParseResult* res);
+ListOfRecord* querySelect(Table* t, ParseResult* res);
+
+//Logger
+void generateLog(ParseResult* res);
+void generateLogSelect(ParseResult* res, ListOfRecord* records);
