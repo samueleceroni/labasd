@@ -1,6 +1,6 @@
 # SbornDB
 In questo file sono racchiuse tutte le informazioni di progetto
-# Strutture dati utilizzte
+# Strutture dati utilizzate
 ## AVL
 Sono dei **BST** bilanciati. Ne utilizziamo uno per ogni campo della tabella che stiamo considernando. Siccome non creiamo indici al momento della creazione della tabella, dobbiamo poter trattare tutte le colonne come possibili indici.
 ## Tutto stringhe!
