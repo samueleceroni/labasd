@@ -18,12 +18,12 @@ bool executeQuery(char*);
 
 // DataBase Part
 
-struct DataBaseHead{
+struct DatabaseHead{
 	struct TableDB* table;
-	struct DataBaseHead* next;
+	struct DatabaseHead* next;
 };
 
-typedef struct DataBaseHead* Database;
+typedef struct DatabaseHead* Database;
 
 // A Table of the Database
 struct TableDB {
@@ -94,14 +94,16 @@ typedef struct ParseResult* ParseResult;
 
 // DataBase Part
 
+void initDatabase(Database* db);
+
 // Table
 Table createTableDb(Database db, char* tableName, char** columns);
 Table searchTableDb(Database db, char* tableName);
-void insertTableDb(Database db, Table t);
+bool insertTableDb(Database db, Table t);
 
 // Record, or Row of the Table
 NodeRecord createRecord(char** values);
-void insertIntoTable(Table t, NodeRecord r);
+bool insertIntoTable(Table t, NodeRecord r);
 
 QueryResultList querySelect(Table t, ParseResult res);
 

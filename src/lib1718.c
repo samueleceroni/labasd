@@ -21,19 +21,23 @@
 #define GROUP_BY 2
 #define INSERT_INTO 3
 
-static Database db;
+static Database database = NULL;
+
 
 //Main functions implematations
 bool executeQuery(char* query){
+	if(database == NULL)
+		initDatabase(&database);
 	ParseResult pRes = parseQuery(query);
 	if(!pRes->success)
 		return false;
 
-	Table t = searchTableDb(db, pRes->tableName);
+	Table t = searchTableDb(database, pRes->tableName);
 	if(t == NULL){
 		t = loadTableFromFile(pRes->tableName);
 		if(t != NULL)
-			insertTableDb(db, t);
+			if(!insertTableDb(database, t))
+				return false;
 	}
 
 	if(pRes->queryType == CREATE_TABLE){
@@ -41,13 +45,14 @@ bool executeQuery(char* query){
 			return false;
 		if(!createTableFile(pRes->tableName, pRes->columns))
 			return false;
-		t = createTableDb(db, pRes->tableName, pRes->columns);
+		t = createTableDb(database, pRes->tableName, pRes->columns);
 		generateLog(pRes);
 	}
 	else if(pRes->queryType == INSERT_INTO){
 		if(t == NULL)
 			return false;
-		insertIntoTable(t, createRecord(pRes->fieldValues));
+		if(!insertIntoTable(t, createRecord(pRes->fieldValues)))
+			return false;
 		generateLog(pRes);
 	}
 	else
@@ -69,3 +74,80 @@ bool executeQuery(char* query){
 
 //Implementations
 //TODO
+void initDatabase(Database* db){
+	(*db) = (Database) malloc (sizeof(struct DatabaseHead));
+	(*db)->table = NULL;
+	(*db)->next = NULL;
+}
+
+bool insertTableDb(Database db, Table t){
+	while(db->next != NULL) db = db->next;
+	if(db->table == NULL){
+		db->table = t;
+		return true;
+	}
+	db->next = (Database) malloc (sizeof(struct DatabaseHead));
+	db->next->table = t;
+	db->next->next = NULL;
+	return true;
+}
+
+Table createTableDb(Database db, char* tableName, char** columns){
+	//TODO
+	return NULL;
+}
+Table searchTableDb(Database db, char* tableName){
+	//TODO
+	return NULL;
+}
+
+NodeRecord createRecord(char** values){
+	//TODO
+	return NULL;
+}
+bool insertIntoTable(Table t, NodeRecord r){
+	//TODO
+	return false;
+}
+
+QueryResultList querySelect(Table t, ParseResult res){
+	//TODO
+	return false;
+}
+
+ParseResult parseQuery(char* queryString){
+	//TODO
+	return NULL;
+}
+
+void freeParseResult(ParseResult res){
+	//TODO
+	return;
+}
+void freeQueryResultList(QueryResultList res){
+	//TODO
+	return;
+}
+
+void generateLog(ParseResult res){
+	//TODO
+	return;
+}
+void generateLogSelect(ParseResult res, QueryResultList records){
+	//TODO
+	return;
+}
+
+bool checkTable(char* name){
+	//TODO
+	return false;
+}
+bool createTableFile(char* name, char** columns){
+	//TODO
+	return false;
+}
+
+Table loadTableFromFile(char* name){
+	//TODO
+	return NULL;
+}
