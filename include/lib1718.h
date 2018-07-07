@@ -1,4 +1,4 @@
-#define bool int
+#define bool char
 #define true 1
 #define false 0
 
@@ -8,78 +8,139 @@ Input:
 Output:
 	-bool: true/false, se l'esecuzione della query e' andata a buon fine o meno (presenza di eventuali errori) 
 */
+
+// General Part
+
 bool executeQuery(char*);
 
-//Record
-typedef struct Record {
-	char** columns;
-	char** values;
-} Record;
+// End of General Part
 
-Record* createRecord(char** columns, char** values);
 
-//ListOfRecord
-typedef struct ListOfRecord {
-	Record record;
-	struct ListOfRecord* next;
-} ListOfRecord;
+// DataBase Part
 
-void freeListOfRecord(ListOfRecord* l);
+struct DataBaseHead{
+	struct TableDB* root;
+};
 
-//Bst
-typedef struct Bst {
-	char* key;
-	int type;
-	int count;
-	ListOfRecord* records;
+typedef struct DataBaseHead* DBHead;
 
-	//TODO
-} Bst;
 
-typedef struct ListOfBst {
-	Bst bst;
-	struct ListOfBst* next;
-} ListOfBst;
 
-ListOfRecord* bstQuery(Bst* bst, char* key, int selector);
-void bstInsert(Bst* bst, char* key, char** values);
-
-//Table
-typedef struct Table {
+// A Table of the Database
+struct TableDB {
 	char* name;
-	char* columns;
-	ListOfRecord* records;
-	ListOfBst* bsts[3];
-	//TODO
-} Table;
+	char** columns;
+	struct Record* recordList;
+	struct RBTree* treeList;
+	struct TableDB* next;
+};
 
-//List of table
-typedef struct ListOfTable {
-	Table table;
-	struct ListOfTable* next;
-} ListOfTable;
+typedef struct TableDB* Table;
 
-Table* searchTable(ListOfTable* l, char* tableName);
-Table* loadTable(char* tableName);
-void insertTable(ListOfTable* l, Table* t);
 
-Table* createTable(char* tableName, char** columns);
-void insertIntoTable(Table* t, Record* r);
+
+//Record, or Row of the table
+struct Record {
+	char** values;
+	struct Record* next;
+};
+
+typedef struct Record* NodeRecord;
+
+
+
+// Head of a RedBlackTree
+struct RBTree {
+	int key;
+	struct RBTNode* root;
+	struct rbTree* next;
+};
+
+typedef struct RBTree* Tree;
+
+
+
+// Node of a RedBlackTree
+struct RBTNode {
+	bool color;
+	struct Record* nodeValue;
+	struct RBTree* head;
+	struct RBTNode* p;
+	struct RBTNode* right;
+	struct RBTNode* left;
+
+};
+
+typedef struct RBTNode Node;
+
+struct QueryResultElement{
+	int occurence;
+	struct Record* nodeValue;
+	struct QueryResultElement* next;
+};
+
+typedef struct QueryResultElement* QueryResultList;
+
+// End of Database Part
+
+
 
 //Parser
-typedef struct ParseResult {
+struct ParseResult {
 	bool success;
 	char* tableName;
 	int queryType;
 	int querySelector;
 	char** columns;
 	char** fieldValues;
-} ParseResult;
+};
 
+typedef struct ParseResult* ParseResult;
+
+
+
+///////////////
+/* Functions */
+///////////////
+
+
+// DataBase Part
+
+// General
+void freeDB(DBHead h);
+
+
+
+// Table
+Table createTable(DBHead h, char* tableName, char** columns);
+Table getTableP(DBHead h, char* tableName);
+
+
+
+// Record, or Row of the Table
+NodeRecord createRecord(char** values);
+void insertIntoTable(Table t, NodeRecord r);
+
+
+QueryResultList querySelect(Table t, ParseResult res);
+
+// DataBase Part
+
+
+
+// 
 ParseResult* parseQuery(char* queryString);
-void freeParseResult(ParseResult* res);
-ListOfRecord* querySelect(Table* t, ParseResult* res);
+void freeParseResult(ParseResult res);
+
+
 
 //Logger
-void generateLog(ParseResult* res);
-void generateLogSelect(ParseResult* res, ListOfRecord* records);
+void generateLog(ParseResult res);
+void generateLogSelect(ParseResult res, QueryResultList records);
+
+
+
+
+// 
+//ListOfRecord* bstQuery(Bst* bst, char* key, int selector);
+//void bstInsert(Bst* bst, char* key, char** values);

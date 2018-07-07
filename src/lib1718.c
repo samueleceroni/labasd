@@ -21,9 +21,6 @@
 #define GROUP_BY 2
 #define INSERT_INTO 3
 
-//Main data structure
-static ListOfTable* tables;
-
 //Main functions implematations
 bool executeQuery(char* query){
 	ParseResult* pRes = parseQuery(query);
