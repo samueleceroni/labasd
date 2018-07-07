@@ -21,51 +21,47 @@
 #define GROUP_BY 2
 #define INSERT_INTO 3
 
+static Database db;
+
 //Main functions implematations
 bool executeQuery(char* query){
-	ParseResult* pRes = parseQuery(query);
+	ParseResult pRes = parseQuery(query);
 	if(!pRes->success)
 		return false;
 
-	Table* t = searchTable(tables, pRes->tableName);
+	Table t = searchTableDb(db, pRes->tableName);
 	if(t == NULL){
-		t = loadTable(pRes->tableName);
+		t = loadTableFromFile(pRes->tableName);
 		if(t != NULL)
-			insertTable(tables, t);
+			insertTableDb(db, t);
 	}
 
 	if(pRes->queryType == CREATE_TABLE){
 		if(t != NULL)
 			return false;
-		t = createTable(pRes->tableName, pRes->columns);
-		if(t != NULL)
-			insertTable(tables, t);
-		else
+		if(!createTableFile(pRes->tableName, pRes->columns))
 			return false;
+		t = createTableDb(db, pRes->tableName, pRes->columns);
 		generateLog(pRes);
 	}
 	else if(pRes->queryType == INSERT_INTO){
 		if(t == NULL)
 			return false;
-		Record* r = createRecord(pRes->columns, pRes->fieldValues);
-		insertIntoTable(t, r);
+		insertIntoTable(t, createRecord(pRes->fieldValues));
 		generateLog(pRes);
 	}
 	else
 	{
 		//SELECT
-		ListOfRecord* selectResult;
-		bool success = true;
-
+		QueryResultList selectResult;
 		if(t == NULL)
 			return false;
 
 		selectResult = querySelect(t, pRes);
 		generateLogSelect(pRes, selectResult);
 
-		freeListOfRecord(selectResult);
+		freeQueryResultList(selectResult);
 	}
-
 	freeParseResult(pRes);
 
 	return true;

@@ -19,12 +19,11 @@ bool executeQuery(char*);
 // DataBase Part
 
 struct DataBaseHead{
-	struct TableDB* root;
+	struct TableDB* table;
+	struct DataBaseHead* next;
 };
 
-typedef struct DataBaseHead* DBHead;
-
-
+typedef struct DataBaseHead* Database;
 
 // A Table of the Database
 struct TableDB {
@@ -32,12 +31,9 @@ struct TableDB {
 	char** columns;
 	struct Record* recordList;
 	struct RBTree* treeList;
-	struct TableDB* next;
 };
 
 typedef struct TableDB* Table;
-
-
 
 //Record, or Row of the table
 struct Record {
@@ -47,8 +43,6 @@ struct Record {
 
 typedef struct Record* NodeRecord;
 
-
-
 // Head of a RedBlackTree
 struct RBTree {
 	int key;
@@ -57,8 +51,6 @@ struct RBTree {
 };
 
 typedef struct RBTree* Tree;
-
-
 
 // Node of a RedBlackTree
 struct RBTNode {
@@ -71,7 +63,7 @@ struct RBTNode {
 
 };
 
-typedef struct RBTNode Node;
+typedef struct RBTNode* Node;
 
 struct QueryResultElement{
 	int occurence;
@@ -82,8 +74,6 @@ struct QueryResultElement{
 typedef struct QueryResultElement* QueryResultList;
 
 // End of Database Part
-
-
 
 //Parser
 struct ParseResult {
@@ -97,8 +87,6 @@ struct ParseResult {
 
 typedef struct ParseResult* ParseResult;
 
-
-
 ///////////////
 /* Functions */
 ///////////////
@@ -106,41 +94,26 @@ typedef struct ParseResult* ParseResult;
 
 // DataBase Part
 
-// General
-void freeDB(DBHead h);
-
-
-
 // Table
-Table createTable(DBHead h, char* tableName, char** columns);
-Table getTableP(DBHead h, char* tableName);
-
-
+Table createTableDb(Database db, char* tableName, char** columns);
+Table searchTableDb(Database db, char* tableName);
+void insertTableDb(Database db, Table t);
 
 // Record, or Row of the Table
 NodeRecord createRecord(char** values);
 void insertIntoTable(Table t, NodeRecord r);
 
-
 QueryResultList querySelect(Table t, ParseResult res);
 
-// DataBase Part
-
-
-
-// 
-ParseResult* parseQuery(char* queryString);
+ParseResult parseQuery(char* queryString);
 void freeParseResult(ParseResult res);
-
-
+void freeQueryResultList(QueryResultList res);
 
 //Logger
 void generateLog(ParseResult res);
 void generateLogSelect(ParseResult res, QueryResultList records);
 
-
-
-
-// 
-//ListOfRecord* bstQuery(Bst* bst, char* key, int selector);
-//void bstInsert(Bst* bst, char* key, char** values);
+//File part
+bool checkTable(char* name);
+bool createTableFile(char* name, char** columns);
+Table loadTableFromFile(char* name);
