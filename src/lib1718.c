@@ -406,3 +406,12 @@ Table loadTableFromFile(Database db, char* name){
 
 // Secondary functions implementation
 
+Tree createTree(int key){
+	
+	Tree newTree = (Tree) malloc (struct RBTree);
+	
+	if (!newTree){return NULL;} // CASE MALLOC FAILS
+	newTree -> key = key;
+	newTree -> root = NULL;
+	newTree -> next = NULL; 
+}
