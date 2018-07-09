@@ -408,7 +408,7 @@ Table loadTableFromFile(Database db, char* name){
 
 Tree createTree(int key){
 	
-	Tree newTree = (Tree) malloc (struct RBTree);
+	Tree newTree = (Tree) malloc (sizeof(struct RBTree));
 	
 	if (!newTree){return NULL;} // CASE MALLOC FAILS
 	newTree -> key = key;
