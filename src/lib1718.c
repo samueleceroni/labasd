@@ -249,9 +249,12 @@ Table loadTableFromFile(Database db, char* name){
 	c = fgetc(f);
 
 	Table t = createTableDb(db, name, columns, nColumns);
-	//if(t == NULL){
-	//	return NULL;
-	//}
+	if(t == NULL){
+	#ifdef DEBUG
+		printf("Creation gone wrong!\nAborting...\n");
+	#endif
+		return NULL;
+	}
 
 	//Reading rows
 	//TODO
@@ -326,7 +329,12 @@ Table loadTableFromFile(Database db, char* name){
 			printf("%s,", row[i]);
 		printf("\b)\n");
 	#endif
-		insertIntoTable(t, createRecord(row));
+		if(!insertIntoTable(t, createRecord(row))){
+	#ifdef DEBUG
+			printf("Insertion gone wrong!\nAborting...\n");
+			return NULL;
+	#endif
+		}
 
 		c = fgetc(f);
 	}while(c != EOF);
@@ -336,5 +344,5 @@ Table loadTableFromFile(Database db, char* name){
 	#endif
 
 	fclose(f);
-	return NULL;
+	return t;
 }
