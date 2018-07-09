@@ -21,6 +21,15 @@
 #define GROUP_BY 2
 #define INSERT_INTO 3
 
+//Flags di test
+#ifdef TEST
+	#define FOLDER "test/tables/"
+#endif
+
+#ifndef TEST
+	#define FOLDER ""
+#endif
+
 static Database database = NULL;
 
 
@@ -133,6 +142,69 @@ bool createTableFile(char* name, char** columns){
 }
 
 Table loadTableFromFile(Database db, char* name){
+	char* buffer = (char*)malloc(sizeof(char) * (strlen(name) + 20));
+	strcpy(buffer, FOLDER);
+	strcat(buffer, name);
+	strcat(buffer, ".txt");
+
+	FILE* f = fopen(buffer, "r");
+	if(f == NULL)
+		return NULL;
+
+	//Read table name and columns
+	char header[] = {"TABLE "};
+	char headerSeparator[] = {" COLUMNS "};
+	char inlineSeparator = ',';
+	char endlineSeparator = ';';
+
+	//Check first header
+	buffer = (char*)realloc(buffer, sizeof(char) * (strlen(header)+1));
+	buffer = fgets(buffer, strlen(header), f);
+	buffer[strlen(header)] = '\0';
+
+	if(strcmp(buffer, header) != 0)
+		return NULL;
+
+	//Check table name
+	buffer = (char*)realloc(buffer, sizeof(char) * (strlen(name)+1));
+	buffer = fgets(buffer, strlen(name), f);
+	buffer[strlen(name)] = '\0';
+
+	if(strcmp(buffer, name) != 0)
+		return NULL;
+
+	//Check header separator	
+	buffer = (char*)realloc(buffer, sizeof(char) * (strlen(headerSeparator)+1));
+	buffer = fgets(buffer, strlen(headerSeparator), f);
+	buffer[strlen(headerSeparator)] = '\0';
+
+	if(strcmp(buffer, headerSeparator) != 0)
+		return NULL;
+
+	//Reading fields
+	char** columns;
+	int nColumns = 0;
+
+	char c = 0;
+	while((c != endlineSeparator)){
+		nColumns++;
+		columns = (char**)realloc(columns, sizeof(char*) * nColumns);
+		char* column;
+		int colLen = 0;
+		while(c != inlineSeparator  && c != endlineSeparator){
+			colLen++;
+			column = (char*)realloc(column, sizeof(char) * colLen);
+			column[colLen-1] = c;
+			c = fgetc(f);
+		}
+		//Insert terminal char
+		column = (char*)realloc(column, sizeof(char) * colLen+1);
+		column[colLen] = '\0';
+		columns[nColumns-1] = column;
+		c = fgetc(f);
+	}
+
+	//Reading rows
 	//TODO
 	return NULL;
 }
