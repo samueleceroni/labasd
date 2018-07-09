@@ -29,7 +29,7 @@ typedef struct DatabaseHead* Database;
 struct TableDB {
 	char* name;
 	char** columns;
-	int nColums;
+	int nColumns;
 	struct Record* recordList;
 	struct RBTree* treeList;
 };
