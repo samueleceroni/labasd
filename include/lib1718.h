@@ -29,6 +29,7 @@ typedef struct DatabaseHead* Database;
 struct TableDB {
 	char* name;
 	char** columns;
+	int nColums;
 	struct Record* recordList;
 	struct RBTree* treeList;
 };
@@ -81,8 +82,12 @@ struct ParseResult {
 	char* tableName;
 	int queryType;
 	int querySelector;
+	char* keyName;
+	char* key;
 	char** columns;
+	int nColumns;
 	char** fieldValues;
+	int nValues;
 };
 
 typedef struct ParseResult* ParseResult;
@@ -93,13 +98,11 @@ typedef struct ParseResult* ParseResult;
 
 
 // DataBase Part
-
 void initDatabase(Database* db);
 
 // Table
 Table createTableDb(Database db, char* tableName, char** columns);
 Table searchTableDb(Database db, char* tableName);
-bool insertTableDb(Database db, Table t);
 
 // Record, or Row of the Table
 NodeRecord createRecord(char** values);
@@ -118,4 +121,4 @@ void generateLogSelect(ParseResult res, QueryResultList records);
 //File part
 bool checkTable(char* name);
 bool createTableFile(char* name, char** columns);
-Table loadTableFromFile(char* name);
+Table loadTableFromFile(Database db, char* name);

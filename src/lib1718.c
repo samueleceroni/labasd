@@ -34,10 +34,7 @@ bool executeQuery(char* query){
 
 	Table t = searchTableDb(database, pRes->tableName);
 	if(t == NULL){
-		t = loadTableFromFile(pRes->tableName);
-		if(t != NULL)
-			if(!insertTableDb(database, t))
-				return false;
+		t = loadTableFromFile(database, pRes->tableName);
 	}
 
 	if(pRes->queryType == CREATE_TABLE){
@@ -78,18 +75,6 @@ void initDatabase(Database* db){
 	(*db) = (Database) malloc (sizeof(struct DatabaseHead));
 	(*db)->table = NULL;
 	(*db)->next = NULL;
-}
-
-bool insertTableDb(Database db, Table t){
-	while(db->next != NULL) db = db->next;
-	if(db->table == NULL){
-		db->table = t;
-		return true;
-	}
-	db->next = (Database) malloc (sizeof(struct DatabaseHead));
-	db->next->table = t;
-	db->next->next = NULL;
-	return true;
 }
 
 Table createTableDb(Database db, char* tableName, char** columns){
@@ -147,7 +132,7 @@ bool createTableFile(char* name, char** columns){
 	return false;
 }
 
-Table loadTableFromFile(char* name){
+Table loadTableFromFile(Database db, char* name){
 	//TODO
 	return NULL;
 }
