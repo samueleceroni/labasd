@@ -87,7 +87,6 @@ struct ParseResult {
 	char** columns;
 	int nColumns;
 	char** fieldValues;
-	int nValues;
 };
 
 typedef struct ParseResult* ParseResult;
@@ -101,7 +100,7 @@ typedef struct ParseResult* ParseResult;
 void initDatabase(Database* db);
 
 // Table
-Table createTableDb(Database db, char* tableName, char** columns);
+Table createTableDb(Database db, char* tableName, char** columns, int nColumns);
 Table searchTableDb(Database db, char* tableName);
 
 // Record, or Row of the Table
