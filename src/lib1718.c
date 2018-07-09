@@ -78,10 +78,13 @@ bool executeQuery(char* query){
 	return true;
 }
 
-// Prototypes
+
+// Secondary functions prototypes
+
 Tree createTree(int key);
+
+
 // Implementations
-// TODO
 void initDatabase(Database* db){
 	(*db) = (Database) malloc (sizeof(struct DatabaseHead));
 	(*db)->table = NULL;
@@ -126,8 +129,24 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 		temp->treeList = newTree;
 	}
 
-	return NULL;
+	// the table is ready to be inserted into the database
+	// Case database is empty
+	if (!(db->table)){
+		db->table=temp;
+	}
+	else{
+	// try to create the newTable structure to be inserted as element of a list
+	Database newTable = (Database)malloc(sizeof(struct DatabaseHead));
+	if (!newTable) {return NULL;} // malloc fails
+
+	newTable->table = temp;
+	newTable->next = db->next;
+	}
+
+	return temp;
+
 }
+
 Table searchTableDb(Database db, char* tableName){
 	//TODO
 	return NULL;
@@ -384,3 +403,6 @@ Table loadTableFromFile(Database db, char* name){
 	fclose(f);
 	return t;
 }
+
+// Secondary functions implementation
+
