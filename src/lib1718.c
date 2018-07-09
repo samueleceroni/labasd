@@ -42,7 +42,7 @@ bool executeQuery(char* query){
 			return false;
 		if(!createTableFile(pRes->tableName, pRes->columns))
 			return false;
-		t = createTableDb(database, pRes->tableName, pRes->columns);
+		t = createTableDb(database, pRes->tableName, pRes->columns, pRes->nColumns);
 		generateLog(pRes);
 	}
 	else if(pRes->queryType == INSERT_INTO){
@@ -69,16 +69,55 @@ bool executeQuery(char* query){
 	return true;
 }
 
-//Implementations
-//TODO
+// Prototypes
+Tree createTree(int key);
+// Implementations
+// TODO
 void initDatabase(Database* db){
 	(*db) = (Database) malloc (sizeof(struct DatabaseHead));
 	(*db)->table = NULL;
 	(*db)->next = NULL;
 }
 
-Table createTableDb(Database db, char* tableName, char** columns){
-	//TODO
+Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
+	// Case: Trying to create an existing table
+	if (searchTableDb(db, tableName)){
+		return NULL;
+	}
+
+	Table temp;
+	// Try to allocate the table
+	if (!(temp = (Table) malloc (sizeof(struct TableDB)))) {return NULL;}
+
+	// Try to allocate the name of the table
+	if(!(temp->name = (char*) malloc (strlen(tableName) * sizeof(char)))) {return NULL;}
+	
+	strcpy(temp->name, tableName);
+
+	// Try to allocate the array of strings
+	if(!(temp->columns = (char**) malloc (nColumns * sizeof(char*)))) {return NULL;}
+	
+	// Try to allocate each string and copy all of them 
+	for (int i; i<nColumns; i++){
+		if (!(temp->columns[i] = (char*) malloc(strlen(columns[i])*sizeof(char)))) {return NULL;}
+		strcpy(temp->columns[i], columns[i]);
+	}
+
+	temp->nColumns = nColumns;
+	temp->treeList = NULL;
+
+	// Create and inserting all the trees. Start with i = nColumns so i can insert each tree in O(1) in the head
+	for (int i=nColumns-1; i>=0; i--){
+		// Create the Tree
+		Tree newTree = createTree(i);
+		// If createTree fails return error
+		if (!newTree){return NULL;}
+		// Insert the newTree in the head of the list of 
+		newTree->next = temp->treeList;
+		temp->treeList = newTree;
+	}
+
+
 	return NULL;
 }
 Table searchTableDb(Database db, char* tableName){
