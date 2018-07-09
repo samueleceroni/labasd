@@ -87,7 +87,6 @@ struct ParseResult {
 	char** columns;
 	int nColumns;
 	char** fieldValues;
-	int nValues;
 };
 
 typedef struct ParseResult* ParseResult;

@@ -21,6 +21,15 @@
 #define GROUP_BY 2
 #define INSERT_INTO 3
 
+//Flags di test
+#ifdef TEST
+	#define FOLDER "test/tables/"
+#endif
+
+#ifndef TEST
+	#define FOLDER ""
+#endif
+
 static Database database = NULL;
 
 
@@ -117,14 +126,12 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 		temp->treeList = newTree;
 	}
 
-
 	return NULL;
 }
 Table searchTableDb(Database db, char* tableName){
 	//TODO
 	return NULL;
 }
-
 NodeRecord createRecord(char** values){
 	//TODO
 	return NULL;
@@ -138,7 +145,6 @@ QueryResultList querySelect(Table t, ParseResult res){
 	//TODO
 	return false;
 }
-
 ParseResult parseQuery(char* queryString){
 	//TODO
 	return NULL;
@@ -172,6 +178,209 @@ bool createTableFile(char* name, char** columns){
 }
 
 Table loadTableFromFile(Database db, char* name){
+	char* buffer = (char*)malloc(sizeof(char) * (strlen(name) + 20));
+	strcpy(buffer, FOLDER);
+	strcat(buffer, name);
+	strcat(buffer, ".txt");
+
+	#ifdef DEBUG
+		printf("Trying to load table: %s ...\n", name);
+	#endif
+
+	FILE* f = fopen(buffer, "r");
+	if(f == NULL){
+	#ifdef DEBUG
+		printf("Table not found!\nAborting...\n");
+	#endif
+		return NULL;
+	}
+
+	//Read table name and columns
+	char header[] = {"TABLE "};
+	char headerSeparator[] = {" COLUMNS "};
+	char inlineSeparator = ',';
+	char endlineSeparator = ';';
+
+	//Check first header
+	buffer = (char*)realloc(buffer, sizeof(char) * (strlen(header)+1));
+	buffer = fgets(buffer, strlen(header)+1, f);
+	buffer[strlen(header)] = '\0';
+
+	if(strcmp(buffer, header) != 0){
+	#ifdef DEBUG
+		printf("Incorrect header! (%s)\nAborting...\n", buffer);
+	#endif
+		return NULL;
+	}
+
+	//Check table name
+	buffer = (char*)realloc(buffer, sizeof(char) * (strlen(name)+1));
+	buffer = fgets(buffer, strlen(name)+1, f);
+	buffer[strlen(name)] = '\0';
+
+	if(strcmp(buffer, name) != 0){
+	#ifdef DEBUG
+		printf("Incorrect table name! (%s)\nAborting...\n", buffer);
+	#endif
+		return NULL;
+	}
+
+	//Check header separator	
+	buffer = (char*)realloc(buffer, sizeof(char) * (strlen(headerSeparator)+1));
+	buffer = fgets(buffer, strlen(headerSeparator)+1, f);
+	buffer[strlen(headerSeparator)] = '\0';
+
+	if(strcmp(buffer, headerSeparator) != 0){
+	#ifdef DEBUG
+		printf("Incorrect header separator! (%s)\nAborting...\n", buffer);
+	#endif
+		return NULL;
+	}
+
+	//Reading fields
+	char** columns = NULL;
+	int nColumns = 0;
+
+	char c = 0;
+	do{
+		c = fgetc(f);
+		if(c == EOF){
+	#ifdef DEBUG
+			printf("Incorrect columns separation!\nAborting...\n");
+	#endif
+			return NULL;
+		}
+		nColumns++;
+		columns = (char**)realloc(columns, sizeof(char*) * nColumns);
+		char* column = NULL;
+		int colLen = 0;
+		while(c != inlineSeparator  && c != endlineSeparator){
+			if(c == EOF){
+	#ifdef DEBUG
+				printf("Incorrect columns separation!\nAborting...\n");
+	#endif
+				return NULL;
+			}
+			colLen++;
+			column = (char*)realloc(column, sizeof(char) * colLen);
+			column[colLen-1] = c;
+			c = fgetc(f);
+		}
+		if(colLen == 0){
+	#ifdef DEBUG
+			printf("Incorrect column size!\nAborting...\n");
+	#endif
+			return NULL;
+		}
+		//Insert terminal char
+		column = (char*)realloc(column, sizeof(char) * colLen+1);
+		column[colLen] = '\0';
+		columns[nColumns-1] = column;
+	}while(c != endlineSeparator);
+
+	#ifdef DEBUG
+	printf("Table: %s\n", name);
+	printf("Columns:\n");
+	for(int i = 0; i < nColumns; i++)
+		printf("\t%s\n", columns[i]);
+	#endif
+	c = fgetc(f);
+
+	Table t = createTableDb(db, name, columns, nColumns);
+	if(t == NULL){
+	#ifdef DEBUG
+		printf("Creation gone wrong!\nAborting...\n");
+	#endif
+		return NULL;
+	}
+
+	//Reading rows
 	//TODO
-	return NULL;
+	char rowHeader[] = {"ROW "};
+	
+	char** row = NULL;
+
+	do{
+		if(c != '\n'){
+	#ifdef DEBUG
+			printf("Incorrect return space!\nAborting...\n");
+	#endif
+			return NULL;
+		}
+
+		//Check row header
+		buffer = (char*)realloc(buffer, sizeof(char) * (strlen(rowHeader)+1));
+		fgets(buffer, strlen(rowHeader)+1, f);
+		buffer[strlen(rowHeader)] = '\0';
+		if(strcmp(buffer, rowHeader) != 0){
+	#ifdef DEBUG
+			printf("Incorrect row header! (%s)\nAborting...\n", buffer);
+	#endif
+			return NULL;
+		}
+
+		row = (char**)malloc(sizeof(char*) * nColumns);
+
+		//Reding row
+		for(int i = 0; i < nColumns; i++){
+			char* value = NULL;
+			int size = 0;
+			c = fgetc(f);
+			if(c == EOF){
+	#ifdef DEBUG
+				printf("Incorrect return space!\nAborting...\n");
+	#endif
+				return NULL;
+			}
+			while(c != inlineSeparator && c != endlineSeparator){
+				if(c == EOF){
+	#ifdef DEBUG
+					printf("Incorrect return space!\nAborting...\n");
+	#endif
+					return NULL;
+				}
+				size++;
+				value = (char*)realloc(value, sizeof(char) * size);
+				value[size-1] = c;
+				c = fgetc(f);
+			}
+			value = (char*)realloc(value, sizeof(char) * (size+1));
+			value[size] = '\0';
+			if(c == endlineSeparator){
+				if(nColumns - 1 != i){
+	#ifdef DEBUG
+					printf("Too few fields! (%d instead of %d)\nAborting...\n", i+1, nColumns);
+	#endif
+					return NULL;
+				}
+			}
+			row[i] = value;
+		}
+
+		if(c != endlineSeparator){
+			return NULL;
+		}
+
+	#ifdef DEBUG
+		printf("Inserting row into table... (");
+		for(int i = 0; i < nColumns; i++)
+			printf("%s,", row[i]);
+		printf("\b)\n");
+	#endif
+		if(!insertIntoTable(t, createRecord(row))){
+	#ifdef DEBUG
+			printf("Insertion gone wrong!\nAborting...\n");
+			return NULL;
+	#endif
+		}
+
+		c = fgetc(f);
+	}while(c != EOF);
+	
+	#ifdef DEBUG
+	printf("Table loaded!\n");
+	#endif
+
+	fclose(f);
+	return t;
 }

@@ -9,5 +9,6 @@ src/bin/*
 src/obj/*.o
 src/test/rbt/*.out
 
-#ignore test.c
+#ignore test files
 src/test/test.c
+src/test/tables/*.txt
