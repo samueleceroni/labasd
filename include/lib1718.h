@@ -104,7 +104,7 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns);
 Table searchTableDb(Database db, char* tableName);
 
 // Record, or Row of the Table
-NodeRecord createRecord(char** values);
+NodeRecord createRecord(char** values, int nColumns);
 bool insertIntoTable(Table t, NodeRecord r);
 
 QueryResultList querySelect(Table t, ParseResult res);

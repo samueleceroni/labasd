@@ -57,7 +57,7 @@ bool executeQuery(char* query){
 	else if(pRes->queryType == INSERT_INTO){
 		if(t == NULL)
 			return false;
-		if(!insertIntoTable(t, createRecord(pRes->fieldValues)))
+		if(!insertIntoTable(t, createRecord(pRes->fieldValues, pRes->nColumns)))
 			return false;
 		generateLog(pRes);
 	}
@@ -151,9 +151,16 @@ Table searchTableDb(Database db, char* tableName){
 	//TODO
 	return NULL;
 }
-NodeRecord createRecord(char** values){
-	//TODO
-	return NULL;
+NodeRecord createRecord(char** values, int nColumns){
+	NodeRecord newRecord = (NodeRecord) malloc (sizeof(struct Record));
+	if (!(newRecord)){return NULL;} // MALLOC FAILS
+	newRecord->next = NULL;
+	if(!(newRecord->values = (char**) malloc (nColumns*sizeof(char*)))) {return NULL;}
+	for (int i; i<nColumns; i++){
+		if (!(newRecord->values[i] = (char*) malloc(strlen(values[i])*sizeof(char)))) {return NULL;}
+		strcpy(newRecord->values[i], values[i]);
+	}
+	return newRecord;	
 }
 bool insertIntoTable(Table t, NodeRecord r){
 	//TODO
@@ -386,7 +393,7 @@ Table loadTableFromFile(Database db, char* name){
 			printf("%s,", row[i]);
 		printf("\b)\n");
 	#endif
-		if(!insertIntoTable(t, createRecord(row))){
+		if(!insertIntoTable(t, createRecord(row, nColumns))){
 	#ifdef DEBUG
 			printf("Insertion gone wrong!\nAborting...\n");
 			return NULL;
