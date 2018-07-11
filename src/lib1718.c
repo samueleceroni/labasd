@@ -203,11 +203,11 @@ bool insertRecordDb(Table t, NodeRecord r){
 
 QueryResultList querySelect(Table t, ParseResult res){
 	//TODO
-	QueryResultList queryToGet = NULL;
+	QueryResultList* queryToGet = NULL;
 
 	switch(res->queryType){// select tablename order by key (crescente o decrescente)
 	case (ORDER_BY):
-		selectOrderBy(t->treeList[searchColumnIndex(t, res->keyName)].root, &queryToGet, res->order);
+		selectOrderBy(t->treeList[searchColumnIndex(t, res->keyName)].root, queryToGet, res->order);
 		break;
 	case (GROUP_BY):
 		//TODO
@@ -219,7 +219,7 @@ QueryResultList querySelect(Table t, ParseResult res){
 	// select tablename where attributo[key] = "..." and not only equal where key queryselector keyname
 	// selectWhere(table, key, queryselector, keyname)
 	}
-	return false;
+	return *queryToGet;
 } //TODO
 
 ParseResult parseQuery(char* queryString){
