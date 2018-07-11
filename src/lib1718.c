@@ -59,7 +59,7 @@ bool leftRotate(Tree T, Node x) ;
 bool rightRotate(Tree T, Node x);
 int searchColumnIndex(Table T, char* keyName); // TODO
 void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
-
+void countForGroupBy(int key, QueryResultList queryToGet);
 
 double parseDouble (char * s);
 int compare (char * a, char * b);
@@ -210,7 +210,8 @@ QueryResultList querySelect(Table t, ParseResult res){
 		selectOrderBy(t->treeList[searchColumnIndex(t, res->keyName)].root, queryToGet, res->order);
 		break;
 	case (GROUP_BY):
-		//TODO
+		selectOrderBy(t->treeList[searchColumnIndex(t, res->keyName)].root, queryToGet, res->order);
+		countForGroupBy(searchColumnIndex(t, res->keyName), (*queryToGet));
 		break;
 
 	// selectOrderBy(table, key, order);
@@ -226,14 +227,17 @@ ParseResult parseQuery(char* queryString){
 	//TODO
 	return NULL;
 }
+
 void freeParseResult(ParseResult res){
 	//TODO
 	return;
 }
+
 void freeQueryResultList(QueryResultList res){
 	//TODO
 	return;
 }
+
 void generateLog(ParseResult pRes, char* query, QueryResultList records, Database db){
 	char* buffer = (char*)malloc(sizeof(char) * (strlen(LOG_FILE_NAME) + strlen(FOLDER) + 1));
 	strcpy(buffer, FOLDER);
@@ -316,14 +320,17 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 
 	fclose(f);
 }
+
 bool checkTable(char* name){
 	//TODO
 	return false;
 }
+
 bool createTableFile(char* name, char** columns){
 	//TODO
 	return false;
 }
+
 Table loadTableFromFile(Database db, char* name){
 	char* buffer = (char*)malloc(sizeof(char) * (strlen(name) + strlen(TABLE_FOLDER) + 5));
 	strcpy(buffer, TABLE_FOLDER);
@@ -748,7 +755,6 @@ void selectOrderBy(Node x, QueryResultList* queryToGet, int order){
 	}
 	else{
 		selectOrderBy(x->left, queryToGet, order);
-
 	}
 
 	QueryResultList newElement;
@@ -760,9 +766,23 @@ void selectOrderBy(Node x, QueryResultList* queryToGet, int order){
 
 	if(order==ASC){
 		selectOrderBy(x->left, queryToGet, order);
-
 	}
 	else{
 		selectOrderBy(x->right, queryToGet, order);
+	}
+}
+
+void countForGroupBy(int key, QueryResultList queryToGet){
+	QueryResultList temp = queryToGet, temp2;
+	while(temp && temp->next){
+		if (compare(temp->nodeValue->values[key],temp->next->nodeValue->values[key])==EQUAL){
+			temp->occurence++;
+			temp2 = temp->next;
+			temp->next = temp2->next;
+			free(temp2);
+		}
+		else{
+			temp = temp->next;
+		}
 	}
 }
