@@ -57,7 +57,7 @@ bool rbtInsertFixup(Tree T, Node z);
 Node createNodeRBT(NodeRecord r);
 bool leftRotate(Tree T, Node x) ;
 bool rightRotate(Tree T, Node x);
-int searchColumnIndex(Table T, char* keyName); // TODO
+int searchColumnIndex(Table T, char* keyName);
 void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
 void countForGroupBy(int key, QueryResultList queryToGet);
 
@@ -302,12 +302,12 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 		fprintf(f, "ROW ");
 		if(pRes->queryType == GROUP_BY){
 			int colIndex = 0;
-			//colIndex = searchColumnIndex(t, pRes->keyName);
+			colIndex = searchColumnIndex(t, pRes->keyName);
 			fprintf(f, "%s,%d;\n", records->nodeValue->values[colIndex], records->occurence);
 		} else {
 			for(i = 0; i < pRes->nColumns; i++){
 				int colIndex = i;
-				//colIndex = searchColumnIndex(t, pRes->columns[i]);
+				colIndex = searchColumnIndex(t, pRes->columns[i]);
 				fprintf(f, "%s", records->nodeValue->values[colIndex]);
 				if(i != pRes->nColumns - 1)
 					fprintf(f, ",");
@@ -743,6 +743,11 @@ bool rightRotate(Tree T, Node x) {
     y->right = x;
     x->p = y;
     return true;
+}
+
+int searchColumnIndex(Table T, char* keyName){
+	//TODO
+	return -1;
 }
 
 void selectOrderBy(Node x, QueryResultList* queryToGet, int order){
