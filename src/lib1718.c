@@ -38,8 +38,10 @@ static Database database = NULL;
 
 
 // Secondary functions prototypes
+void insertRecordTree(Tree T, Node z);
+void rbtInsertFixup(Tree T, Node z);
+Node createNodeRBT(NodeRecord r);
 
-bool insertRecordTree(Tree t, NodeRecord r);
 double parseDouble (char * s);
 int compare (char * a, char * b);
 int strCompare (char * a, char * b);
@@ -177,7 +179,7 @@ bool insertRecordDb(Table t, NodeRecord r){
 
 	// insert the element in each tree
 	for(int i=0; i < t->nColumns; i++){
-		if(!(insertRecordTree(&(t->treeList[i]), r))){return false;}
+		if(!(insertRecordTree(&(t->treeList[i]), createNodeRBT(r)))){return false;}
 	}
 	return true; 
 } //OK, NOT FINALLY TESTED 
@@ -457,13 +459,10 @@ int strIsNumber (char * s) {
 	return isNumber;
 }
 
-
-
-int strAreBothNumbers (char * a, char * b) {	
+int strAreBothNumbers (char * a, char * b) {
+	// useless comment	
 	return strIsNumber(a) && strIsNumber(b);
 }
-
-
 
 double parseDouble (char * s) {
 	int i = 0;
@@ -496,10 +495,7 @@ double parseDouble (char * s) {
 	return result * signMultiplier;
 }
 
-
-// compares two strings
-
-int compare (char * a, char * b) {	
+int compare (char * a, char * b) {	// compares two strings
 	double numA = 0, numB = 0;
 
 	if (strAreBothNumbers (a, b)) {
@@ -518,4 +514,22 @@ int compare (char * a, char * b) {
 	}
 
 	return strCompare (a, b);
+}
+
+Node createNodeRBT(NodeRecord r){
+	Node x;
+	if(!(x = (Node) malloc(sizeof(struct RBTNode)))){return NULL;}
+	x->nodeValue = r;
+	return x;
+}
+bool insertRecordTree(Tree T, Node z){
+
+	Node y = NULL;
+	Node x = T->root;
+	while(x!=NULL){
+		y = x;
+		if(/*.............*/){
+			x = x->left
+		}
+	}
 }
