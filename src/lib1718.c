@@ -25,6 +25,10 @@
 // For Parse
 #define DECIMAL_SEPARATOR '.'
 
+// Red Black Tree colors
+#define RED 1
+#define BLACK 0
+
 // Flags di test
 #ifdef TEST
 	#define FOLDER "test/tables/"
@@ -38,9 +42,12 @@ static Database database = NULL;
 
 
 // Secondary functions prototypes
-void insertRecordTree(Tree T, Node z);
-void rbtInsertFixup(Tree T, Node z);
+bool insertRecordTree(Tree T, Node z);
+bool rbtInsertFixup(Tree T, Node z);
 Node createNodeRBT(NodeRecord r);
+bool leftRotate(Tree T, Node x) ;
+bool rightRotate(Tree T, Node x);
+
 
 double parseDouble (char * s);
 int compare (char * a, char * b);
@@ -522,14 +529,111 @@ Node createNodeRBT(NodeRecord r){
 	x->nodeValue = r;
 	return x;
 }
-bool insertRecordTree(Tree T, Node z){
 
+bool insertRecordTree(Tree T, Node z){
+	if( !z || !T ) return false;
 	Node y = NULL;
 	Node x = T->root;
 	while(x!=NULL){
 		y = x;
-		if(/*.............*/){
-			x = x->left
+		if(compare(z->nodeValue->values[T->key], y->nodeValue->values[T->key])==LESSER){
+			x = x->left;
+		}
+		else{
+			x = x->right;
 		}
 	}
+	z->left = NULL;
+	z->right = NULL;
+	z->color = RED;
+
+	return rbtInsertFixup(T, z);
+}
+
+bool rbtInsertFixup(Tree T, Node z){
+	if( !T || !z ){return false;}
+
+	Node y;
+
+	while (z->p && z->p->color == RED) {
+	    if (z->p == z->p->p->left) {
+	        y = z->p->p->right;
+	        if (y && y->color == RED) {
+	            z->p->color = BLACK;
+	            y->color = BLACK;
+	            z->p->p->color = RED;
+	            z = z->p->p;
+	        }
+	        else {
+	            if (z == z->p->right) {
+	                z = z->p;
+	                if(!(leftRotate(T, z))){return false;}
+	            }
+	            z->p->color = BLACK;
+	            z->p->p->color = RED;
+	            if(!(rightRotate(T, z->p->p))){return false;}
+	        }
+	    }
+	    else {
+	        y = z->p->p->left;
+	        if (y && y->color == RED) {
+	            z->p->color = BLACK;
+	            y->color = BLACK;
+	            z->p->p->color = RED;
+	            z = z->p->p;
+	        }
+	        else {
+	            if (z == z->p->left) {
+	                z = z->p;
+	                if(!(rightRotate(T, z))){return false;}
+	            }
+	            z->p->color = BLACK;
+	            z->p->p->color = RED;
+	            if(!(leftRotate(T, z->p->p))){return false;}
+	        }
+	    }
+	}
+	T->root->color = BLACK;
+	return true;
+}
+
+bool leftRotate(Tree T, Node x) {
+    if( !T || !x ){return false;}
+    Node y = x->right;
+    x->right = y->left;
+    if (y->left != NULL)
+        y->left->p = x;
+    y->p = x->p;
+    if (x->p == NULL)
+        T->root = y;
+    else
+        if (x == x->p->left)
+            x->p->left = y;
+        else
+            x->p->right = y;
+    y->left = x;
+    x->p = y;
+    return true;
+}
+
+bool rightRotate(Tree T, Node x) {
+    if( !T || !x ){return false;}
+
+    Node y = x->left;
+    x->left = y->right;
+    if (y->right != NULL)
+        y->right->p = x;
+    y->p = x->p;
+    if (x->p == NULL)
+        T->root = y;
+    else
+        // x was the left son of his father
+        if (x == x->p->left)
+            x->p->left = y;
+    // x was the right son of his father
+        else
+            x->p->right = y;
+    y->right = x;
+    x->p = y;
+    return true;
 }
