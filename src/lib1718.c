@@ -57,7 +57,7 @@ bool executeQuery(char* query){
 	else if(pRes->queryType == INSERT_INTO){
 		if(t == NULL)
 			return false;
-		if(!insertIntoTable(t, createRecord(pRes->fieldValues, pRes->nColumns)))
+		if(!insertRecordDb(t, createRecord(pRes->fieldValues, pRes->nColumns)))
 			return false;
 		generateLog(pRes);
 	}
@@ -80,9 +80,8 @@ bool executeQuery(char* query){
 
 
 // Secondary functions prototypes
-
-Tree createTree(int key);
-
+double parseDouble (char * s);
+int compare (char * a, char * b);
 
 // Implementations
 void initDatabase(Database* db){
@@ -91,7 +90,7 @@ void initDatabase(Database* db){
 	(*db)->next = NULL;
 }
 
-Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
+Table createTableDb(Database db, char* tableName, char** columns, int nColumns){ // creates the table and insert it into the DB
 	// Case: Trying to create an existing table
 	if (searchTableDb(db, tableName)){
 		return NULL;
@@ -116,17 +115,14 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	}
 
 	temp->nColumns = nColumns;
-	temp->treeList = NULL;
+	// Allocate the head of all the trees
+	if(!(temp->treeList = (Tree) malloc (nColumns*sizeof(struct RBTree)))){return NULL;}
 
 	// Create and inserting all the trees. Start with i = nColumns so i can insert each tree in O(1) in the head
-	for (int i=nColumns-1; i>=0; i--){
+	for (int i=0; i<nColumns; i++){
 		// Create the Tree
-		Tree newTree = createTree(i);
-		// If createTree fails return error
-		if (!newTree){return NULL;}
-		// Insert the newTree in the head of the list of 
-		newTree->next = temp->treeList;
-		temp->treeList = newTree;
+		temp->treeList[i].key = i;
+		temp->treeList[i].root = NULL;
 	}
 
 	// the table is ready to be inserted into the database
@@ -136,11 +132,11 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	}
 	else{
 	// try to create the newTable structure to be inserted as element of a list
-	Database newTable = (Database)malloc(sizeof(struct DatabaseHead));
-	if (!newTable) {return NULL;} // malloc fails
+	Database newTableHead = (Database)malloc(sizeof(struct DatabaseHead));
+	if (!newTableHead) {return NULL;} // malloc fails
 
-	newTable->table = temp;
-	newTable->next = db->next;
+	newTableHead->table = temp;
+	newTableHead->next = db->next;
 	}
 
 	return temp;
@@ -148,23 +144,27 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 }
 
 Table searchTableDb(Database db, char* tableName){
-	//TODO
-	return NULL;
+	if (!db) {return NULL;}	// Db is empty or the end of the queue is reached
+	if (compare(db->table->name, tableName)==EQUAL){return db->table;}	// the table is found
+	return searchTableDb(db->next, tableName);	// recursevely return the searchTable on the next table
 }
+
 NodeRecord createRecord(char** values, int nColumns){
 	NodeRecord newRecord = (NodeRecord) malloc (sizeof(struct Record));
 	if (!(newRecord)){return NULL;} // MALLOC FAILS
 	newRecord->next = NULL;
-	if(!(newRecord->values = (char**) malloc (nColumns*sizeof(char*)))) {return NULL;}
+	if (!(newRecord->values = (char**) malloc (nColumns*sizeof(char*)))) {return NULL;}
 	for (int i; i<nColumns; i++){
 		if (!(newRecord->values[i] = (char*) malloc(strlen(values[i])*sizeof(char)))) {return NULL;}
 		strcpy(newRecord->values[i], values[i]);
 	}
 	return newRecord;	
 }
-bool insertIntoTable(Table t, NodeRecord r){
-	//TODO
-	return false;
+bool insertRecordDb(Table t, NodeRecord r){
+	// insert the element into the list of element
+	
+	// insert the element in each tree
+	return false; 
 }
 
 QueryResultList querySelect(Table t, ParseResult res){
@@ -393,7 +393,7 @@ Table loadTableFromFile(Database db, char* name){
 			printf("%s,", row[i]);
 		printf("\b)\n");
 	#endif
-		if(!insertIntoTable(t, createRecord(row, nColumns))){
+		if(!insertRecordDb(t, createRecord(row, nColumns))){
 	#ifdef DEBUG
 			printf("Insertion gone wrong!\nAborting...\n");
 			return NULL;
@@ -412,13 +412,3 @@ Table loadTableFromFile(Database db, char* name){
 }
 
 // Secondary functions implementation
-
-Tree createTree(int key){
-	
-	Tree newTree = (Tree) malloc (sizeof(struct RBTree));
-	
-	if (!newTree){return NULL;} // CASE MALLOC FAILS
-	newTree -> key = key;
-	newTree -> root = NULL;
-	newTree -> next = NULL; 
-}

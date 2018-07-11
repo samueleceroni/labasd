@@ -31,7 +31,7 @@ struct TableDB {
 	char** columns;
 	int nColumns;
 	struct Record* recordList;
-	struct RBTree* treeList;
+	struct RBTree* treeList; // Array of nColumns tree
 };
 
 typedef struct TableDB* Table;
@@ -48,7 +48,6 @@ typedef struct Record* NodeRecord;
 struct RBTree {
 	int key;
 	struct RBTNode* root;
-	struct RBTree* next;
 };
 
 typedef struct RBTree* Tree;
@@ -105,7 +104,7 @@ Table searchTableDb(Database db, char* tableName);
 
 // Record, or Row of the Table
 NodeRecord createRecord(char** values, int nColumns);
-bool insertIntoTable(Table t, NodeRecord r);
+bool insertRecordDb(Table t, NodeRecord r);
 
 QueryResultList querySelect(Table t, ParseResult res);
 
