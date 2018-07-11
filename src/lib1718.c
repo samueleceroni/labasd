@@ -21,6 +21,7 @@
 #define ORDER_BY 1
 #define GROUP_BY 2
 #define INSERT_INTO 3
+#define SELECT_WITHOUT_FILTERS 4
 
 // For Parse
 #define DECIMAL_SEPARATOR '.'
@@ -29,13 +30,18 @@
 #define RED 1
 #define BLACK 0
 
+//Files
+#define LOG_FILE_NAME "query_results.txt"
+
 // Flags di test
 #ifdef TEST
-	#define FOLDER "test/tables/"
+	#define FOLDER "test/"
+	#define TABLE_FOLDER "test/tables/"
 #endif
 
 #ifndef TEST
 	#define FOLDER ""
+	#define TABLE_FOLDER ""
 #endif
 
 static Database database = NULL;
@@ -74,14 +80,12 @@ bool executeQuery(char* query){
 		if(!createTableFile(pRes->tableName, pRes->columns))
 			return false;
 		t = createTableDb(database, pRes->tableName, pRes->columns, pRes->nColumns);
-		generateLog(pRes);
 	}
 	else if(pRes->queryType == INSERT_INTO){
 		if(t == NULL)
 			return false;
 		if(!insertRecordDb(t, createRecord(pRes->fieldValues, pRes->nColumns)))
 			return false;
-		generateLog(pRes);
 	}
 	else
 	{
@@ -91,7 +95,7 @@ bool executeQuery(char* query){
 			return false;
 
 		selectResult = querySelect(t, pRes);
-		generateLogSelect(pRes, selectResult);
+		generateLog(pRes, query, selectResult, database);
 
 		freeQueryResultList(selectResult);
 	}
@@ -216,13 +220,87 @@ void freeQueryResultList(QueryResultList res){
 	//TODO
 	return;
 }
-void generateLog(ParseResult res){
-	//TODO
-	return;
-}
-void generateLogSelect(ParseResult res, QueryResultList records){
-	//TODO
-	return;
+void generateLog(ParseResult pRes, char* query, QueryResultList records, Database db){
+	char* buffer = (char*)malloc(sizeof(char) * (strlen(LOG_FILE_NAME) + strlen(FOLDER) + 1));
+	strcpy(buffer, FOLDER);
+	strcat(buffer, LOG_FILE_NAME);
+
+#ifdef DEBUG
+	printf("Inserting log into %s ...\n", buffer);
+#endif
+
+	FILE* f = fopen(buffer, "a+");
+
+	if(f == NULL){
+#ifdef DEBUG
+		printf("Error while creating/opening %s!\nAborting...", buffer);
+#endif
+		return;
+	}
+
+	fprintf(f, "%s\n", query);
+
+	//Inserting header
+	fprintf(f, "TABLE %s COLUMNS ", pRes->tableName);
+	int i;
+	if(pRes->queryType == GROUP_BY){
+		fprintf(f, "%s,COUNT;\n", pRes->keyName);
+	} else {
+		for(i = 0; i < pRes->nColumns; i++){
+			fprintf(f, "%s", pRes->columns[i]);
+			if(i != pRes->nColumns - 1)
+				fprintf(f, ",");
+			else
+				fprintf(f, ";\n");
+		}
+	}
+
+	Table t = searchTableDb(db, pRes->tableName);
+	if(t == NULL){
+#ifdef DEBUG
+		printf("Failed to search table %s !\nAborting...\n", pRes->tableName);
+#endif
+		return;
+	}
+
+	//Inserting records
+	if(pRes->queryType == SELECT_WITHOUT_FILTERS){
+		NodeRecord r = t->recordList;
+		while(r != NULL){
+			fprintf(f, "ROW ");
+			for(i = 0; i < t->nColumns; i++){
+				fprintf(f, "%s", r->values[i]);
+				if(i != pRes->nColumns - 1)
+					fprintf(f, ",");
+				else
+					fprintf(f, ";\n");	
+			}
+		}
+		fclose(f);
+		return;
+	}
+
+	while(records != NULL){
+		fprintf(f, "ROW ");
+		if(pRes->queryType == GROUP_BY){
+			int colIndex = 0;
+			//colIndex = searchColumnIndex(t, pRes->keyName);
+			fprintf(f, "%s,%d;\n", records->nodeValue->values[colIndex], records->occurence);
+		} else {
+			for(i = 0; i < pRes->nColumns; i++){
+				int colIndex = i;
+				//colIndex = searchColumnIndex(t, pRes->columns[i]);
+				fprintf(f, "%s", records->nodeValue->values[colIndex]);
+				if(i != pRes->nColumns - 1)
+					fprintf(f, ",");
+				else
+					fprintf(f, ";\n");	
+			}
+		}
+		records = records->next;
+	}
+
+	fclose(f);
 }
 bool checkTable(char* name){
 	//TODO
@@ -233,8 +311,8 @@ bool createTableFile(char* name, char** columns){
 	return false;
 }
 Table loadTableFromFile(Database db, char* name){
-	char* buffer = (char*)malloc(sizeof(char) * (strlen(name) + 20));
-	strcpy(buffer, FOLDER);
+	char* buffer = (char*)malloc(sizeof(char) * (strlen(name) + strlen(TABLE_FOLDER) + 5));
+	strcpy(buffer, TABLE_FOLDER);
 	strcat(buffer, name);
 	strcat(buffer, ".txt");
 

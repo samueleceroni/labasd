@@ -111,8 +111,7 @@ void freeParseResult(ParseResult res);
 void freeQueryResultList(QueryResultList res);
 
 //Logger
-void generateLog(ParseResult res);
-void generateLogSelect(ParseResult res, QueryResultList records);
+void generateLog(ParseResult pRes, char* query, QueryResultList records, Database db);
 
 //File part
 bool checkTable(char* name);
