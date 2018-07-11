@@ -755,6 +755,7 @@ void selectOrderBy(Node x, QueryResultList* queryToGet, int order){
 	if (!(newElement = (QueryResultList) malloc(sizeof(struct QueryResultElement)))){return;}
 	newElement->next = (*queryToGet);
 	newElement->nodeValue = x->nodeValue;
+	newElement->occurence = 1;
 	queryToGet = &newElement;
 
 	if(order==ASC){
