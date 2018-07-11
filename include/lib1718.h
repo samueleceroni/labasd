@@ -9,9 +9,6 @@ Output:
 	-bool: true/false, se l'esecuzione della query e' andata a buon fine o meno (presenza di eventuali errori) 
 */
 
-
-
-
 // DataBase Part
 
 struct DatabaseHead{
@@ -75,13 +72,14 @@ typedef struct QueryResultElement* QueryResultList;
 struct ParseResult {
 	bool success;
 	char* tableName;
-	int queryType;
+	int queryType; // type of select
 	int querySelector;
 	char* keyName;
 	char* key;
 	char** columns;
 	int nColumns;
 	char** fieldValues;
+	// look at queryselect function in order to understand how to parse commands for select query
 };
 
 typedef struct ParseResult* ParseResult;

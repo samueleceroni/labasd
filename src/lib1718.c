@@ -193,6 +193,14 @@ bool insertRecordDb(Table t, NodeRecord r){
 
 QueryResultList querySelect(Table t, ParseResult res){
 	//TODO
+
+	// select tablename order by key (crescente o decrescente)
+	// selectOrderBy(table, key, order);
+	// select tablename group by key
+	// selectGroupBy(table, key);
+	// select tablename where attributo[key] = "..." and not only equal where key queryselector keyname
+	// selectWhere(table, key, queryselector, keyname)
+
 	return false;
 } //TODO
 
@@ -637,3 +645,4 @@ bool rightRotate(Tree T, Node x) {
     x->p = y;
     return true;
 }
+

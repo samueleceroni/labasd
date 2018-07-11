@@ -123,6 +123,7 @@ bool leftRotate(tree T, node x) {
             x->p->right = y;
     y->left = x;
     x->p = y;
+    return true;
 }
 
 bool rightRotate(tree T, node x) {
@@ -144,6 +145,7 @@ bool rightRotate(tree T, node x) {
             x->p->right = y;
     y->right = x;
     x->p = y;
+    return true;
 }
 
 void rbInsertFixup(tree T, node z) {
