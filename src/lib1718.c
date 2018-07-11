@@ -5,23 +5,26 @@
 #include <string.h>
 #include <ctype.h>
 
-//Defines
+// Defines
 
-//Query selectors
+// Query selectors
 #define EQUAL 0
 #define GREATER 1
 #define LESSER 2
 #define GREATER_EQUAL 3
 #define LESSER_EQUAL 4
 
-//Query types
+// Query types
 #define CREATE_TABLE -1
 #define WHERE 0
 #define ORDER_BY 1
 #define GROUP_BY 2
 #define INSERT_INTO 3
 
-//Flags di test
+// For Parse
+#define DECIMAL_SEPARATOR '.'
+
+// Flags di test
 #ifdef TEST
 	#define FOLDER "test/tables/"
 #endif
@@ -31,6 +34,12 @@
 #endif
 
 static Database database = NULL;
+
+
+// Secondary functions prototypes
+double parseDouble (char * s);
+int compare (char * a, char * b);
+bool insertRecordTree(Tree t, NodeRecord r);
 
 
 //Main functions implematations
@@ -77,11 +86,6 @@ bool executeQuery(char* query){
 
 	return true;
 }
-
-
-// Secondary functions prototypes
-double parseDouble (char * s);
-int compare (char * a, char * b);
 
 // Implementations
 void initDatabase(Database* db){
@@ -140,14 +144,13 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	}
 
 	return temp;
-
-}
+} //OK, NOT FINALLY TESTED
 
 Table searchTableDb(Database db, char* tableName){
 	if (!db) {return NULL;}	// Db is empty or the end of the queue is reached
 	if (compare(db->table->name, tableName)==EQUAL){return db->table;}	// the table is found
 	return searchTableDb(db->next, tableName);	// recursevely return the searchTable on the next table
-}
+} //OK, NOT FINALLY TESTED
 
 NodeRecord createRecord(char** values, int nColumns){
 	NodeRecord newRecord = (NodeRecord) malloc (sizeof(struct Record));
@@ -159,23 +162,31 @@ NodeRecord createRecord(char** values, int nColumns){
 		strcpy(newRecord->values[i], values[i]);
 	}
 	return newRecord;	
-}
+} //OK, NOT FINALLY TESTED
+
 bool insertRecordDb(Table t, NodeRecord r){
-	// insert the element into the list of element
+	if(!t || !r){return false;} // table or record are not initilized, impossible to insert the record
 	
+	// insert the record into the head of the list of record
+	r->next = t->recordList;
+	t->recordList = r;
+
 	// insert the element in each tree
-	return false; 
-}
+	for(int i=0; i < t->nColumns; i++){
+		if(!(insertRecordTree(&(t->treeList[i]), r))){return false;}
+	}
+	return true; 
+} //OK, NOT FINALLY TESTED 
 
 QueryResultList querySelect(Table t, ParseResult res){
 	//TODO
 	return false;
-}
+} //TODO
+
 ParseResult parseQuery(char* queryString){
 	//TODO
 	return NULL;
 }
-
 void freeParseResult(ParseResult res){
 	//TODO
 	return;
@@ -184,7 +195,6 @@ void freeQueryResultList(QueryResultList res){
 	//TODO
 	return;
 }
-
 void generateLog(ParseResult res){
 	//TODO
 	return;
@@ -193,7 +203,6 @@ void generateLogSelect(ParseResult res, QueryResultList records){
 	//TODO
 	return;
 }
-
 bool checkTable(char* name){
 	//TODO
 	return false;
@@ -202,7 +211,6 @@ bool createTableFile(char* name, char** columns){
 	//TODO
 	return false;
 }
-
 Table loadTableFromFile(Database db, char* name){
 	char* buffer = (char*)malloc(sizeof(char) * (strlen(name) + 20));
 	strcpy(buffer, FOLDER);

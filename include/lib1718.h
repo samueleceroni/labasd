@@ -9,11 +9,7 @@ Output:
 	-bool: true/false, se l'esecuzione della query e' andata a buon fine o meno (presenza di eventuali errori) 
 */
 
-// General Part
 
-bool executeQuery(char*);
-
-// End of General Part
 
 
 // DataBase Part
@@ -93,6 +89,10 @@ typedef struct ParseResult* ParseResult;
 ///////////////
 /* Functions */
 ///////////////
+
+// General Part
+bool executeQuery(char*);
+// End of General Part
 
 
 // DataBase Part
