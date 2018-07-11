@@ -79,6 +79,7 @@ struct ParseResult {
 	char** columns;
 	int nColumns;
 	char** fieldValues;
+	int order; // asc or desc
 	// look at queryselect function in order to understand how to parse commands for select query
 };
 

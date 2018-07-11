@@ -23,6 +23,10 @@
 #define INSERT_INTO 3
 #define SELECT_WITHOUT_FILTERS 4
 
+// Query order
+#define ASC 0
+#define DESC 1
+
 // For Parse
 #define DECIMAL_SEPARATOR '.'
 
@@ -53,6 +57,8 @@ bool rbtInsertFixup(Tree T, Node z);
 Node createNodeRBT(NodeRecord r);
 bool leftRotate(Tree T, Node x) ;
 bool rightRotate(Tree T, Node x);
+int searchColumnIndex(Table T, char* keyName); // TODO
+void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
 
 
 double parseDouble (char * s);
@@ -197,14 +203,22 @@ bool insertRecordDb(Table t, NodeRecord r){
 
 QueryResultList querySelect(Table t, ParseResult res){
 	//TODO
+	QueryResultList queryToGet = NULL;
 
-	// select tablename order by key (crescente o decrescente)
+	switch(res->queryType){// select tablename order by key (crescente o decrescente)
+	case (ORDER_BY):
+		selectOrderBy(t->treeList[searchColumnIndex(t, res->keyName)].root, &queryToGet, res->order);
+		break;
+	case (GROUP_BY):
+		//TODO
+		break;
+
 	// selectOrderBy(table, key, order);
 	// select tablename group by key
 	// selectGroupBy(table, key);
 	// select tablename where attributo[key] = "..." and not only equal where key queryselector keyname
 	// selectWhere(table, key, queryselector, keyname)
-
+	}
 	return false;
 } //TODO
 
@@ -225,16 +239,16 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 	strcpy(buffer, FOLDER);
 	strcat(buffer, LOG_FILE_NAME);
 
-#ifdef DEBUG
+	#ifdef DEBUG
 	printf("Inserting log into %s ...\n", buffer);
-#endif
+	#endif
 
 	FILE* f = fopen(buffer, "a+");
 
 	if(f == NULL){
-#ifdef DEBUG
+	#ifdef DEBUG
 		printf("Error while creating/opening %s!\nAborting...", buffer);
-#endif
+	#endif
 		return;
 	}
 
@@ -257,9 +271,9 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 
 	Table t = searchTableDb(db, pRes->tableName);
 	if(t == NULL){
-#ifdef DEBUG
+	#ifdef DEBUG
 		printf("Failed to search table %s !\nAborting...\n", pRes->tableName);
-#endif
+	#endif
 		return;
 	}
 
@@ -724,3 +738,30 @@ bool rightRotate(Tree T, Node x) {
     return true;
 }
 
+void selectOrderBy(Node x, QueryResultList* queryToGet, int order){
+	if(!x){return;}
+	if(order!=ASC && order!=DESC){return;}
+
+	// I have to walk into the tree in the opposite way because i push elements to the head of the list
+	if(order==ASC){
+		selectOrderBy(x->right, queryToGet, order);
+	}
+	else{
+		selectOrderBy(x->left, queryToGet, order);
+
+	}
+
+	QueryResultList newElement;
+	if (!(newElement = (QueryResultList) malloc(sizeof(struct QueryResultElement)))){return;}
+	newElement->next = (*queryToGet);
+	newElement->nodeValue = x->nodeValue;
+	queryToGet = &newElement;
+
+	if(order==ASC){
+		selectOrderBy(x->left, queryToGet, order);
+
+	}
+	else{
+		selectOrderBy(x->right, queryToGet, order);
+	}
+}
