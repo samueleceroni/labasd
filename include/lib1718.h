@@ -9,13 +9,6 @@ Output:
 	-bool: true/false, se l'esecuzione della query e' andata a buon fine o meno (presenza di eventuali errori) 
 */
 
-// General Part
-
-bool executeQuery(char*);
-
-// End of General Part
-
-
 // DataBase Part
 
 struct DatabaseHead{
@@ -29,9 +22,9 @@ typedef struct DatabaseHead* Database;
 struct TableDB {
 	char* name;
 	char** columns;
-	int nColums;
+	int nColumns;
 	struct Record* recordList;
-	struct RBTree* treeList;
+	struct RBTree* treeList; // Array of nColumns tree
 };
 
 typedef struct TableDB* Table;
@@ -48,7 +41,6 @@ typedef struct Record* NodeRecord;
 struct RBTree {
 	int key;
 	struct RBTNode* root;
-	struct rbTree* next;
 };
 
 typedef struct RBTree* Tree;
@@ -80,14 +72,15 @@ typedef struct QueryResultElement* QueryResultList;
 struct ParseResult {
 	bool success;
 	char* tableName;
-	int queryType;
+	int queryType; // type of select
 	int querySelector;
 	char* keyName;
 	char* key;
 	char** columns;
 	int nColumns;
 	char** fieldValues;
-	int nValues;
+	int order; // asc or desc
+	// look at queryselect function in order to understand how to parse commands for select query
 };
 
 typedef struct ParseResult* ParseResult;
@@ -96,17 +89,21 @@ typedef struct ParseResult* ParseResult;
 /* Functions */
 ///////////////
 
+// General Part
+bool executeQuery(char*);
+// End of General Part
+
 
 // DataBase Part
 void initDatabase(Database* db);
 
 // Table
-Table createTableDb(Database db, char* tableName, char** columns);
+Table createTableDb(Database db, char* tableName, char** columns, int nColumns);
 Table searchTableDb(Database db, char* tableName);
 
 // Record, or Row of the Table
-NodeRecord createRecord(char** values);
-bool insertIntoTable(Table t, NodeRecord r);
+NodeRecord createRecord(char** values, int nColumns);
+bool insertRecordDb(Table t, NodeRecord r);
 
 QueryResultList querySelect(Table t, ParseResult res);
 
@@ -115,8 +112,7 @@ void freeParseResult(ParseResult res);
 void freeQueryResultList(QueryResultList res);
 
 //Logger
-void generateLog(ParseResult res);
-void generateLogSelect(ParseResult res, QueryResultList records);
+void generateLog(ParseResult pRes, char* query, QueryResultList records, Database db);
 
 //File part
 bool checkTable(char* name);

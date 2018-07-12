@@ -107,7 +107,8 @@ void nodePrintKeys(node temp) {
     nodePrintKeys(temp->right);
 }
 
-void leftRotate(tree T, node x) {
+bool leftRotate(tree T, node x) {
+    if( !T || !z ){return false;}
     node y = x->right;
     x->right = y->left;
     if (y->left != NULL)
@@ -122,9 +123,12 @@ void leftRotate(tree T, node x) {
             x->p->right = y;
     y->left = x;
     x->p = y;
+    return true;
 }
 
-void rightRotate(tree T, node x) {
+bool rightRotate(tree T, node x) {
+    if( !T || !z ){return false;}
+
     node y = x->left;
     x->left = y->right;
     if (y->right != NULL)
@@ -141,6 +145,7 @@ void rightRotate(tree T, node x) {
             x->p->right = y;
     y->right = x;
     x->p = y;
+    return true;
 }
 
 void rbInsertFixup(tree T, node z) {
