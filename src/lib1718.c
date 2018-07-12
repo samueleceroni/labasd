@@ -22,6 +22,9 @@
 #define GROUP_BY 2
 #define INSERT_INTO 3
 #define SELECT_WITHOUT_FILTERS 4
+#define SELECT 5
+#define NOT_VALID 6
+
 
 // Query order
 #define ASC 0
@@ -206,6 +209,7 @@ bool insertRecordDb(Table t, NodeRecord r){
 QueryResultList querySelect(Table t, ParseResult res){
 	//TODO
 	QueryResultList* queryToGet = NULL;
+
 	int keyIndex = searchColumnIndex(t, res->key);
 	if(keyIndex == -1){return NULL;}
 	switch(res->queryType){
@@ -225,10 +229,196 @@ QueryResultList querySelect(Table t, ParseResult res){
 	return *queryToGet;
 } //TODO
 
-ParseResult parseQuery(char* queryString){
-	//TODO
-	return NULL;
+
+
+void unsuccessfulParse (ParseResult result) {
+	result->success = false;
 }
+
+
+
+int parseQueryParameter (char * query, char ** parameter, char * forbiddenCharSet) {
+	const int paramSize = 1024;
+
+	*parameter = (char *) malloc (sizeof(char) * paramSize);
+
+	if (!*parameter) return;
+
+	int i=0;
+
+	for (i=0; query[i] && i<paramSize-1; i++) {
+		if (charIsAllowed (query[i], forbiddenCharSet)) {
+			// add it to the parsed parameter
+			(*parameter)[i] = query[i];
+		} else {
+			// found not-allowed char
+			return i;
+		}
+	}
+
+
+	return i;
+}
+
+
+
+int parseQueryType (char * query) {
+	const char ** queryType = {
+		"CREATE TABLE",
+		"INSERT INTO",
+		"SELECT"
+	};
+
+	const int * queryDefinedValues = {
+		CREATE_TABLE,
+		INSERT_INTO,
+		SELECT
+	};
+
+	int i=0, j=0;
+
+	for (i=0; i<3; i++) { // query first, so a not-matching query can be skipped @ the first char
+		for (j=0; query[j] && queryType[i][j]; j++) {	
+
+			if (query[j] != queryType[i][j]) {
+				break;
+			}
+		}
+
+		if (queryType[i][j] == 0) {
+			return queryDefinedValues[i];
+		}
+	}
+
+	return NOT_VALID;
+}
+
+
+
+void parseQueryCreateTable (char * query, ParseResult result) {
+	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
+	const char space = ' ';
+	const char comma = ',';
+
+	// CREATE TABLE name
+	//             ^ position 12
+	query += 12; 
+
+	// checking the space
+	if (*query != ' ') {
+	query++; // first char of tableName
+
+	// parsing table name and shifting forward the pointer 
+	query += parseQueryParameter (query, &(result->tableName), paramForbiddenChars, space);
+
+	if (!result->tableName) {
+		unsuccessfulParse (result);
+		return;
+	}
+
+	// checking the space after table name
+	if (*query != ' ') {
+		unsuccessfulParse (result);	
+		return;
+	}
+
+	query++;	// moving the pointer to the open bracket
+
+	if (*query != '(') {
+		unsuccessfulParse (result);
+		return;
+	}
+
+	query++; // moving to the first column name char
+
+	result->nColumns = 128;
+
+	result->columns = (char **) malloc (result->nColumns * sizeof (char *));
+
+	if (!result->columns) {
+		unsuccessfulParse ();
+		return;
+	}
+
+	int i=0;
+	for (i=0; true; i++) {
+
+		if (i > result->nColumns) {
+			char ** newColumns = (char **) realloc (result->columns, result->nColumns*2);
+
+			if (!newColumns) {
+				unsuccessfulParse();
+				return;
+			}
+
+			result->nColumns *= 2;
+			result->columns = newColumns;
+		}
+
+		query += parseQueryParameter (query, result->columns[i], paramForbiddenChars);
+
+		if (*query == ',') {
+			query++;
+			continue;
+		}
+
+		if (*query == ')' && *(query+1) == 0) {
+			i++;
+
+			char ** reallocation = (char **) realloc (result->columns, i+1);
+
+			if (!reallocation) {
+				unsuccessfulParse ();
+				return;
+			}
+
+			result->columns = reallocation;
+			result->nColumns = i+1;
+			result->success = true;
+
+		} else {
+			unsuccessfulParse ();
+		}
+
+		return;
+	}
+}
+
+
+
+ParseResult parseQuery (char* queryString){
+	ParseResult * result = (ParseResult *) malloc (sizeof (ParseResult));
+
+	if (!result) {
+		return NULL;
+	}
+
+	result->success = false;	
+
+	char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
+
+	int queryType = parseQueryType (queryString);
+
+	switch (queryType) {
+		case CREATE_TABLE:
+			parseQueryCreateTable (queryString, result);
+			break;
+
+		case INSERT_INTO:
+			parseQueryInsertInto (queryString, result);
+			break;
+
+		case SELECT:
+			parseQuerySelect (queryString, result);
+			break;
+
+		case NOT_VALID:
+			result->success = false;
+			return result;
+	}
+}
+
+
 
 void freeParseResult(ParseResult res){
 	//TODO
