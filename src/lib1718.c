@@ -57,9 +57,11 @@ bool rbtInsertFixup(Tree T, Node z);
 Node createNodeRBT(NodeRecord r);
 bool leftRotate(Tree T, Node x) ;
 bool rightRotate(Tree T, Node x);
-int searchColumnIndex(Table T, char* keyName);
+int searchColumnIndex(Table T, char* key);//todo
 void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
 void countForGroupBy(int key, QueryResultList queryToGet);
+void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* keyName);
+
 
 double parseDouble (char * s);
 int compare (char * a, char * b);
@@ -205,15 +207,17 @@ QueryResultList querySelect(Table t, ParseResult res){
 	//TODO
 	QueryResultList* queryToGet = NULL;
 
-	switch(res->queryType){// select tablename order by key (crescente o decrescente)
+	switch(res->queryType){
 	case (ORDER_BY):
-		selectOrderBy(t->treeList[searchColumnIndex(t, res->keyName)].root, queryToGet, res->order);
+		selectOrderBy(t->treeList[searchColumnIndex(t, res->key)].root, queryToGet, res->order);
 		break;
 	case (GROUP_BY):
-		selectOrderBy(t->treeList[searchColumnIndex(t, res->keyName)].root, queryToGet, res->order);
-		countForGroupBy(searchColumnIndex(t, res->keyName), (*queryToGet));
+		selectOrderBy(t->treeList[searchColumnIndex(t, res->key)].root, queryToGet, res->order);
+		countForGroupBy(searchColumnIndex(t, res->key), (*queryToGet));
 		break;
-
+	case(WHERE):
+		selectWhere(t->recordList, queryToGet, searchColumnIndex(t, res->key), res->querySelector, res->keyName);
+		break;
 	// selectOrderBy(table, key, order);
 	// select tablename group by key
 	// selectGroupBy(table, key);
@@ -224,104 +228,8 @@ QueryResultList querySelect(Table t, ParseResult res){
 } //TODO
 
 ParseResult parseQuery(char* queryString){
-	ParseResult * result = (ParseResult *) malloc (sizeof (ParseResult));
-
-	if (!result) {
-		return NULL;
-	}
-
-	result->success = false;
-
-	char** queryType = {
-		"CREATE TABLE",
-		"INSERT INTO",
-		"SELECT"
-	};
-
-	char* paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
-
-	int i=0, j=0, k=0;
-
-	for (i=0; i<3; i++) { // iterate through queryType 
-		for (j=0; queryType[i][j] && queryString[j]; j++) {
-			// keep checking until one of the two is \0
-
-			if (queryType[i][j] != queryString[j]) {
-				// the chars don't match
-				break;
-			}			
-		}
-
-		if (queryType[i][j] == 0) {
-			// if the selected queryType char is \0
-			// it means the previous for stopped because it
-			// reached the end of the queryType string
-			// hence they are equal
-			result->queryType = i-1;
-			// i-1 works because of the defined values at the
-			// beginning of this file
-			break;
-		}
-	}
-
-	// set i to the correct offset to continue parsing
-	switch (result->queryType) {
-		case CREATE_TABLE: // 12 char
-			i=12;
-			break;
-
-		case INSERT_INTO: // 11 char
-			i=11;
-			break;
-
-		case SELECT: // 6 char
-			i=6;
-			break;
-	}
-
-	// checking space between the command and the first parameter
-	// EG: SELECT * .......
-	//			 ^
-
-	if (queryString[i] != ' ') {
-		return result;	
-	}
-
-	// allocate first parameter string container
-	char * param1 = (char *) malloc (sizeof(char *) * 1024);
-
-	if (!param1) {
-		return result;
-	}
-
-	// if the param char is allowed, append it to the string
-	for (i=i+1, j=0; queryString[i]; i++, j++) {
-		// SELECT query with * selector, skip the table name search directly
-		if (j==0 && result->queryType == SELECT && queryString[i] == '*') {
-			result->nColumns = -1;
-			break;
-		}
-
-		if (isAllowed (queryString[i])) {
-			param1[j] = queryString[i];
-		} else {
-			return result;
-		}
-	}
-
-	// checking the space after the first param
-	// EG: SELECT * FROM
-	//             ^
-	if (queryString[i] == ' ') {
-		result->tableName = param1;
-	} else { // is either the terminator or not allowed
-		return result;
-	}
-
-
-
-
-	return result;
+	//TODO
+	return NULL;
 }
 
 void freeParseResult(ParseResult res){
@@ -886,4 +794,45 @@ void countForGroupBy(int key, QueryResultList queryToGet){
 			temp = temp->next;
 		}
 	}
+}
+
+void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* keyName){
+	if( !r || keyIndex < 0 || querySelector < 0 || querySelector > 4 || !keyName ){return;}
+	
+	int comparison = compare(r->values[keyIndex], keyName);
+	bool addToList = false;
+	switch(querySelector){
+		case(GREATER):
+			if(comparison == GREATER){addToList=true;}
+			break;
+		
+		case(GREATER_EQUAL):
+			if(comparison == GREATER || comparison == EQUAL){addToList=true;}
+			break;
+		
+		case(EQUAL):
+			if(comparison == EQUAL){addToList=true;}
+			break;
+		
+		case(LESSER_EQUAL):
+			if(comparison == LESSER || comparison == EQUAL){addToList=true;}
+			break;
+		
+		case(LESSER):
+			if(comparison == LESSER){addToList=true;}
+			break;
+		default:
+			break;
+	}
+	if(addToList){
+		QueryResultList newElement;
+		if(!(newElement = (QueryResultList) malloc(sizeof(struct QueryResultElement)))){return;}
+		newElement->next = (*queryToGet);
+		queryToGet = &newElement;
+		newElement->occurence=1;
+		newElement->nodeValue = r;
+	}
+	return;
+
+
 }
