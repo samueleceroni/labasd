@@ -206,23 +206,21 @@ bool insertRecordDb(Table t, NodeRecord r){
 QueryResultList querySelect(Table t, ParseResult res){
 	//TODO
 	QueryResultList* queryToGet = NULL;
-
+	int keyIndex = searchColumnIndex(t, res->key);
+	if(keyIndex == -1){return NULL;}
 	switch(res->queryType){
 	case (ORDER_BY):
-		selectOrderBy(t->treeList[searchColumnIndex(t, res->key)].root, queryToGet, res->order);
+		selectOrderBy(t->treeList[keyIndex].root, queryToGet, res->order);
 		break;
 	case (GROUP_BY):
-		selectOrderBy(t->treeList[searchColumnIndex(t, res->key)].root, queryToGet, res->order);
-		countForGroupBy(searchColumnIndex(t, res->key), (*queryToGet));
+		selectOrderBy(t->treeList[keyIndex].root, queryToGet, res->order);
+		countForGroupBy(keyIndex, (*queryToGet));
 		break;
 	case(WHERE):
-		selectWhere(t->recordList, queryToGet, searchColumnIndex(t, res->key), res->querySelector, res->keyName);
+		selectWhere(t->recordList, queryToGet, keyIndex, res->querySelector, res->keyName);
 		break;
-	// selectOrderBy(table, key, order);
-	// select tablename group by key
-	// selectGroupBy(table, key);
-	// select tablename where attributo[key] = "..." and not only equal where key queryselector keyname
-	// selectWhere(table, key, queryselector, keyname)
+	default:
+		break;
 	}
 	return *queryToGet;
 } //TODO
@@ -307,11 +305,13 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 		if(pRes->queryType == GROUP_BY){
 			int colIndex = 0;
 			colIndex = searchColumnIndex(t, pRes->keyName);
+			if(keyIndex == -1){return;}
 			fprintf(f, "%s,%d;\n", records->nodeValue->values[colIndex], records->occurence);
 		} else {
 			for(i = 0; i < pRes->nColumns; i++){
 				int colIndex = i;
 				colIndex = searchColumnIndex(t, pRes->columns[i]);
+				if(keyIndex == -1){return;}
 				fprintf(f, "%s", records->nodeValue->values[colIndex]);
 				if(i != pRes->nColumns - 1)
 					fprintf(f, ",");
@@ -749,11 +749,6 @@ bool rightRotate(Tree T, Node x) {
     return true;
 }
 
-int searchColumnIndex(Table T, char* keyName){
-	//TODO
-	return -1;
-}
-
 void selectOrderBy(Node x, QueryResultList* queryToGet, int order){
 	if(!x){return;}
 	if(order!=ASC && order!=DESC){return;}
@@ -833,6 +828,13 @@ void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int qu
 		newElement->nodeValue = r;
 	}
 	return;
+}
 
-
+int searchColumnIndex(Table T, char* key){
+	int i = 0;
+	while(i < nColumns){
+		if(compare(key, T->columns[i]) == EQUAL){return i;}
+		i++;
+	}
+	return -1;
 }
