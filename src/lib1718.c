@@ -230,7 +230,6 @@ QueryResultList querySelect(Table t, ParseResult res){
 } //TODO
 
 
-
 void unsuccessfulParse (ParseResult result) {
 	result->success = false;
 }
@@ -362,7 +361,7 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 			continue;
 		}
 
-		if (*query == ')' && *(query+1) == 0) {
+		if (*query == ')') {
 			i++;
 
 			char ** reallocation = (char **) realloc (result->columns, i+1);
@@ -384,6 +383,153 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 	}
 }
 
+
+
+void parseQueryInsertInto (char * query, ParseResult result) {
+
+	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
+	const char space = ' ';
+	const char comma = ',';
+
+	// INSERT INTO name
+	//            ^ position 11
+	query += 11; 
+
+	// checking the space
+	if (*query != ' ') {
+	query++; // first char of tableName
+
+	// parsing table name and shifting forward the pointer 
+	query += parseQueryParameter (query, &(result->tableName), paramForbiddenChars, space);
+
+	if (!result->tableName) {
+		unsuccessfulParse (result);
+		return;
+	}
+
+	// checking the space after table name
+	if (*query != ' ') {
+		unsuccessfulParse (result);	
+		return;
+	}
+
+	query++;	// moving the pointer to the open bracket
+
+	if (*query != '(') {
+		unsuccessfulParse (result);
+		return;
+	}
+
+	query++; // moving to the first column name char
+
+	// arbitrary number of columns
+	result->nColumns = 128;
+
+	// allocating memory for pointerz
+	result->columns = (char **) malloc (result->nColumns * sizeof (char *));
+
+	// checking pointer
+	if (!result->columns) {
+		unsuccessfulParse ();
+		return;
+	}
+
+	int i=0;
+
+	// gettin' those column names
+	for (i=0; true; i++) {
+
+		// if there isn't enough space
+		if (i > result->nColumns) {
+			// double up!
+			char ** newColumns = (char **) realloc (result->columns, result->nColumns*2);
+
+			if (!newColumns) {
+				unsuccessfulParse();
+				return;
+			}
+
+			result->nColumns *= 2;
+			result->columns = newColumns;
+		}
+
+		// now there is space for sure
+		// and we parse the next parameter
+		query += parseQueryParameter (query, result->columns[i], paramForbiddenChars);
+		// shifting the pointer @ the same time
+
+		// comma = gotta read another column name
+		if (*query == ',') {
+			query++;
+			continue;
+		}
+
+		// closed bracket, no more column names
+		if (*query == ')') {
+			i++;
+
+			// now we can shrink the column list to fit, and save memory
+			char ** reallocation = (char **) realloc (result->columns, i+1);
+
+			if (!reallocation) {
+				unsuccessfulParse ();
+				return;
+			}
+
+			result->columns = reallocation;
+			result->nColumns = i+1;
+
+		} else {
+			unsuccessfulParse ();
+		}
+
+		break;
+	}
+
+	query++;
+
+	// check for " WHERE ("
+	const char where = " WHERE (";
+
+	for (i=0; i<8; i++) {
+		if (query[i] != where[i]) {
+			unsuccessfulParse ();
+			return;
+		}
+	}
+
+	query += 8; // shift that pointer!
+
+	// we expect N columns and N values
+	// we already have nColumns so let's use it to init the array
+	result->fieldValues = (char **) malloc (sizeof (char *) * result->nColumns);
+
+	if (!result->fieldValues) {
+		unsuccessfulParse();
+		return;
+	}
+
+	for (i=0; i<result->nColumns; i++) {
+		query += parseQueryParameter (query, result->fieldValues[i], forbiddenCharSet);
+
+		// comma = gotta read another value
+		if (*query == ',') {
+			query++;
+			continue;
+		}
+
+		// closed bracket, no more values
+		if (*query == ')') {
+
+			result->success = true;
+			return ;
+
+		} else {
+			unsuccessfulParse ();
+			return;
+		}
+	}
+}
 
 
 ParseResult parseQuery (char* queryString){
