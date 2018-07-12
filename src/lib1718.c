@@ -64,6 +64,7 @@ int searchColumnIndex(Table T, char* key);//todo
 void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
 void countForGroupBy(int key, QueryResultList queryToGet);
 void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* keyName);
+bool charIsAllowed (char c, const char * forbiddenCharSet);
 
 
 double parseDouble (char * s);
@@ -234,14 +235,26 @@ void unsuccessfulParse (ParseResult result) {
 	result->success = false;
 }
 
+bool charIsAllowed (char c, const char * forbiddenCharSet) {
+	int i;
+
+	for (i=0; forbiddenCharSet[i]; i++) {
+		if (c == forbiddenCharSet[i]) {
+			return false;
+		}
+	}
+
+	return true;
+}
 
 
-int parseQueryParameter (char * query, char ** parameter, char * forbiddenCharSet) {
+
+int parseQueryParameter (char * query, char ** parameter, const char * forbiddenCharSet) {
 	const int paramSize = 1024;
 
 	*parameter = (char *) malloc (sizeof(char) * paramSize);
 
-	if (!*parameter) return;
+	if (!*parameter) return 0;
 
 	int i=0;
 
@@ -262,13 +275,13 @@ int parseQueryParameter (char * query, char ** parameter, char * forbiddenCharSe
 
 
 int parseQueryType (char * query) {
-	const char ** queryType = {
+	const char * queryType[] = {
 		"CREATE TABLE",
 		"INSERT INTO",
 		"SELECT"
 	};
 
-	const int * queryDefinedValues = {
+	int queryDefinedValues[] = {
 		CREATE_TABLE,
 		INSERT_INTO,
 		SELECT
@@ -304,11 +317,15 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 	query += 12; 
 
 	// checking the space
-	if (*query != ' ') {
+	if (*query != ' ') {		
+		unsuccessfulParse (result);
+		return;
+	}
+
 	query++; // first char of tableName
 
 	// parsing table name and shifting forward the pointer 
-	query += parseQueryParameter (query, &(result->tableName), paramForbiddenChars, space);
+	query += parseQueryParameter (query, &(result->tableName), paramForbiddenChars);
 
 	if (!result->tableName) {
 		unsuccessfulParse (result);
@@ -335,7 +352,7 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 	result->columns = (char **) malloc (result->nColumns * sizeof (char *));
 
 	if (!result->columns) {
-		unsuccessfulParse ();
+		unsuccessfulParse (result);
 		return;
 	}
 
@@ -346,7 +363,7 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 			char ** newColumns = (char **) realloc (result->columns, result->nColumns*2);
 
 			if (!newColumns) {
-				unsuccessfulParse();
+				unsuccessfulParse(result);
 				return;
 			}
 
@@ -354,7 +371,7 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 			result->columns = newColumns;
 		}
 
-		query += parseQueryParameter (query, result->columns[i], paramForbiddenChars);
+		query += parseQueryParameter (query, &(result->columns[i]), paramForbiddenChars);
 
 		if (*query == ',') {
 			query++;
@@ -367,7 +384,7 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 			char ** reallocation = (char **) realloc (result->columns, i+1);
 
 			if (!reallocation) {
-				unsuccessfulParse ();
+				unsuccessfulParse (result);
 				return;
 			}
 
@@ -376,7 +393,7 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 			result->success = true;
 
 		} else {
-			unsuccessfulParse ();
+			unsuccessfulParse (result);
 		}
 
 		return;
@@ -397,10 +414,14 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 
 	// checking the space
 	if (*query != ' ') {
+		unsuccessfulParse(result);
+		return;
+	}
+
 	query++; // first char of tableName
 
 	// parsing table name and shifting forward the pointer 
-	query += parseQueryParameter (query, &(result->tableName), paramForbiddenChars, space);
+	query += parseQueryParameter (query, &(result->tableName), paramForbiddenChars);
 
 	if (!result->tableName) {
 		unsuccessfulParse (result);
@@ -430,7 +451,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 
 	// checking pointer
 	if (!result->columns) {
-		unsuccessfulParse ();
+		unsuccessfulParse (result);
 		return;
 	}
 
@@ -445,7 +466,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 			char ** newColumns = (char **) realloc (result->columns, result->nColumns*2);
 
 			if (!newColumns) {
-				unsuccessfulParse();
+				unsuccessfulParse(result);
 				return;
 			}
 
@@ -455,7 +476,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 
 		// now there is space for sure
 		// and we parse the next parameter
-		query += parseQueryParameter (query, result->columns[i], paramForbiddenChars);
+		query += parseQueryParameter (query, &(result->columns[i]), paramForbiddenChars);
 		// shifting the pointer @ the same time
 
 		// comma = gotta read another column name
@@ -472,7 +493,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 			char ** reallocation = (char **) realloc (result->columns, i+1);
 
 			if (!reallocation) {
-				unsuccessfulParse ();
+				unsuccessfulParse (result);
 				return;
 			}
 
@@ -480,7 +501,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 			result->nColumns = i+1;
 
 		} else {
-			unsuccessfulParse ();
+			unsuccessfulParse (result);
 		}
 
 		break;
@@ -489,11 +510,11 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 	query++;
 
 	// check for " WHERE ("
-	const char where = " WHERE (";
+	const char where[] = " WHERE (";
 
 	for (i=0; i<8; i++) {
 		if (query[i] != where[i]) {
-			unsuccessfulParse ();
+			unsuccessfulParse (result);
 			return;
 		}
 	}
@@ -505,12 +526,12 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 	result->fieldValues = (char **) malloc (sizeof (char *) * result->nColumns);
 
 	if (!result->fieldValues) {
-		unsuccessfulParse();
+		unsuccessfulParse(result);
 		return;
 	}
 
 	for (i=0; i<result->nColumns; i++) {
-		query += parseQueryParameter (query, result->fieldValues[i], forbiddenCharSet);
+		query += parseQueryParameter (query, &(result->fieldValues[i]), paramForbiddenChars);
 
 		// comma = gotta read another value
 		if (*query == ',') {
@@ -525,7 +546,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 			return ;
 
 		} else {
-			unsuccessfulParse ();
+			unsuccessfulParse (result);
 			return;
 		}
 	}
@@ -533,7 +554,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 
 
 ParseResult parseQuery (char* queryString){
-	ParseResult * result = (ParseResult *) malloc (sizeof (ParseResult));
+	ParseResult result = (ParseResult) malloc (sizeof (struct ParseResult));
 
 	if (!result) {
 		return NULL;
@@ -555,13 +576,15 @@ ParseResult parseQuery (char* queryString){
 			break;
 
 		case SELECT:
-			parseQuerySelect (queryString, result);
+			// parseQuerySelect (queryString, result);
 			break;
 
-		case NOT_VALID:
+		default:
 			result->success = false;
 			return result;
 	}
+
+	return result;
 }
 
 
