@@ -664,13 +664,13 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 		if(pRes->queryType == GROUP_BY){
 			int colIndex = 0;
 			colIndex = searchColumnIndex(t, pRes->keyName);
-			if(keyIndex == -1){return;}
+			if(colIndex == -1){return;}
 			fprintf(f, "%s,%d;\n", records->nodeValue->values[colIndex], records->occurence);
 		} else {
 			for(i = 0; i < pRes->nColumns; i++){
 				int colIndex = i;
 				colIndex = searchColumnIndex(t, pRes->columns[i]);
-				if(keyIndex == -1){return;}
+				if(colIndex == -1){return;}
 				fprintf(f, "%s", records->nodeValue->values[colIndex]);
 				if(i != pRes->nColumns - 1)
 					fprintf(f, ",");
@@ -1191,7 +1191,7 @@ void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int qu
 
 int searchColumnIndex(Table T, char* key){
 	int i = 0;
-	while(i < nColumns){
+	while(i < T->nColumns){
 		if(compare(key, T->columns[i]) == EQUAL){return i;}
 		i++;
 	}
