@@ -170,6 +170,7 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 
 	newTableHead->table = temp;
 	newTableHead->next = db->next;
+	db->next = newTableHead;
 	}
 
 	return temp;
