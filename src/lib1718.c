@@ -142,7 +142,7 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	if(!(temp->columns = (char**) malloc (nColumns * sizeof(char*)))) {return NULL;}
 	
 	// Try to allocate each string and copy all of them 
-	for (int i; i<nColumns; i++){
+	for (int i=0; i<nColumns; i++){
 		if (!(temp->columns[i] = (char*) malloc(strlen(columns[i])*sizeof(char)))) {return NULL;}
 		strcpy(temp->columns[i], columns[i]);
 	}
@@ -186,7 +186,7 @@ NodeRecord createRecord(char** values, int nColumns){
 	if (!(newRecord)){return NULL;} // MALLOC FAILS
 	newRecord->next = NULL;
 	if (!(newRecord->values = (char**) malloc (nColumns*sizeof(char*)))) {return NULL;}
-	for (int i; i<nColumns; i++){
+	for (int i=0; i<nColumns; i++){
 		if (!(newRecord->values[i] = (char*) malloc(strlen(values[i])*sizeof(char)))) {return NULL;}
 		strcpy(newRecord->values[i], values[i]);
 	}
