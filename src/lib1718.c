@@ -1014,6 +1014,14 @@ bool insertRecordTree(Tree T, Node z){
 			x = x->right;
 		}
 	}
+	z->p = y;
+    if (y == NULL)
+        T->root = z;
+    else
+        if (compare(z->nodeValue->values[T->key], y->nodeValue->values[T->key])==LESSER)
+            y->left = z;
+        else
+            y->right = z;
 	z->left = NULL;
 	z->right = NULL;
 	z->color = RED;
