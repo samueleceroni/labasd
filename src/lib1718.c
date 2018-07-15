@@ -210,8 +210,8 @@ bool insertRecordDb(Table t, NodeRecord r){
 
 QueryResultList querySelect(Table t, ParseResult res){
 	//TODO
-	QueryResultList* queryToGet = NULL;
-
+	QueryResultList* queryToGet = (QueryResultList*) malloc(sizeof(QueryResultList));
+	*queryToGet = NULL;
 	int keyIndex = searchColumnIndex(t, res->key);
 	if(keyIndex == -1){return NULL;}
 	switch(res->queryType){
@@ -666,7 +666,7 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 			int colIndex = 0;
 			colIndex = searchColumnIndex(t, pRes->keyName);
 			if(colIndex == -1){return;}
-			fprintf(f, "%s,%d;\n", records->nodeValue->values[colIndex], records->occurence);
+			fprintf(f, "%s,%d;\n", records->nodeValue->values[colIndex], records->occurrence);
 		} else {
 			for(i = 0; i < pRes->nColumns; i++){
 				int colIndex = i;
@@ -1130,11 +1130,11 @@ void selectOrderBy(Node x, QueryResultList* queryToGet, int order){
 	}
 
 	QueryResultList newElement;
-	if (!(newElement = (QueryResultList) malloc(sizeof(struct QueryResultElement)))){return;}
+	if (!(newElement = (QueryResultList) malloc (sizeof(struct QueryResultElement)))){return;}
 	newElement->next = (*queryToGet);
 	newElement->nodeValue = x->nodeValue;
-	newElement->occurence = 1;
-	queryToGet = &newElement;
+	newElement->occurrence = 1;
+	*queryToGet = newElement;
 
 	if(order==ASC){
 		selectOrderBy(x->left, queryToGet, order);
@@ -1148,7 +1148,7 @@ void countForGroupBy(int key, QueryResultList queryToGet){
 	QueryResultList temp = queryToGet, temp2;
 	while(temp && temp->next){
 		if (compare(temp->nodeValue->values[key],temp->next->nodeValue->values[key])==EQUAL){
-			temp->occurence++;
+			temp->occurrence++;
 			temp2 = temp->next;
 			temp->next = temp2->next;
 			free(temp2);
@@ -1192,7 +1192,7 @@ void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int qu
 		if(!(newElement = (QueryResultList) malloc(sizeof(struct QueryResultElement)))){return;}
 		newElement->next = (*queryToGet);
 		queryToGet = &newElement;
-		newElement->occurence=1;
+		newElement->occurrence=1;
 		newElement->nodeValue = r;
 	}
 	return;
