@@ -1159,10 +1159,10 @@ void countForGroupBy(int key, QueryResultList queryToGet){
 	}
 }
 
-void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* keyName){
-	if( !r || keyIndex < 0 || querySelector < 0 || querySelector > 4 || !keyName ){return;}
+void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* key){
+	if( !r || keyIndex < 0 || querySelector < 0 || querySelector > 4 || !key ){return;}
 	
-	int comparison = compare(r->values[keyIndex], keyName);
+	int comparison = compare(r->values[keyIndex], key);
 	bool addToList = false;
 	switch(querySelector){
 		case(GREATER):
@@ -1191,10 +1191,11 @@ void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int qu
 		QueryResultList newElement;
 		if(!(newElement = (QueryResultList) malloc(sizeof(struct QueryResultElement)))){return;}
 		newElement->next = (*queryToGet);
-		queryToGet = &newElement;
+		*queryToGet = newElement;
 		newElement->occurrence=1;
 		newElement->nodeValue = r;
 	}
+	selectWhere(r->next, queryToGet, keyIndex, querySelector, key);
 	return;
 }
 
