@@ -59,7 +59,7 @@ struct RBTNode {
 typedef struct RBTNode* Node;
 
 struct QueryResultElement{
-	int occurence;
+	int occurrence;
 	struct Record* nodeValue;
 	struct QueryResultElement* next;
 };
