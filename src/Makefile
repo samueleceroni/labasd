@@ -19,29 +19,41 @@ MAIN = $(patsubst %,$(ODIR)/%,$(_MAIN))
 
 _TEST = test.o
 TEST = $(patsubst %,$(ODIR)/%,$(_TEST))
+MKDIR_P = mkdir -p
 
-$(DIRS):
-	mkdir -p $@
+.PHONY: directories
+directories: ${BDIR} ${ODIR}
 
-$(ODIR)/%.o: %.c $(DEPS) $(DIRS)/
+${BDIR}:
+	${MKDIR_P} ${BDIR}
+${ODIR}:
+	${MKDIR_P} ${ODIR}
+
+$(ODIR)/%.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS) $(TFLAGS) $(DFLAGS)
-$(ODIR)/test.o: $(TDIR)/test.c $(DIRS)/
+$(ODIR)/test.o: $(TDIR)/test.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-labasd: $(OBJ) $(MAIN)
+labasd: directories clabasd 
+clabasd: $(OBJ) $(MAIN)
 	$(CC) -o $(BDIR)/$@ $^ $(CFLAGS)
 
 test: TFLAGS = -D TEST
-test: $(OBJ) $(TEST)
+test: directories ctest
+
+ctest: $(OBJ) $(TEST)
 	$(CC) -o $(BDIR)/$@ $^ $(CFLAGS)
 
 testdebug: TFLAGS = -D TEST
 testdebug: DFLAGS = -D DEBUG
-testdebug: $(OBJ) $(TEST)
+testdebug: directories ctestdebug
+ctestdebug: $(OBJ) $(TEST)
 	$(CC) -o $(BDIR)/$@ $^ $(CFLAGS)
 
-lib: lib1718.c
-	$(CC) -c -o $(ODIR)/lib1718.o $^ $(CFLAGS)
+lib: directories lib1718.c
+	$(CC) -c -o $(ODIR)/lib1718.o lib1718.c $(CFLAGS)
+
+all: directories lib test labasd
 
 .PHONY: clean
 
