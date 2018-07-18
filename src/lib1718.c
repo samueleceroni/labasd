@@ -393,7 +393,7 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 			}
 
 			result->columns = reallocation;
-			result->nColumns = i+1;
+			result->nColumns = i;
 			result->success = true;
 
 		} else {
@@ -502,7 +502,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 			}
 
 			result->columns = reallocation;
-			result->nColumns = i+1;
+			result->nColumns = i;
 
 		} else {
 			unsuccessfulParse (result);
@@ -514,16 +514,16 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 	query++;
 
 	// check for " WHERE ("
-	const char where[] = " WHERE (";
+	const char where[] = " VALUES (";
 
-	for (i=0; i<8; i++) {
+	for (i=0; i<9; i++) {
 		if (query[i] != where[i]) {
 			unsuccessfulParse (result);
 			return;
 		}
 	}
 
-	query += 8; // shift that pointer!
+	query += 9; // shift that pointer!
 
 	// we expect N columns and N values
 	// we already have nColumns so let's use it to init the array
