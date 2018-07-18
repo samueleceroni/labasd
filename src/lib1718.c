@@ -49,6 +49,7 @@
 
 #ifndef TEST
 	#define FOLDER ""
+	#define LOG_FOLDER ""
 	#define TABLE_FOLDER ""
 #endif
 
