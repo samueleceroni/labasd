@@ -12,3 +12,4 @@ src/test/rbt/*.out
 #ignore test files
 src/test/test.c
 src/test/tables/*.txt
+src/test/log/*.txt

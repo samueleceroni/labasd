@@ -43,6 +43,7 @@
 // Flags di test
 #ifdef TEST
 	#define FOLDER "test/"
+	#define LOG_FOLDER "test/log/"
 	#define TABLE_FOLDER "test/tables/"
 #endif
 
@@ -72,6 +73,8 @@ int compare (char * a, char * b);
 int strCompare (char * a, char * b);
 int strIsNumber (char * s);
 int strAreBothNumbers (char * a, char * b);
+
+int fpeek(FILE * const fp);
 
 //Main functions implematations
 bool executeQuery(char* query){
@@ -128,13 +131,13 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	if (searchTableDb(db, tableName)){
 		return NULL;
 	}
-
+	
 	Table temp;
 	// Try to allocate the table
 	if (!(temp = (Table) malloc (sizeof(struct TableDB)))) {return NULL;}
 
 	// Try to allocate the name of the table
-	if(!(temp->name = (char*) malloc (strlen(tableName) * sizeof(char)))) {return NULL;}
+	if(!(temp->name = (char*) malloc ((strlen(tableName)+1) * sizeof(char)))) {return NULL;}
 	
 	strcpy(temp->name, tableName);
 
@@ -146,11 +149,11 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 		if (!(temp->columns[i] = (char*) malloc(strlen(columns[i])*sizeof(char)))) {return NULL;}
 		strcpy(temp->columns[i], columns[i]);
 	}
-
+	
 	temp->nColumns = nColumns;
 	// Allocate the head of all the trees
 	if(!(temp->treeList = (Tree) malloc (nColumns*sizeof(struct RBTree)))){return NULL;}
-
+	
 	// Create and inserting all the trees. Start with i = nColumns so i can insert each tree in O(1) in the head
 	for (int i=0; i<nColumns; i++){
 		// Create the Tree
@@ -172,12 +175,12 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	newTableHead->next = db->next;
 	db->next = newTableHead;
 	}
-
+	
 	return temp;
 } //OK, NOT FINALLY TESTED
 
 Table searchTableDb(Database db, char* tableName){
-	if (!db) {return NULL;}	// Db is empty or the end of the queue is reached
+	if (!db || db->table == NULL) {return NULL;}	// Db is empty or the end of the queue is reached
 	if (compare(db->table->name, tableName)==EQUAL){return db->table;}	// the table is found
 	return searchTableDb(db->next, tableName);	// recursevely return the searchTable on the next table
 } //OK, NOT FINALLY TESTED
@@ -602,7 +605,7 @@ void freeQueryResultList(QueryResultList res){
 
 void generateLog(ParseResult pRes, char* query, QueryResultList records, Database db){
 	char* buffer = (char*)malloc(sizeof(char) * (strlen(LOG_FILE_NAME) + strlen(FOLDER) + 1));
-	strcpy(buffer, FOLDER);
+	strcpy(buffer, LOG_FOLDER);
 	strcat(buffer, LOG_FILE_NAME);
 
 	#ifdef DEBUG
@@ -618,7 +621,9 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 		return;
 	}
 
-	fprintf(f, "%s\n", query);
+	fprintf(f, "%s", query);
+	if(query[strlen(query)-1] != '\n')
+		fprintf(f, "\n");
 
 	//Inserting header
 	fprintf(f, "TABLE %s COLUMNS ", pRes->tableName);
@@ -638,7 +643,7 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 	Table t = searchTableDb(db, pRes->tableName);
 	if(t == NULL){
 	#ifdef DEBUG
-		printf("Failed to search table %s !\nAborting...\n", pRes->tableName);
+		printf("Table %s not found!\nAborting...\n", pRes->tableName);
 	#endif
 		return;
 	}
@@ -713,6 +718,8 @@ Table loadTableFromFile(Database db, char* name){
 		return NULL;
 	}
 
+	Table t = NULL;
+	
 	//Read table name and columns
 	char header[] = {"TABLE "};
 	char headerSeparator[] = {" COLUMNS "};
@@ -803,15 +810,15 @@ Table loadTableFromFile(Database db, char* name){
 		printf("\t%s\n", columns[i]);
 	#endif
 	c = fgetc(f);
-
-	Table t = createTableDb(db, name, columns, nColumns);
+	
+	t = createTableDb(db, name, columns, nColumns);
 	if(t == NULL){
 	#ifdef DEBUG
 		printf("Creation gone wrong!\nAborting...\n");
 	#endif
 		return NULL;
 	}
-
+	
 	//Reading rows
 	//TODO
 	char rowHeader[] = {"ROW "};
@@ -888,13 +895,14 @@ Table loadTableFromFile(Database db, char* name){
 		if(!insertRecordDb(t, createRecord(row, nColumns))){
 	#ifdef DEBUG
 			printf("Insertion gone wrong!\nAborting...\n");
-			return NULL;
 	#endif
+			return NULL;
 		}
 
 		c = fgetc(f);
-	}while(c != EOF);
-	
+
+	}while(c != EOF && fpeek(f) != EOF);
+		
 	#ifdef DEBUG
 	printf("Table loaded!\n");
 	#endif
@@ -1206,4 +1214,10 @@ int searchColumnIndex(Table T, char* key){
 		i++;
 	}
 	return -1;
+}
+
+int fpeek(FILE * const fp)
+{
+  const int c = getc(fp);
+  return c == EOF ? EOF : ungetc(c, fp);
 }
