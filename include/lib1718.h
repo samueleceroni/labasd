@@ -48,6 +48,7 @@ typedef struct RBTree* Tree;
 // Node of a RedBlackTree
 struct RBTNode {
 	bool color;
+	char nodeType; // can be table or record
 	struct Record* nodeValue;
 	struct RBTree* head;
 	struct RBTNode* p;

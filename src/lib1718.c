@@ -37,6 +37,10 @@
 #define RED 1
 #define BLACK 0
 
+// Red Black Tree node type
+#define TABLE 0
+#define RECORD 1
+
 //Files
 #define LOG_FILE_NAME "query_results.txt"
 
