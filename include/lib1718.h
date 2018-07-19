@@ -107,6 +107,7 @@ bool insertRecordDb(Table t, NodeRecord r);
 
 QueryResultList querySelect(Table t, ParseResult res);
 
+// Parser
 ParseResult parseQuery(char* queryString);
 void freeParseResult(ParseResult res);
 void freeQueryResultList(QueryResultList res);

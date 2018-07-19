@@ -66,9 +66,8 @@ int searchColumnIndex(Table T, char* key);//todo
 void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
 void countForGroupBy(int key, QueryResultList queryToGet);
 void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* keyName);
+
 bool charIsAllowed (char c, const char * forbiddenCharSet);
-
-
 double parseDouble (char * s);
 int compare (char * a, char * b);
 int strCompare (char * a, char * b);
@@ -120,19 +119,20 @@ bool executeQuery(char* query){
 	return true;
 }
 
-// Implementations
 void initDatabase(Database* db){
+	// Trying to allocate the database structure
 	(*db) = (Database) malloc (sizeof(struct DatabaseHead));
+	// Initializing all the value to NULL
 	(*db)->table = NULL;
 	(*db)->next = NULL;
 }
 
 Table createTableDb(Database db, char* tableName, char** columns, int nColumns){ // creates the table and insert it into the DB
-	// Case: Trying to create an existing table
+	// Case when you try to create an existing table
 	if (searchTableDb(db, tableName)){
 		return NULL;
 	}
-	
+	// Case table is not found in database
 	Table temp;
 	// Try to allocate the table
 	if (!(temp = (Table) malloc (sizeof(struct TableDB)))) {return NULL;}
@@ -142,6 +142,9 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	
 	strcpy(temp->name, tableName);
 
+	// save the number of columns of the table
+	temp->nColumns = nColumns;
+	
 	// Try to allocate the array of strings
 	if(!(temp->columns = (char**) malloc (nColumns * sizeof(char*)))) {return NULL;}
 	
@@ -151,11 +154,10 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 		strcpy(temp->columns[i], columns[i]);
 	}
 	
-	temp->nColumns = nColumns;
-	// Allocate the head of all the trees
+	// Allocate the  array of head of the trees
 	if(!(temp->treeList = (Tree) malloc (nColumns*sizeof(struct RBTree)))){return NULL;}
 	
-	// Create and inserting all the trees. Start with i = nColumns so i can insert each tree in O(1) in the head
+	// Initialization of the trees
 	for (int i=0; i<nColumns; i++){
 		// Create the Tree
 		temp->treeList[i].key = i;
@@ -165,7 +167,7 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	// the table is ready to be inserted into the database
 	// Case database is empty
 	if (!(db->table)){
-		db->table=temp;
+		db->table = temp;
 	}
 	else{
 	// try to create the newTable structure to be inserted as element of a list
@@ -178,28 +180,32 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	}
 	
 	return temp;
-} //OK, NOT FINALLY TESTED
+} //OK
 
 Table searchTableDb(Database db, char* tableName){
-	if (!db || db->table == NULL) {return NULL;}	// Db is empty or the end of the queue is reached
+	if (!db || !(db->table)) {return NULL;}	// Db is empty or the end of the queue is reached
 	if (compare(db->table->name, tableName)==EQUAL){return db->table;}	// the table is found
-	return searchTableDb(db->next, tableName);	// recursevely return the searchTable on the next table
-} //OK, NOT FINALLY TESTED
+	return searchTableDb(db->next, tableName);	// recursevely scroll the list
+} //OK
 
 NodeRecord createRecord(char** values, int nColumns){
-	NodeRecord newRecord = (NodeRecord) malloc (sizeof(struct Record));
-	if (!(newRecord)){return NULL;} // MALLOC FAILS
+	NodeRecord newRecord;
+	// Try to allocate the new record structure and if fails returns NULL
+	if (!(newRecord = (NodeRecord) malloc (sizeof(struct Record)))){return NULL;} // MALLOC FAILS
 	newRecord->next = NULL;
+	// Try to allocate values pointer and if fails returns NULL
 	if (!(newRecord->values = (char**) malloc (nColumns*sizeof(char*)))) {return NULL;}
+	// Try to allocate each values and if fails returns NULL
 	for (int i=0; i<nColumns; i++){
 		if (!(newRecord->values[i] = (char*) malloc(strlen(values[i])*sizeof(char)))) {return NULL;}
 		strcpy(newRecord->values[i], values[i]);
 	}
 	return newRecord;	
-} //OK, NOT FINALLY TESTED
+} //OK
 
 bool insertRecordDb(Table t, NodeRecord r){
-	if(!t || !r){return false;} // table or record are not initilized, impossible to insert the record
+	// table or record are not initilized, impossible to insert the record
+	if(!t || !r){return false;}
 	
 	// insert the record into the head of the list of record
 	r->next = t->recordList;
@@ -210,14 +216,16 @@ bool insertRecordDb(Table t, NodeRecord r){
 		if(!(insertRecordTree(&(t->treeList[i]), createNodeRBT(r)))){return false;}
 	}
 	return true; 
-} //OK, NOT FINALLY TESTED 
+} //OK 
 
 QueryResultList querySelect(Table t, ParseResult res){
-	//TODO
-	QueryResultList* queryToGet = (QueryResultList*) malloc(sizeof(QueryResultList));
+	QueryResultList* queryToGet;
+	if (!(queryToGet = (QueryResultList*) malloc(sizeof(QueryResultList)))){return NULL;}
 	*queryToGet = NULL;
+
 	int keyIndex = searchColumnIndex(t, res->key);
 	if(keyIndex == -1){return NULL;}
+
 	switch(res->queryType){
 	case (ORDER_BY):
 		selectOrderBy(t->treeList[keyIndex].root, queryToGet, res->order);
@@ -233,7 +241,7 @@ QueryResultList querySelect(Table t, ParseResult res){
 		break;
 	}
 	return *queryToGet;
-} //TODO
+} // OK
 
 
 void unsuccessfulParse (ParseResult result) {
