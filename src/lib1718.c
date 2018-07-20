@@ -1,4 +1,4 @@
-#include <lib1718.h>
+#include "lib1718.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -49,13 +49,11 @@
 // Flags di test
 #ifdef TEST
 	#define FOLDER "test/"
-	#define LOG_FOLDER "test/log/"
 	#define TABLE_FOLDER "test/tables/"
 #endif
 
 #ifndef TEST
 	#define FOLDER ""
-	#define LOG_FOLDER ""
 	#define TABLE_FOLDER ""
 #endif
 
@@ -72,8 +70,9 @@ int searchColumnIndex(Table T, char* key);//todo
 void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
 void countForGroupBy(int key, QueryResultList queryToGet);
 void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* keyName);
-
 bool charIsAllowed (char c, const char * forbiddenCharSet);
+
+
 double parseDouble (char * s);
 int compare (char * a, char * b);
 int strCompare (char * a, char * b);
@@ -82,6 +81,7 @@ int strAreBothNumbers (char * a, char * b);
 
 void printAllRecordsBackward(NodeRecord n, Table t, ParseResult pRes, FILE* f);
 int fpeek(FILE * const fp);
+
 
 //Main functions implematations
 bool executeQuery(char* query){
@@ -149,7 +149,7 @@ void initDatabase(Database* db){
 }
 
 Table createTableDb(Database db, char* tableName, char** columns, int nColumns){ // creates the table and insert it into the DB
-	// Case when you try to create an existing table
+	// Case: Trying to create an existing table
 	if (searchTableDb(db, tableName)){
 		return NULL;
 	}
@@ -159,6 +159,7 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	if (!(newTable = (Table) malloc (sizeof(struct TableDB)))) {return NULL;}
 
 	// Try to allocate the name of the table
+
 	if(!(newTable->name = (char*) malloc ((strlen(tableName)+1) * sizeof(char)))) {return NULL;}
 
 	strcpy(newTable->name, tableName);
@@ -179,6 +180,7 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	if (!(newTable->treeList = (Tree) malloc (nColumns*sizeof(struct RBTree)))) {return NULL;}
 
 	// Initialization of the trees
+
 	for (int i=0; i<nColumns; i++){
 		// Create the Tree
 		newTable->treeList[i].key = i;
@@ -215,13 +217,10 @@ Table searchTableDb(Database db, char* tableName){
 } //OK
 
 NodeRecord createRecord(char** values, int nColumns){
-	NodeRecord newRecord;
-	// Try to allocate the new record structure and if fails returns NULL
-	if (!(newRecord = (NodeRecord) malloc (sizeof(struct Record)))){return NULL;} // MALLOC FAILS
+	NodeRecord newRecord = (NodeRecord) malloc (sizeof(struct Record));
+	if (!(newRecord)){return NULL;} // MALLOC FAILS
 	newRecord->next = NULL;
-	// Try to allocate values pointer and if fails returns NULL
 	if (!(newRecord->values = (char**) malloc (nColumns*sizeof(char*)))) {return NULL;}
-	// Try to allocate each values and if fails returns NULL
 	for (int i=0; i<nColumns; i++){
 		if (!(newRecord->values[i] = (char*) malloc(strlen(values[i])*sizeof(char)))) {return NULL;}
 		strcpy(newRecord->values[i], values[i]);
@@ -245,13 +244,11 @@ bool insertRecordDb(Table t, NodeRecord r){
 } //OK
 
 QueryResultList querySelect(Table t, ParseResult res){
-	QueryResultList* queryToGet;
-	if (!(queryToGet = (QueryResultList*) malloc(sizeof(QueryResultList)))){return NULL;}
+	//TODO
+	QueryResultList* queryToGet = (QueryResultList*) malloc(sizeof(QueryResultList));
 	*queryToGet = NULL;
-
 	int keyIndex = searchColumnIndex(t, res->key);
 	if(keyIndex == -1){return NULL;}
-
 	switch(res->queryType){
 	case (ORDER_BY):
 		selectOrderBy(t->treeList[keyIndex].root, queryToGet, res->order);
@@ -267,7 +264,7 @@ QueryResultList querySelect(Table t, ParseResult res){
 		break;
 	}
 	return *queryToGet;
-} // OK
+} //TODO
 
 
 void unsuccessfulParse (ParseResult result) {
@@ -291,6 +288,7 @@ bool charIsAllowed (char c, const char * forbiddenCharSet) {
 int parseQueryParameter (char * query, char ** parameter, const char * forbiddenCharSet) {
 	const int paramSize = 1024;
 
+	// string parameter = where to save the parsed parameter
 	*parameter = (char *) malloc (sizeof(char) * paramSize);
 
 	if (!*parameter) return 0;
@@ -306,7 +304,6 @@ int parseQueryParameter (char * query, char ** parameter, const char * forbidden
 			return i;
 		}
 	}
-
 
 	return i;
 }
@@ -343,8 +340,6 @@ int parseQueryType (char * query) {
 
 	return NOT_VALID;
 }
-
-
 
 void parseQueryCreateTable (char * query, ParseResult result) {
 	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
@@ -438,8 +433,6 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 		return;
 	}
 }
-
-
 
 void parseQueryInsertInto (char * query, ParseResult result) {
 
@@ -548,11 +541,11 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 
 	query++;
 
-	// check for " WHERE ("
-	const char where[] = " VALUES (";
+	// check for " VALUES ("
+	const char values[] = " VALUES (";
 
 	for (i=0; i<9; i++) {
-		if (query[i] != where[i]) {
+		if (query[i] != values[i]) {
 			unsuccessfulParse (result);
 			return;
 		}
@@ -579,7 +572,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 		}
 
 		// closed bracket, no more values
-		if (*query == ')') {
+		if (*query == ')' ) {
 
 			result->success = true;
 			return ;
@@ -591,6 +584,232 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 	}
 }
 
+ParseResult parseQuerySelect (char * query, ParseResult result) {
+	const char * paramForbiddenChars = " ,.;%$#@&^~\"'=+/\n\r!?()[]{}<>";
+	const char space = ' ';
+	const char comma = ',';
+
+	// SELECT name
+	//       ^ position 6
+	query += 6; 
+
+	// checking the space
+	if (*query != ' ') {
+		unsuccessfulParse(result);
+		return;
+	}
+
+	query++; // first char of the list of columns
+	
+	// SELECT * FROM ...
+	//        ^
+	if (*query == '*') {
+		result->nColumns = 1; // one column
+
+		result->columns = (char **) malloc (sizeof (char *)); // one pointer to string
+
+		if (result->columns) { // allocation check
+			result->columns[0] = (char *) malloc (sizeof(char) * 2); // two chars '*' and '\0'
+			result->columns[0][0] = '*';
+			result->columns[0][1] = '\0';
+		} else {
+			unsuccessfulParse ();
+			return result;
+		}
+
+	} else {
+
+		// arbitrary number of columns
+		result->nColumns = 128;
+
+		// allocating memory for pointerz
+		result->columns = (char **) malloc (result->nColumns * sizeof (char *));
+
+		// checking pointer
+		if (!result->columns) {
+			unsuccessfulParse (result);
+			return;
+		}
+
+		int i=0;
+
+		// gettin' those column names
+		for (i=0; true; i++) {
+
+			// if there isn't enough space in result->columns
+			if (i > result->nColumns) {
+				// double up!
+				char ** newColumns = (char **) realloc (result->columns, result->nColumns*2);
+
+				if (!newColumns) {
+					unsuccessfulParse(result);
+					return;
+				}
+
+				result->nColumns *= 2;
+				result->columns = newColumns;
+			}
+
+			// now there is space for sure
+			// and we parse the next parameter
+			query += parseQueryParameter (query, &(result->columns[i]), paramForbiddenChars);
+			// shifting the pointer @ the same time
+
+			// comma = gotta read another column name
+			if (*query == ',') {
+				query++;
+				continue;
+			}
+
+			// closed bracket, no more column names
+			if (*query == ' ') {
+				i++;
+
+				// now we can shrink the column list to fit, and save memory
+				char ** reallocation = (char **) realloc (result->columns, i);
+
+				if (!reallocation) {
+					unsuccessfulParse (result);
+					return;
+				}
+
+				result->columns = reallocation;
+				result->nColumns = i;
+
+			} else {
+				unsuccessfulParse (result);
+			}
+
+			break;
+		}
+	}
+
+	// check for " FROM "
+	// SELECT sborn FROM banana;
+	//             ^^^^^^
+	const char values[] = " FROM ";
+
+	for (i=0; i<6; i++) { // 6 is the string length
+		if (query[i] != values[i]) {
+			unsuccessfulParse (result);
+			return;
+		}
+	}
+
+	query += 6; // shift that pointer!
+
+	// parse the name of the table
+	query += parseQueryParameter (query, &(result->tableName), paramForbiddenChars);
+
+	if (!result->tableName) {
+		unsuccessfulParse (result);
+		return;
+	}
+
+	// SELECT * FROM banana;
+	//                     ^
+	if (*query == ';') {
+		result->queryType = SELECT_WITHOUT_FILTERS;
+		result->success = true;
+		return result;
+	}
+
+	if (*query != ' ') {
+		unsuccessfulParse (result);
+		return result;
+	}
+
+	query++;
+
+	// SELECT * FROM banana WHERE
+	//                      ^
+
+	switch (*query) {
+		case 'W': // WHERE
+			return parseQuerySelectWHERE (query, result);
+
+		case 'O': // ORDER BY
+			return parseQuerySelectORDERBY (query, result);
+
+		case 'G': // GROUP BY
+			return parseQuerySelectGROUPBY (query, result);
+
+		default:
+			unsuccessfulParse (result);
+			return result;
+	}
+
+}
+
+ParseResult parseQuerySelectWHERE (char * query, ParseResult result) {
+
+}
+
+ParseResult parseQuerySelectGROUPBY (char * query, ParseResult result) {
+	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
+	const char groupByString = "GROUP BY ";
+	const int groupByStringLength = 9;
+	int i=0;
+
+	for (i=0; i<groupByStringLength; i++, query++) {
+		if (*query != groupByString[i]) {
+			unsuccessfulParse (result);
+			return result;
+		}
+	}
+
+	query += parseQueryParameter (query, &(result->keyName), paramForbiddenChars);
+
+	if (*query == ';') {
+		result->success = true;
+		return result;
+	}
+
+	unsuccessfulParse (result);
+	return result;
+}
+
+
+
+ParseResult parseQuerySelectORDERBY (char * query, ParseResult result) {
+	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
+	const char orderByString = "ORDER BY ";
+	const int orderByStringLength = 9;
+	int i=0, j=0;
+
+	for (i=0; i<orderByStringLength; i++, query++) {
+		if (*query != orderByString[i]) {
+			unsuccessfulParse (result);
+			return result;
+		}
+	}
+
+	query += parseQueryParameter (query, &(result->keyName), paramForbiddenChars);
+
+	// SELECT * FROM banana ORDER BY giovanni ASC
+	//                                       ^
+
+
+	const char orderASC = " ASC;";
+	const char orderDESC = " DESC;";
+ 
+	if (strcmp (query, orderASC) == 0) {
+		result->success = true;
+		result->order = ASC;
+		return result;
+	}
+
+	if (strcmp (query, orderDESC) == 0) {
+		result->success = true;
+		result->order = DESC;
+		return result;
+	}
+
+	unsuccessfulParse (result);
+	return result;
+}
+
+
 
 ParseResult parseQuery (char* queryString){
 	ParseResult result = (ParseResult) malloc (sizeof (struct ParseResult));
@@ -599,7 +818,17 @@ ParseResult parseQuery (char* queryString){
 		return NULL;
 	}
 
-	result->success = false;
+	// init result
+	result->success = false;	
+	result->tableName = NULL;
+	result->queryType = 0;
+	result->querySelector = 0;
+	result->keyName = NULL;
+	result->key = NULL;
+	result->columns = NULL;
+	result->nColumns = 0;
+	result->fieldValues = NULL;
+	result->order = 0;
 
 	char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
 
@@ -640,7 +869,7 @@ void freeQueryResultList(QueryResultList res){
 
 void generateLog(ParseResult pRes, char* query, QueryResultList records, Database db){
 	char* buffer = (char*)malloc(sizeof(char) * (strlen(LOG_FILE_NAME) + strlen(FOLDER) + 1));
-	strcpy(buffer, LOG_FOLDER);
+	strcpy(buffer, FOLDER);
 	strcat(buffer, LOG_FILE_NAME);
 
 	#ifdef DEBUG
@@ -664,9 +893,7 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 		return;
 	}
 
-	fprintf(f, "%s", query);
-	if(query[strlen(query)-1] != '\n')
-		fprintf(f, "\n");
+	fprintf(f, "%s\n", query);
 
 	//Inserting header
 	fprintf(f, "TABLE %s COLUMNS ", pRes->tableName);
@@ -947,8 +1174,8 @@ Table loadTableFromFile(Database db, char* name){
 		if(!insertRecordDb(t, createRecord(row, nColumns))){
 	#ifdef DEBUG
 			printf("Insertion gone wrong!\nAborting...\n");
-	#endif
 			return NULL;
+	#endif
 		}
 
 		c = fgetc(f);
@@ -1333,3 +1560,4 @@ int fpeek(FILE * const fp){
   const int c = getc(fp);
   return c == EOF ? EOF : ungetc(c, fp);
 }
+
