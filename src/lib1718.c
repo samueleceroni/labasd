@@ -71,6 +71,9 @@ void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
 void countForGroupBy(int key, QueryResultList queryToGet);
 void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* keyName);
 bool charIsAllowed (char c, const char * forbiddenCharSet);
+ParseResult parseQuerySelectWHERE (char * query, ParseResult result);
+ParseResult parseQuerySelectORDERBY (char * query, ParseResult result);
+ParseResult parseQuerySelectGROUPBY (char * query, ParseResult result);
 
 
 double parseDouble (char * s);
@@ -596,7 +599,7 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 	// checking the space
 	if (*query != ' ') {
 		unsuccessfulParse(result);
-		return;
+		return result;
 	}
 
 	query++; // first char of the list of columns
@@ -613,7 +616,7 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 			result->columns[0][0] = '*';
 			result->columns[0][1] = '\0';
 		} else {
-			unsuccessfulParse ();
+			unsuccessfulParse (result);
 			return result;
 		}
 
@@ -628,7 +631,7 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 		// checking pointer
 		if (!result->columns) {
 			unsuccessfulParse (result);
-			return;
+			return result;
 		}
 
 		int i=0;
@@ -643,7 +646,7 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 
 				if (!newColumns) {
 					unsuccessfulParse(result);
-					return;
+					return result;
 				}
 
 				result->nColumns *= 2;
@@ -670,7 +673,7 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 
 				if (!reallocation) {
 					unsuccessfulParse (result);
-					return;
+					return result;
 				}
 
 				result->columns = reallocation;
@@ -689,10 +692,12 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 	//             ^^^^^^
 	const char values[] = " FROM ";
 
+	int i=0;
+
 	for (i=0; i<6; i++) { // 6 is the string length
 		if (query[i] != values[i]) {
 			unsuccessfulParse (result);
-			return;
+			return result;
 		}
 	}
 
@@ -703,7 +708,7 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 
 	if (!result->tableName) {
 		unsuccessfulParse (result);
-		return;
+		return result;
 	}
 
 	// SELECT * FROM banana;
@@ -742,12 +747,12 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 }
 
 ParseResult parseQuerySelectWHERE (char * query, ParseResult result) {
-
+	return result;
 }
 
 ParseResult parseQuerySelectGROUPBY (char * query, ParseResult result) {
 	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
-	const char groupByString = "GROUP BY ";
+	const char * groupByString = "GROUP BY ";
 	const int groupByStringLength = 9;
 	int i=0;
 
@@ -773,7 +778,7 @@ ParseResult parseQuerySelectGROUPBY (char * query, ParseResult result) {
 
 ParseResult parseQuerySelectORDERBY (char * query, ParseResult result) {
 	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
-	const char orderByString = "ORDER BY ";
+	const char * orderByString = "ORDER BY ";
 	const int orderByStringLength = 9;
 	int i=0, j=0;
 
@@ -790,8 +795,8 @@ ParseResult parseQuerySelectORDERBY (char * query, ParseResult result) {
 	//                                       ^
 
 
-	const char orderASC = " ASC;";
-	const char orderDESC = " DESC;";
+	const char * orderASC = " ASC;";
+	const char * orderDESC = " DESC;";
  
 	if (strcmp (query, orderASC) == 0) {
 		result->success = true;
