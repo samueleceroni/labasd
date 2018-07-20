@@ -3,20 +3,20 @@
 #define false 0
 
 /*
-Input: 
+Input:
 	-La stringa contenente la query da eseguire, ad esempio "CREATE TABLE studenti (matricola, nome, cognome)"
 Output:
-	-bool: true/false, se l'esecuzione della query e' andata a buon fine o meno (presenza di eventuali errori) 
+	-bool: true/false, se l'esecuzione della query e' andata a buon fine o meno (presenza di eventuali errori)
 */
 
 // DataBase Part
 
-struct DatabaseHead{
-	struct TableDB* table;
-	struct DatabaseHead* next;
-};
+// struct DatabaseHead{
+// 	struct TableDB* table;
+// 	struct DatabaseHead* next;
+// };
 
-typedef struct DatabaseHead* Database;
+//typedef struct DatabaseHead* Database;
 
 // A Table of the Database
 struct TableDB {
@@ -44,12 +44,14 @@ struct RBTree {
 };
 
 typedef struct RBTree* Tree;
+typedef struct RBTree* Database;
+
 
 // Node of a RedBlackTree
 struct RBTNode {
 	bool color;
-	char nodeType; // can be table or record
-	struct Record* nodeValue;
+	//char nodeType; // can be table or record
+	void * nodeValue;
 	struct RBTree* head;
 	struct RBTNode* p;
 	struct RBTNode* right;

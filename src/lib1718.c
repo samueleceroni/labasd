@@ -37,9 +37,11 @@
 #define RED 1
 #define BLACK 0
 
-// Red Black Tree node type
-#define TABLE 0
-#define RECORD 1
+// Red Black Tree key type
+#define TABLE -2
+//#define RECORD -3
+// #define TABLE 0
+// #define RECORD 1
 
 //Files
 #define LOG_FILE_NAME "query_results.txt"
@@ -61,9 +63,9 @@ static Database database = NULL;
 
 
 // Secondary functions prototypes
-bool insertRecordTree(Tree T, Node z);
+bool insertNodeTree(Tree T, Node z);
 bool rbtInsertFixup(Tree T, Node z);
-Node createNodeRBT(NodeRecord r);
+Node createNodeRBT(void * r);
 bool leftRotate(Tree T, Node x) ;
 bool rightRotate(Tree T, Node x);
 int searchColumnIndex(Table T, char* key);//todo
@@ -123,12 +125,26 @@ bool executeQuery(char* query){
 	return true;
 }
 
+// This was for list version
+// void initDatabase(Database* db){
+// 	// Trying to allocate the database structure
+// 	(*db) = (Database) malloc (sizeof(struct DatabaseHead));
+// 	// Initializing all the value to NULL
+// 	(*db)->table = NULL;
+// 	(*db)->next = NULL;
+// }
+
 void initDatabase(Database* db){
 	// Trying to allocate the database structure
-	(*db) = (Database) malloc (sizeof(struct DatabaseHead));
-	// Initializing all the value to NULL
-	(*db)->table = NULL;
-	(*db)->next = NULL;
+	(*db) = (Database) malloc (sizeof(struct RBTree));
+
+	// the key attribute is used to store the column index when
+	// the tree contains information about a specific columns.
+	// here we store all the tables for the whole database
+	// so we set the 'key' attribute to the TABLE value
+
+	(*db)->key = TABLE;
+	(*db)->root = NULL;
 }
 
 Table createTableDb(Database db, char* tableName, char** columns, int nColumns){ // creates the table and insert it into the DB
@@ -137,59 +153,64 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 		return NULL;
 	}
 	// Case table is not found in database
-	Table temp;
+	Table newTable;
 	// Try to allocate the table
-	if (!(temp = (Table) malloc (sizeof(struct TableDB)))) {return NULL;}
+	if (!(newTable = (Table) malloc (sizeof(struct TableDB)))) {return NULL;}
 
 	// Try to allocate the name of the table
-	if(!(temp->name = (char*) malloc ((strlen(tableName)+1) * sizeof(char)))) {return NULL;}
-	
-	strcpy(temp->name, tableName);
+	if(!(newTable->name = (char*) malloc ((strlen(tableName)+1) * sizeof(char)))) {return NULL;}
+
+	strcpy(newTable->name, tableName);
 
 	// save the number of columns of the table
-	temp->nColumns = nColumns;
-	
+	newTable->nColumns = nColumns;
+
 	// Try to allocate the array of strings
-	if(!(temp->columns = (char**) malloc (nColumns * sizeof(char*)))) {return NULL;}
-	
-	// Try to allocate each string and copy all of them 
+	if(!(newTable->columns = (char**) malloc (nColumns * sizeof(char*)))) {return NULL;}
+
+	// Try to allocate each string and copy all of them
 	for (int i=0; i<nColumns; i++){
-		if (!(temp->columns[i] = (char*) malloc(strlen(columns[i])*sizeof(char)))) {return NULL;}
-		strcpy(temp->columns[i], columns[i]);
+		if (!(newTable->columns[i] = (char*) malloc (strlen(columns[i])*sizeof(char)))) {return NULL;}
+		strcpy(newTable->columns[i], columns[i]);
 	}
-	
-	// Allocate the  array of head of the trees
-	if(!(temp->treeList = (Tree) malloc (nColumns*sizeof(struct RBTree)))){return NULL;}
-	
+
+	// Allocate the array of head of the trees
+	if (!(newTable->treeList = (Tree) malloc (nColumns*sizeof(struct RBTree)))) {return NULL;}
+
 	// Initialization of the trees
 	for (int i=0; i<nColumns; i++){
 		// Create the Tree
-		temp->treeList[i].key = i;
-		temp->treeList[i].root = NULL;
+		newTable->treeList[i].key = i;
+		newTable->treeList[i].root = NULL;
 	}
 
 	// the table is ready to be inserted into the database
 	// Case database is empty
-	if (!(db->table)){
-		db->table = temp;
-	}
-	else{
-	// try to create the newTable structure to be inserted as element of a list
-	Database newTableHead = (Database)malloc(sizeof(struct DatabaseHead));
-	if (!newTableHead) {return NULL;} // malloc fails
+	// if (!(db->table)){
+	// 	db->table = temp;
+	// }
+	// else{
+	// // try to create the newTable structure to be inserted as element of a list
+	// Database newTableHead = (Database)malloc(sizeof(struct DatabaseHead));
+	// if (!newTableHead) {return NULL;} // malloc fails
 
-	newTableHead->table = temp;
-	newTableHead->next = db->next;
-	db->next = newTableHead;
-	}
-	
-	return temp;
+	// newTableHead->table = temp;
+	// newTableHead->next = db->next;
+	// db->next = newTableHead;
+	// }
+
+    Node newTableNode = createNodeRBT((void*) newTable);
+
+	if (insertNodeTree(db, newTableNode) == false) {return NULL;}
+
+	return newTable;
 } //OK
 
 Table searchTableDb(Database db, char* tableName){
-	if (!db || !(db->table)) {return NULL;}	// Db is empty or the end of the queue is reached
-	if (compare(db->table->name, tableName)==EQUAL){return db->table;}	// the table is found
-	return searchTableDb(db->next, tableName);	// recursevely scroll the list
+// 	if (!db || !(db->table)) {return NULL;}	// Db is empty or the end of the queue is reached
+// 	if (compare(db->table->name, tableName)==EQUAL){return db->table;}	// the table is found
+// 	return searchTableDb(db->next, tableName);	// recursevely scroll the list
+    return NULL;
 } //OK
 
 NodeRecord createRecord(char** values, int nColumns){
@@ -204,23 +225,23 @@ NodeRecord createRecord(char** values, int nColumns){
 		if (!(newRecord->values[i] = (char*) malloc(strlen(values[i])*sizeof(char)))) {return NULL;}
 		strcpy(newRecord->values[i], values[i]);
 	}
-	return newRecord;	
+	return newRecord;
 } //OK
 
 bool insertRecordDb(Table t, NodeRecord r){
 	// table or record are not initilized, impossible to insert the record
 	if(!t || !r){return false;}
-	
+
 	// insert the record into the head of the list of record
 	r->next = t->recordList;
 	t->recordList = r;
 
 	// insert the element in each tree
 	for(int i=0; i < t->nColumns; i++){
-		if(!(insertRecordTree(&(t->treeList[i]), createNodeRBT(r)))){return false;}
+		if(!(insertNodeTree(&(t->treeList[i]), createNodeRBT(r)))){return false;}
 	}
-	return true; 
-} //OK 
+	return true;
+} //OK
 
 QueryResultList querySelect(Table t, ParseResult res){
 	QueryResultList* queryToGet;
@@ -307,7 +328,7 @@ int parseQueryType (char * query) {
 	int i=0, j=0;
 
 	for (i=0; i<3; i++) { // query first, so a not-matching query can be skipped @ the first char
-		for (j=0; query[j] && queryType[i][j]; j++) {	
+		for (j=0; query[j] && queryType[i][j]; j++) {
 
 			if (query[j] != queryType[i][j]) {
 				break;
@@ -331,17 +352,17 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 
 	// CREATE TABLE name
 	//             ^ position 12
-	query += 12; 
+	query += 12;
 
 	// checking the space
-	if (*query != ' ') {		
+	if (*query != ' ') {
 		unsuccessfulParse (result);
 		return;
 	}
 
 	query++; // first char of tableName
 
-	// parsing table name and shifting forward the pointer 
+	// parsing table name and shifting forward the pointer
 	query += parseQueryParameter (query, &(result->tableName), paramForbiddenChars);
 
 	if (!result->tableName) {
@@ -351,7 +372,7 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 
 	// checking the space after table name
 	if (*query != ' ') {
-		unsuccessfulParse (result);	
+		unsuccessfulParse (result);
 		return;
 	}
 
@@ -427,7 +448,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 
 	// INSERT INTO name
 	//            ^ position 11
-	query += 11; 
+	query += 11;
 
 	// checking the space
 	if (*query != ' ') {
@@ -437,7 +458,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 
 	query++; // first char of tableName
 
-	// parsing table name and shifting forward the pointer 
+	// parsing table name and shifting forward the pointer
 	query += parseQueryParameter (query, &(result->tableName), paramForbiddenChars);
 
 	if (!result->tableName) {
@@ -447,7 +468,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 
 	// checking the space after table name
 	if (*query != ' ') {
-		unsuccessfulParse (result);	
+		unsuccessfulParse (result);
 		return;
 	}
 
@@ -577,7 +598,7 @@ ParseResult parseQuery (char* queryString){
 		return NULL;
 	}
 
-	result->success = false;	
+	result->success = false;
 
 	char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
 
@@ -671,7 +692,7 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 				if(i != pRes->nColumns - 1)
 					fprintf(f, ",");
 				else
-					fprintf(f, ";\n");	
+					fprintf(f, ";\n");
 			}
 		}
 		fclose(f);
@@ -694,7 +715,7 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 				if(i != pRes->nColumns - 1)
 					fprintf(f, ",");
 				else
-					fprintf(f, ";\n");	
+					fprintf(f, ";\n");
 			}
 		}
 		records = records->next;
@@ -732,7 +753,7 @@ Table loadTableFromFile(Database db, char* name){
 	}
 
 	Table t = NULL;
-	
+
 	//Read table name and columns
 	char header[] = {"TABLE "};
 	char headerSeparator[] = {" COLUMNS "};
@@ -763,7 +784,7 @@ Table loadTableFromFile(Database db, char* name){
 		return NULL;
 	}
 
-	//Check header separator	
+	//Check header separator
 	buffer = (char*)realloc(buffer, sizeof(char) * (strlen(headerSeparator)+1));
 	buffer = fgets(buffer, strlen(headerSeparator)+1, f);
 	buffer[strlen(headerSeparator)] = '\0';
@@ -823,7 +844,7 @@ Table loadTableFromFile(Database db, char* name){
 		printf("\t%s\n", columns[i]);
 	#endif
 	c = fgetc(f);
-	
+
 	t = createTableDb(db, name, columns, nColumns);
 	if(t == NULL){
 	#ifdef DEBUG
@@ -831,11 +852,11 @@ Table loadTableFromFile(Database db, char* name){
 	#endif
 		return NULL;
 	}
-	
+
 	//Reading rows
 	//TODO
 	char rowHeader[] = {"ROW "};
-	
+
 	char** row = NULL;
 
 	do{
@@ -915,7 +936,7 @@ Table loadTableFromFile(Database db, char* name){
 		c = fgetc(f);
 
 	}while(c != EOF && fpeek(f) != EOF);
-		
+
 	#ifdef DEBUG
 	printf("Table loaded!\n");
 	#endif
@@ -925,7 +946,7 @@ Table loadTableFromFile(Database db, char* name){
 }
 
 // Secondary functions implementation
-int strCompare (char * a, char * b) {	
+int strCompare (char * a, char * b) {
 	int res = strcmp (a, b);
 
 	if (res < 0) {
@@ -953,13 +974,13 @@ int strIsNumber (char * s) {
 			isNumber = false;
 			break;
 		}
-	}	
+	}
 
 	return isNumber;
 }
 
 int strAreBothNumbers (char * a, char * b) {
-	// useless comment	
+	// useless comment
 	return strIsNumber(a) && strIsNumber(b);
 }
 
@@ -1015,39 +1036,62 @@ int compare (char * a, char * b) {	// compares two strings
 	return strCompare (a, b);
 }
 
-Node createNodeRBT(NodeRecord r){
+Node createNodeRBT (void* r) {
 	Node x;
 	if(!(x = (Node) malloc(sizeof(struct RBTNode)))){return NULL;}
 	x->nodeValue = r;
 	return x;
 }
 
-bool insertRecordTree(Tree T, Node z){
-	if( !z || !T ) return false;
+
+bool nodeCompare (int columnIndex, void * nodeA, void * nodeB) {
+    bool isTable = (columnIndex == TABLE);
+
+    if (isTable) {
+		Table tableA = (Table) nodeA;
+        Table tableB = (Table) nodeB;
+
+		return compare (tableA->name, tableB->name);
+	}
+
+	NodeRecord recordA = (NodeRecord) nodeA;
+	NodeRecord recordB = (NodeRecord) nodeB;
+
+    return compare (recordA->values[columnIndex], recordB->values[columnIndex]);
+}
+
+bool insertNodeTree (Tree T, Node z){
+	if (!z || !T) return false;
+
 	Node y = NULL;
 	Node x = T->root;
-	while(x!=NULL){
+
+	while (x) {
 		y = x;
-		if(compare(z->nodeValue->values[T->key], y->nodeValue->values[T->key])==LESSER){
+		if (nodeCompare (T->key, z, y) == LESSER){
 			x = x->left;
-		}
-		else{
+		} else {
 			x = x->right;
 		}
 	}
-	z->p = y;
-    if (y == NULL)
-        T->root = z;
-    else
-        if (compare(z->nodeValue->values[T->key], y->nodeValue->values[T->key])==LESSER)
-            y->left = z;
-        else
-            y->right = z;
-	z->left = NULL;
-	z->right = NULL;
-	z->color = RED;
 
-	return rbtInsertFixup(T, z);
+	z->p = y;
+
+    if (y == NULL) {
+        T->root = z;
+    } else {
+        if (nodeCompare (T->key, z, y)==LESSER) {
+            y->left = z;
+        } else {
+            y->right = z;
+        }
+    }
+
+    z->left = NULL;
+    z->right = NULL;
+    z->color = RED;
+
+    return rbtInsertFixup(T, z);
 }
 
 bool rbtInsertFixup(Tree T, Node z){
@@ -1153,7 +1197,7 @@ void selectOrderBy(Node x, QueryResultList* queryToGet, int order){
 	QueryResultList newElement;
 	if (!(newElement = (QueryResultList) malloc (sizeof(struct QueryResultElement)))){return;}
 	newElement->next = (*queryToGet);
-	newElement->nodeValue = x->nodeValue;
+	newElement->nodeValue = (NodeRecord) (x->nodeValue);
 	newElement->occurrence = 1;
 	*queryToGet = newElement;
 
@@ -1181,27 +1225,28 @@ void countForGroupBy(int key, QueryResultList queryToGet){
 }
 
 void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* key){
-	if( !r || keyIndex < 0 || querySelector < 0 || querySelector > 4 || !key ){return;}
-	
-	int comparison = compare(r->values[keyIndex], key);
+	if (!r || keyIndex<0 || querySelector<0 || querySelector>4 || !key) {return;}
+
+	int comparison = compare (r->values[keyIndex], key);
 	bool addToList = false;
-	switch(querySelector){
+
+	switch (querySelector) {
 		case(GREATER):
 			if(comparison == GREATER){addToList=true;}
 			break;
-		
+
 		case(GREATER_EQUAL):
 			if(comparison == GREATER || comparison == EQUAL){addToList=true;}
 			break;
-		
+
 		case(EQUAL):
 			if(comparison == EQUAL){addToList=true;}
 			break;
-		
+
 		case(LESSER_EQUAL):
 			if(comparison == LESSER || comparison == EQUAL){addToList=true;}
 			break;
-		
+
 		case(LESSER):
 			if(comparison == LESSER){addToList=true;}
 			break;
