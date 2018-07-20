@@ -80,6 +80,7 @@ int strCompare (char * a, char * b);
 int strIsNumber (char * s);
 int strAreBothNumbers (char * a, char * b);
 
+void printAllRecordsBackward(NodeRecord n, Table t, ParseResult pRes, FILE* f);
 int fpeek(FILE * const fp);
 
 //Main functions implematations
@@ -646,6 +647,14 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 	printf("Inserting log into %s ...\n", buffer);
 	#endif
 
+	Table t = searchTableDb(db, pRes->tableName);
+	if(t == NULL){
+	#ifdef DEBUG
+		printf("Table %s not found!\nAborting...\n", pRes->tableName);
+	#endif
+		return;
+	}
+
 	FILE* f = fopen(buffer, "a+");
 
 	if(f == NULL){
@@ -665,36 +674,33 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 	if(pRes->queryType == GROUP_BY){
 		fprintf(f, "%s,COUNT;\n", pRes->keyName);
 	} else {
-		for(i = 0; i < pRes->nColumns; i++){
-			fprintf(f, "%s", pRes->columns[i]);
-			if(i != pRes->nColumns - 1)
-				fprintf(f, ",");
-			else
-				fprintf(f, ";\n");
-		}
-	}
-
-	Table t = searchTableDb(db, pRes->tableName);
-	if(t == NULL){
-	#ifdef DEBUG
-		printf("Table %s not found!\nAborting...\n", pRes->tableName);
-	#endif
-		return;
-	}
-
-	//Inserting records
-	if(pRes->queryType == SELECT_WITHOUT_FILTERS){
-		NodeRecord r = t->recordList;
-		while(r != NULL){
-			fprintf(f, "ROW ");
+		if(pRes->nColumns == 1 && pRes->columns[0][0] == '*'){
+			//Print all column identificators
 			for(i = 0; i < t->nColumns; i++){
-				fprintf(f, "%s", r->values[i]);
+				fprintf(f, "%s", t->columns[i]);
+				if(i != t->nColumns - 1)
+					fprintf(f, ",");
+				else
+					fprintf(f, ";\n");
+			}
+		}
+		else {
+			//Print only selected column identificators
+			for(i = 0; i < pRes->nColumns; i++){
+				fprintf(f, "%s", pRes->columns[i]);
 				if(i != pRes->nColumns - 1)
 					fprintf(f, ",");
 				else
 					fprintf(f, ";\n");
 			}
 		}
+	}
+
+	//Inserting records
+	
+	if(pRes->queryType == SELECT_WITHOUT_FILTERS){
+		NodeRecord r = t->recordList;
+		printAllRecordsBackward(r, t, pRes, f);
 		fclose(f);
 		return;
 	}
@@ -704,9 +710,21 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 		if(pRes->queryType == GROUP_BY){
 			int colIndex = 0;
 			colIndex = searchColumnIndex(t, pRes->keyName);
-			if(colIndex == -1){return;}
+			if(colIndex == -1){
+#ifdef DEBUG
+				printf("Column %s not found in table %s!Aborting...\n", pRes->columns[i], t->name);
+#endif
+				fclose(f);
+				return;
+			}
 			fprintf(f, "%s,%d;\n", records->nodeValue->values[colIndex], records->occurrence);
 		} else {
+			if(pRes->nColumns == 1 && pRes->columns[0][0] == '*'){
+				//Print all columns
+				for(i = 0; i < t->nColumns; i++){
+
+				}
+			}
 			for(i = 0; i < pRes->nColumns; i++){
 				int colIndex = i;
 				colIndex = searchColumnIndex(t, pRes->columns[i]);
@@ -1274,8 +1292,44 @@ int searchColumnIndex(Table T, char* key){
 	return -1;
 }
 
-int fpeek(FILE * const fp)
-{
+void printAllRecordsBackward(NodeRecord r, Table t, ParseResult pRes, FILE* f){
+	if(r == NULL)
+		return;
+	printAllRecordsBackward(r->next, t, pRes, f);
+	int i;
+	fprintf(f, "ROW ");
+	if(pRes->nColumns == 1 && pRes->columns[0][0] == '*'){
+		//Print all columns
+		for(i = 0; i < t->nColumns; i++){
+			fprintf(f, "%s", r->values[i]);
+			if(i != t->nColumns - 1)
+				fprintf(f, ",");
+			else
+				fprintf(f, ";\n");	
+		}
+	}
+	else{
+		//Print selected columns
+		for(i = 0; i < pRes->nColumns; i++){
+			int colIndex = 0;
+			colIndex = searchColumnIndex(t, pRes->columns[i]);
+			if(colIndex == -1){
+#ifdef DEBUG
+				printf("Column %s not found in table %s!Aborting...\n", pRes->columns[i], t->name);
+#endif
+				fclose(f);
+				return;
+			}
+			fprintf(f, "%s", r->values[colIndex]);
+			if(i != pRes->nColumns - 1)
+				fprintf(f, ",");
+			else
+				fprintf(f, ";\n");
+		}
+	}
+}
+
+int fpeek(FILE * const fp){
   const int c = getc(fp);
   return c == EOF ? EOF : ungetc(c, fp);
 }
