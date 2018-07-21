@@ -426,7 +426,7 @@ ParseResult parseQueryCreateTable (char * query, ParseResult result) {
 
 			if (!reallocation) {
 				unsuccessfulParse (result);
-				return;
+				return result;
 			}
 
 			result->columns = reallocation;
