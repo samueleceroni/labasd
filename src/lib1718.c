@@ -72,6 +72,9 @@ void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
 void countForGroupBy(int key, QueryResultList queryToGet);
 void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* keyName);
 bool charIsAllowed (char c, const char * forbiddenCharSet);
+ParseResult parseQuerySelect (char * query, ParseResult result);
+ParseResult parseQueryCreateTable (char * query, ParseResult result);
+ParseResult parseQueryInsertInto (char * query, ParseResult result);
 ParseResult parseQuerySelectWHERE (char * query, ParseResult result);
 ParseResult parseQuerySelectORDERBY (char * query, ParseResult result);
 ParseResult parseQuerySelectGROUPBY (char * query, ParseResult result);
@@ -345,7 +348,7 @@ int parseQueryType (char * query) {
 	return NO_QUERY;
 }
 
-void parseQueryCreateTable (char * query, ParseResult result) {
+ParseResult parseQueryCreateTable (char * query, ParseResult result) {
 	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
 	const char space = ' ';
 	const char comma = ',';
@@ -357,7 +360,7 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 	// checking the space
 	if (*query != ' ') {
 		unsuccessfulParse (result);
-		return;
+		return result;
 	}
 
 	query++; // first char of tableName
@@ -367,20 +370,20 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 
 	if (!result->tableName) {
 		unsuccessfulParse (result);
-		return;
+		return result;
 	}
 
 	// checking the space after table name
 	if (*query != ' ') {
 		unsuccessfulParse (result);
-		return;
+		return result;
 	}
 
 	query++;	// moving the pointer to the open bracket
 
 	if (*query != '(') {
 		unsuccessfulParse (result);
-		return;
+		return result;
 	}
 
 	query++; // moving to the first column name char
@@ -391,7 +394,7 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 
 	if (!result->columns) {
 		unsuccessfulParse (result);
-		return;
+		return result;
 	}
 
 	int i=0;
@@ -402,7 +405,7 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 
 			if (!newColumns) {
 				unsuccessfulParse(result);
-				return;
+				return result;
 			}
 
 			result->nColumns *= 2;
@@ -434,11 +437,11 @@ void parseQueryCreateTable (char * query, ParseResult result) {
 			unsuccessfulParse (result);
 		}
 
-		return;
+		return result;
 	}
 }
 
-void parseQueryInsertInto (char * query, ParseResult result) {
+ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 
 	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
 	const char space = ' ';
@@ -451,7 +454,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 	// checking the space
 	if (*query != ' ') {
 		unsuccessfulParse(result);
-		return;
+		return result;
 	}
 
 	query++; // first char of tableName
@@ -461,20 +464,20 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 
 	if (!result->tableName) {
 		unsuccessfulParse (result);
-		return;
+		return result;
 	}
 
 	// checking the space after table name
 	if (*query != ' ') {
 		unsuccessfulParse (result);
-		return;
+		return result;
 	}
 
 	query++;	// moving the pointer to the open bracket
 
 	if (*query != '(') {
 		unsuccessfulParse (result);
-		return;
+		return result;
 	}
 
 	query++; // moving to the first column name char
@@ -488,7 +491,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 	// checking pointer
 	if (!result->columns) {
 		unsuccessfulParse (result);
-		return;
+		return result;
 	}
 
 	int i=0;
@@ -503,7 +506,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 
 			if (!newColumns) {
 				unsuccessfulParse(result);
-				return;
+				return result;
 			}
 
 			result->nColumns *= 2;
@@ -530,7 +533,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 
 			if (!reallocation) {
 				unsuccessfulParse (result);
-				return;
+				return result;
 			}
 
 			result->columns = reallocation;
@@ -551,7 +554,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 	for (i=0; i<9; i++) {
 		if (query[i] != values[i]) {
 			unsuccessfulParse (result);
-			return;
+			return result;
 		}
 	}
 
@@ -563,7 +566,7 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 
 	if (!result->fieldValues) {
 		unsuccessfulParse(result);
-		return;
+		return result;
 	}
 
 	for (i=0; i<result->nColumns; i++) {
@@ -579,11 +582,11 @@ void parseQueryInsertInto (char * query, ParseResult result) {
 		if (*query == ')' ) {
 
 			result->success = true;
-			return ;
+			return result;
 
 		} else {
 			unsuccessfulParse (result);
-			return;
+			return result;
 		}
 	}
 }
@@ -913,7 +916,7 @@ ParseResult parseQuery (char* queryString){
 			break;
 
 		case SELECT:
-			// parseQuerySelect (queryString, result);
+			parseQuerySelect (queryString, result);
 			break;
 
 		default:
