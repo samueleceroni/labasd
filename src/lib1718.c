@@ -14,6 +14,7 @@
 #define LESSER 2
 #define GREATER_EQUAL 3
 #define LESSER_EQUAL 4
+#define NO_OPERATOR 5
 
 // Query types
 #define CREATE_TABLE -1
@@ -23,7 +24,7 @@
 #define INSERT_INTO 3
 #define SELECT_WITHOUT_FILTERS 4
 #define SELECT 5
-#define NOT_VALID 6
+#define NO_QUERY 6
 
 
 // Query order
@@ -341,7 +342,7 @@ int parseQueryType (char * query) {
 		}
 	}
 
-	return NOT_VALID;
+	return NO_QUERY;
 }
 
 void parseQueryCreateTable (char * query, ParseResult result) {
@@ -747,6 +748,69 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 }
 
 ParseResult parseQuerySelectWHERE (char * query, ParseResult result) {
+	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
+	const char * whereString = "WHERE ";
+	const int whereStringLength = 9;
+	int i=0, j=0;
+
+	for (i=0; i<whereStringLength; i++, query++) {
+		if (*query != whereString[i]) {
+			unsuccessfulParse (result);
+			return result;
+		}
+	}
+
+	query += parseQueryParameter (query, &(result->keyName), paramForbiddenChars);
+
+	const char operators[][5] = {
+		" < ",
+		" <= ",
+		" == ",
+		" >= ",
+		" > "
+	};
+
+	const int operatorValue[] = {
+		LESSER,
+		LESSER_EQUAL,
+		EQUAL,
+		GREATER_EQUAL,
+		GREATER
+	};
+
+	const int operatorLength[] = { 3, 4, 4, 4, 3 };
+
+	const int operatorNumber = 5;
+
+	for (i=0; i<operatorNumber; i++) {
+		for (j=0; operators[i][j]; j++) {
+			if (query[j] != operators[i][j]) {
+				break;
+			}
+		}
+
+		if (operators[i][j] == 0) { // meaning it finished, didn't break out
+			result->querySelector = operatorValue[i];
+			query += operatorLength[i];
+			break;
+		}
+	}
+
+	if (result->querySelector == NO_OPERATOR) {
+		unsuccessfulParse (result);
+		return result;
+	}
+
+
+
+	query += parseQueryParameter (query, &(result->key), paramForbiddenChars);
+
+	if (query[0] == ';') {
+		result->success = true;
+		return result;
+	}
+
+	unsuccessfulParse (result);
 	return result;
 }
 
@@ -826,8 +890,8 @@ ParseResult parseQuery (char* queryString){
 	// init result
 	result->success = false;	
 	result->tableName = NULL;
-	result->queryType = 0;
-	result->querySelector = 0;
+	result->queryType = NO_QUERY;
+	result->querySelector = NO_OPERATOR;
 	result->keyName = NULL;
 	result->key = NULL;
 	result->columns = NULL;
