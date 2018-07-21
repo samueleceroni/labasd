@@ -954,18 +954,28 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 			if(pRes->nColumns == 1 && pRes->columns[0][0] == '*'){
 				//Print all columns
 				for(i = 0; i < t->nColumns; i++){
-
+					fprintf(f, "%s", records->nodeValue->values[i]);
+					if(i != t->nColumns - 1)
+						fprintf(f, ",");
+					else
+						fprintf(f, ";\n");
 				}
 			}
-			for(i = 0; i < pRes->nColumns; i++){
-				int colIndex = i;
-				colIndex = searchColumnIndex(t, pRes->columns[i]);
-				if(colIndex == -1){return;}
-				fprintf(f, "%s", records->nodeValue->values[colIndex]);
-				if(i != pRes->nColumns - 1)
-					fprintf(f, ",");
-				else
-					fprintf(f, ";\n");
+			else{
+				for(i = 0; i < pRes->nColumns; i++){
+					int colIndex = i;
+					colIndex = searchColumnIndex(t, pRes->columns[i]);
+					if(colIndex == -1){
+#ifdef DEBUG
+						printf("Column %s not found in table %s!Aborting...\n", pRes->columns[i], t->name);
+#endif
+					}
+					fprintf(f, "%s", records->nodeValue->values[colIndex]);
+					if(i != pRes->nColumns - 1)
+						fprintf(f, ",");
+					else
+						fprintf(f, ";\n");
+				}
 			}
 		}
 		records = records->next;
@@ -1104,19 +1114,11 @@ Table loadTableFromFile(Database db, char* name){
 	}
 
 	//Reading rows
-	//TODO
 	char rowHeader[] = {"ROW "};
-
 	char** row = NULL;
-
+	
+	int i;
 	do{
-		if(c != '\n'){
-	#ifdef DEBUG
-			printf("Incorrect return space!\nAborting...\n");
-	#endif
-			return NULL;
-		}
-
 		//Check row header
 		buffer = (char*)realloc(buffer, sizeof(char) * (strlen(rowHeader)+1));
 		fgets(buffer, strlen(rowHeader)+1, f);
@@ -1131,7 +1133,7 @@ Table loadTableFromFile(Database db, char* name){
 		row = (char**)malloc(sizeof(char*) * nColumns);
 
 		//Reding row
-		for(int i = 0; i < nColumns; i++){
+		for(i = 0; i < nColumns; i++){
 			char* value = NULL;
 			int size = 0;
 			c = fgetc(f);
@@ -1172,7 +1174,7 @@ Table loadTableFromFile(Database db, char* name){
 
 	#ifdef DEBUG
 		printf("Inserting row into table... (");
-		for(int i = 0; i < nColumns; i++)
+		for(i = 0; i < nColumns; i++)
 			printf("%s,", row[i]);
 		printf("\b)\n");
 	#endif
@@ -1182,10 +1184,16 @@ Table loadTableFromFile(Database db, char* name){
 			return NULL;
 	#endif
 		}
-
 		c = fgetc(f);
-
-	}while(c != EOF && fpeek(f) != EOF);
+		if(c != '\n' && c == EOF)
+			break;
+		if(c != '\n'){
+#ifdef DEBUG
+			fprintf(f, "Incorrect return space!\nAborting...");
+#endif
+			return NULL;
+		}
+	}while(fpeek(f) != EOF);
 
 	#ifdef DEBUG
 	printf("Table loaded!\n");
@@ -1562,7 +1570,7 @@ void printAllRecordsBackward(NodeRecord r, Table t, ParseResult pRes, FILE* f){
 }
 
 int fpeek(FILE * const fp){
-  const int c = getc(fp);
-  return c == EOF ? EOF : ungetc(c, fp);
+	const int c = getc(fp);
+	return c == EOF ? EOF : ungetc(c, fp);
 }
 
