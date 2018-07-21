@@ -584,11 +584,11 @@ ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 			result->success = true;
 			return result;
 
-		} else {
-			unsuccessfulParse (result);
-			return result;
 		}
 	}
+
+	unsuccessfulParse (result);
+	return result;
 }
 
 ParseResult parseQuerySelect (char * query, ParseResult result) {
