@@ -71,6 +71,8 @@ int searchColumnIndex(Table T, char* key);//todo
 void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
 void countForGroupBy(int key, QueryResultList queryToGet);
 void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* keyName);
+Table searchNodeTableDb(Node currentTableNode, char* tableName);
+
 bool charIsAllowed (char c, const char * forbiddenCharSet);
 ParseResult parseQuerySelect (char * query, ParseResult result);
 ParseResult parseQueryCreateTable (char * query, ParseResult result);
@@ -220,8 +222,25 @@ Table searchTableDb(Database db, char* tableName){
 // 	if (!db || !(db->table)) {return NULL;}	// Db is empty or the end of the queue is reached
 // 	if (compare(db->table->name, tableName)==EQUAL){return db->table;}	// the table is found
 // 	return searchTableDb(db->next, tableName);	// recursevely scroll the list
-    return NULL;
+	return searchNodeTableDb(db->root, tableName);
 } //OK
+
+Table searchNodeTableDb(Node currentTableNode, char* tableName){
+	if (!currentTableNode){return NULL;}
+	Table currentTable = (Table) currentTableNode -> nodeValue;
+	
+	switch (compare(currentTable->name, tableName)){
+		case(EQUAL):
+			return currentTable;
+		case(LESSER):
+			return searchNodeTableDb(currentTableNode->left, tableName);
+		case(GREATER):
+			return searchNodeTableDb(currentTableNode->right, tableName);
+		default:
+			return NULL;
+	}
+}
+
 
 NodeRecord createRecord(char** values, int nColumns){
 	NodeRecord newRecord = (NodeRecord) malloc (sizeof(struct Record));
