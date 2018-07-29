@@ -55,7 +55,13 @@
 	#define TABLE_FOLDER ""
 #endif
 
+//Memory usage max threshold
+#define MEMORY_THRESHOLD 512000000
+
 static Database database = NULL;
+static TableHeap memoryHeap = NULL;
+static unsigned long long int priorityCounter = 0;
+static Table currentTableUsed = NULL;
 
 
 // Secondary functions prototypes
@@ -88,14 +94,21 @@ int strAreBothNumbers (char * a, char * b);
 void printAllRecordsBackward(NodeRecord n, Table t, ParseResult pRes, FILE* f);
 int fpeek(FILE * const fp);
 
-//Memory management functions
+//Memory management secondary functions
 void* allocateBytes(int bytes);
+bool moreThanOneTableAllocated();
+int deallocateFurthestTable();
 
+void bubbleUpHeapElement(TableHeapElement el);
+void bubbleDownHeapElement(TableHeapElement el);
+void swapHeapElement(int a, int b);
 
 //Main functions implematations
 bool executeQuery(char* query){
 	if(database == NULL)
 		initDatabase(&database);
+	if(memoryHeap == NULL)
+		initMemoryHeap(&memoryHeap);
 	ParseResult pRes = parseQuery(query);
 	if(!pRes->success)
 		return false;
@@ -103,6 +116,9 @@ bool executeQuery(char* query){
 	Table t = searchTableDb(database, pRes->tableName);
 	if(t == NULL){
 		t = loadTableFromFile(database, pRes->tableName);
+	}else{
+		updatePriorityMemoryHeap(t->heapReference, priorityCounter++);
+		currentTableUsed = t;
 	}
 
 	if(pRes->queryType == CREATE_TABLE){
@@ -153,9 +169,16 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	// Try to allocate the table
 	if (!(newTable = (Table) malloc (sizeof(struct TableDB)))) {return NULL;}
 
+	//Inserting into memory management heap
+	TableHeapElement el = insertMemoryHeap(newTable);
+	newTable->heapReference = el;
+
+	//Updating current table used
+	currentTableUsed = newTable;
+
 	// Try to allocate the name of the table
 
-	if(!(newTable->name = (char*) malloc ((strlen(tableName)+1) * sizeof(char)))) {return NULL;}
+	if(!(newTable->name = (char*) allocateBytes ((strlen(tableName)+1) * sizeof(char)))) {return NULL;}
 
 	strcpy(newTable->name, tableName);
 
@@ -163,16 +186,16 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	newTable->nColumns = nColumns;
 
 	// Try to allocate the array of strings
-	if(!(newTable->columns = (char**) malloc (nColumns * sizeof(char*)))) {return NULL;}
+	if(!(newTable->columns = (char**) allocateBytes (nColumns * sizeof(char*)))) {return NULL;}
 
 	// Try to allocate each string and copy all of them
 	for (int i=0; i<nColumns; i++){
-		if (!(newTable->columns[i] = (char*) malloc (strlen(columns[i])*sizeof(char)))) {return NULL;}
+		if (!(newTable->columns[i] = (char*) allocateBytes (strlen(columns[i])*sizeof(char)))) {return NULL;}
 		strcpy(newTable->columns[i], columns[i]);
 	}
 
 	// Allocate the array of head of the trees
-	if (!(newTable->treeList = (Tree) malloc (nColumns*sizeof(struct RBTree)))) {return NULL;}
+	if (!(newTable->treeList = (Tree) allocateBytes (nColumns*sizeof(struct RBTree)))) {return NULL;}
 
 	// Initialization of the trees
 
@@ -214,12 +237,12 @@ void deallocateTable(Table t){
 }
 
 NodeRecord createRecord(char** values, int nColumns){
-	NodeRecord newRecord = (NodeRecord) malloc (sizeof(struct Record));
+	NodeRecord newRecord = (NodeRecord) allocateBytes(sizeof(struct Record));
 	if (!(newRecord)){return NULL;} // MALLOC FAILS
 	newRecord->next = NULL;
-	if (!(newRecord->values = (char**) malloc (nColumns*sizeof(char*)))) {return NULL;}
+	if (!(newRecord->values = (char**) allocateBytes(nColumns*sizeof(char*)))) {return NULL;}
 	for (int i=0; i<nColumns; i++){
-		if (!(newRecord->values[i] = (char*) malloc(strlen(values[i])*sizeof(char)))) {return NULL;}
+		if (!(newRecord->values[i] = (char*) allocateBytes(strlen(values[i])*sizeof(char)))) {return NULL;}
 		strcpy(newRecord->values[i], values[i]);
 	}
 	return newRecord;
@@ -1186,7 +1209,7 @@ Table loadTableFromFile(Database db, char* name){
 			return NULL;
 		}
 
-		row = (char**)malloc(sizeof(char*) * nColumns);
+		row = (char**)allocateBytes(sizeof(char*) * nColumns);
 
 		//Reding row
 		for(i = 0; i < nColumns; i++){
@@ -1257,6 +1280,63 @@ Table loadTableFromFile(Database db, char* name){
 
 	fclose(f);
 	return t;
+}
+
+void initMemoryHeap(TableHeap* heap){
+	*heap = (TableHeap)malloc(sizeof(struct TableHeap));
+	(*heap)->array = (TableHeapElement*)malloc(2 * sizeof(TableHeapElement));
+	(*heap)->size = 1;
+	(*heap)->last = 0;
+}
+
+TableHeapElement insertMemoryHeap(Table t){
+	if(memoryHeap->last == memoryHeap->size){
+		memoryHeap->size *= 2;
+		memoryHeap->array = (TableHeapElement*)realloc(memoryHeap->array, memoryHeap->size * sizeof(TableHeapElement) + 1);
+		if(memoryHeap->array == NULL)
+			return NULL;
+	}
+
+	TableHeapElement newElement = (TableHeapElement)malloc(sizeof(struct TableHeapElement));
+	newElement->tableReference = t;
+	newElement->priority = priorityCounter++;
+	newElement->memorySize = 0;
+	newElement->position = memoryHeap->last + 1;
+
+	memoryHeap->array[memoryHeap->last + 1] = newElement;
+	memoryHeap->last = memoryHeap->last + 1;
+	if(memoryHeap->last != 1)
+		bubbleUpHeapElement(newElement);
+	return newElement;
+}
+
+TableHeapElement extractMemoryHeap(){
+	TableHeapElement res = memoryHeap->array[1];
+	int last = memoryHeap->last;
+	if(last == 0)
+		return NULL;
+	res->position = -1;
+	if(last == 1){
+		memoryHeap->array[1] = NULL;
+	}
+	else{
+		swapHeapElement(1, last);
+		memoryHeap->array[last] = NULL;
+		memoryHeap->last = last - 1;
+		if(last > 2)
+			bubbleDownHeapElement(memoryHeap->array[1]);
+	}
+	return res;
+}
+
+void updatePriorityMemoryHeap(TableHeapElement element, int priority){
+	if(priority < element->priority){
+		element->priority = priority;
+		bubbleDownHeapElement(element);
+	}else if(priority > element->priority){
+		element->priority = priority;
+		bubbleUpHeapElement(element);
+	}
 }
 
 // Secondary functions implementation
@@ -1630,7 +1710,80 @@ int fpeek(FILE * const fp){
 	return c == EOF ? EOF : ungetc(c, fp);
 }
 
-int allocateBytes(int bytes){
-	//TODO
-	return NULL;
+void* allocateBytes(int bytes){
+	//static variable that keeps track of heap size
+	static int memoryUsage = 0;
+
+	memoryUsage += bytes;
+
+	//if memory gets over the threshold and we have more than one table allocated, dellocate
+	while(memoryUsage > MEMORY_THRESHOLD && moreThanOneTableAllocated()){
+		int tableSize = deallocateFurthestTable();
+		memoryUsage -= tableSize;
+	}
+
+	void* res = NULL;
+	res = malloc(bytes);
+
+	//same thing if OS returns NULL
+	while(res == NULL && moreThanOneTableAllocated()){
+		int tableSize = deallocateFurthestTable();
+		memoryUsage -= tableSize;
+	}
+
+	if(currentTableUsed != NULL)
+		currentTableUsed->heapReference->memorySize += bytes;
+
+	return res;
+}
+
+bool moreThanOneTableAllocated(){
+	return memoryHeap->last >= 2;
+}
+
+int deallocateFurthestTable(){
+	TableHeapElement furthest = extractMemoryHeap();
+	if(furthest == NULL)
+		return 0;
+	int res = furthest->memorySize;
+	deallocateTable(furthest->tableReference);
+	free(furthest);
+	return res;
+}
+
+void swapHeapElement(int a, int b){
+	TableHeapElement tmp = memoryHeap->array[a];
+	memoryHeap->array[a] = memoryHeap->array[b];
+	memoryHeap->array[b] = tmp;
+	memoryHeap->array[a]->position = b;
+	memoryHeap->array[b]->position = a;
+}
+void bubbleUpHeapElement(TableHeapElement el){
+	int i = el->position;
+	int parent;
+	do{
+		parent = i / 2;
+		if(memoryHeap->array[i]->priority < memoryHeap->array[parent]->priority){
+			swapHeapElement(i, parent);
+			i = parent;
+		}
+	}while(i == parent);
+}
+void bubbleDownHeapElement(TableHeapElement el){
+	int min = el->position;
+	TableHeapElement* a = memoryHeap->array;
+	int i;
+	do{
+		i = min;
+		int l = i * 2;
+		int r = l + 1;
+		if(l <= memoryHeap->last){
+			if(a[l]->priority < a[i]->priority)
+				min = l;
+			if(a[r] != NULL && a[r]->priority < a[min]->priority)
+				min = r;
+			if(i != min)
+				swapHeapElement(i, min);
+		}
+	}while(i != min);
 }

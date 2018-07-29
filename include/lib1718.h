@@ -18,6 +18,25 @@ Output:
 
 //typedef struct DatabaseHead* Database;
 
+//Memory management structs
+struct TableHeapElement {
+	struct TableDB* tableReference;
+	unsigned long long int priority;
+	int memorySize;
+	int position;
+};
+
+typedef struct TableHeapElement* TableHeapElement;
+
+struct TableHeap {
+	TableHeapElement* array;
+	int last;
+	int size;
+};
+
+typedef struct TableHeap* TableHeap;
+//End of memory management structs
+
 // A Table of the Database
 struct TableDB {
 	char* name;
@@ -25,6 +44,8 @@ struct TableDB {
 	int nColumns;
 	struct Record* recordList;
 	struct RBTree* treeList; // Array of nColumns tree
+
+	TableHeapElement heapReference; // Reference to the memory management system
 };
 
 typedef struct TableDB* Table;
@@ -96,13 +117,19 @@ typedef struct ParseResult* ParseResult;
 bool executeQuery(char*);
 // End of General Part
 
-
 // DataBase Part
 void initDatabase(Database* db);
+
+// Memory Part
+void initMemoryHeap(TableHeap* heap);
+TableHeapElement insertMemoryHeap(Table t);
+TableHeapElement extractMemoryHeap();
+void updatePriorityMemoryHeap(TableHeapElement element, int priority);
 
 // Table
 Table createTableDb(Database db, char* tableName, char** columns, int nColumns);
 Table searchTableDb(Database db, char* tableName);
+void deallocateTable(Table t);
 
 // Record, or Row of the Table
 NodeRecord createRecord(char** values, int nColumns);
