@@ -88,6 +88,9 @@ int strAreBothNumbers (char * a, char * b);
 void printAllRecordsBackward(NodeRecord n, Table t, ParseResult pRes, FILE* f);
 int fpeek(FILE * const fp);
 
+//Memory management functions
+void* allocateBytes(int bytes);
+
 
 //Main functions implematations
 bool executeQuery(char* query){
@@ -1627,3 +1630,7 @@ int fpeek(FILE * const fp){
 	return c == EOF ? EOF : ungetc(c, fp);
 }
 
+int allocateBytes(int bytes){
+	//TODO
+	return NULL;
+}
