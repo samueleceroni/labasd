@@ -121,10 +121,10 @@ bool executeQuery(char*);
 void initDatabase(Database* db);
 
 // Memory Part
-void initMemoryHeap(TableHeap* heap);
+void initMemoryHeap();
 TableHeapElement insertMemoryHeap(Table t);
 TableHeapElement extractMemoryHeap();
-void updatePriorityMemoryHeap(TableHeapElement element, int priority);
+void updatePriorityMemoryHeap(TableHeapElement element, unsigned long long int priority);
 
 // Table
 Table createTableDb(Database db, char* tableName, char** columns, int nColumns);

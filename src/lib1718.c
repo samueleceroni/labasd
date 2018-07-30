@@ -60,7 +60,7 @@
 
 static Database database = NULL;
 static TableHeap memoryHeap = NULL;
-static unsigned long long int priorityCounter = 0;
+static unsigned long long int priorityCounter = 1;
 static Table currentTableUsed = NULL;
 
 
@@ -108,7 +108,7 @@ bool executeQuery(char* query){
 	if(database == NULL)
 		initDatabase(&database);
 	if(memoryHeap == NULL)
-		initMemoryHeap(&memoryHeap);
+		initMemoryHeap();
 	ParseResult pRes = parseQuery(query);
 	if(!pRes->success)
 		return false;
@@ -168,14 +168,12 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	Table newTable;
 	// Try to allocate the table
 	if (!(newTable = (Table) malloc (sizeof(struct TableDB)))) {return NULL;}
-
 	//Inserting into memory management heap
 	TableHeapElement el = insertMemoryHeap(newTable);
 	newTable->heapReference = el;
 
 	//Updating current table used
 	currentTableUsed = newTable;
-
 	// Try to allocate the name of the table
 
 	if(!(newTable->name = (char*) allocateBytes ((strlen(tableName)+1) * sizeof(char)))) {return NULL;}
@@ -206,7 +204,6 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 	}
 
     Node newTableNode = createNodeRBT((void*) newTable);
-
 	if (insertNodeTree(db, newTableNode) == false) {return NULL;}
 
 	return newTable;
@@ -1282,11 +1279,11 @@ Table loadTableFromFile(Database db, char* name){
 	return t;
 }
 
-void initMemoryHeap(TableHeap* heap){
-	*heap = (TableHeap)malloc(sizeof(struct TableHeap));
-	(*heap)->array = (TableHeapElement*)malloc(2 * sizeof(TableHeapElement));
-	(*heap)->size = 1;
-	(*heap)->last = 0;
+void initMemoryHeap(){
+	memoryHeap = (TableHeap)malloc(sizeof(struct TableHeap));
+	memoryHeap->array = (TableHeapElement*)malloc(2 * sizeof(TableHeapElement));
+	memoryHeap->size = 1;
+	memoryHeap->last = 0;
 }
 
 TableHeapElement insertMemoryHeap(Table t){
@@ -1312,6 +1309,9 @@ TableHeapElement insertMemoryHeap(Table t){
 
 TableHeapElement extractMemoryHeap(){
 	TableHeapElement res = memoryHeap->array[1];
+#ifdef DEBUG
+	printf("Removing table %s\n", res->tableReference->name);
+#endif
 	int last = memoryHeap->last;
 	if(last == 0)
 		return NULL;
@@ -1329,13 +1329,13 @@ TableHeapElement extractMemoryHeap(){
 	return res;
 }
 
-void updatePriorityMemoryHeap(TableHeapElement element, int priority){
+void updatePriorityMemoryHeap(TableHeapElement element, unsigned long long int priority){
 	if(priority < element->priority){
 		element->priority = priority;
-		bubbleDownHeapElement(element);
+		bubbleUpHeapElement(element);
 	}else if(priority > element->priority){
 		element->priority = priority;
-		bubbleUpHeapElement(element);
+		bubbleDownHeapElement(element);
 	}
 }
 
@@ -1432,7 +1432,7 @@ int compare (char * a, char * b) {	// compares two strings
 
 Node createNodeRBT (void* r) {
 	Node x;
-	if(!(x = (Node) malloc(sizeof(struct RBTNode)))){return NULL;}
+	if(!(x = (Node) allocateBytes(sizeof(struct RBTNode)))){return NULL;}
 	x->nodeValue = r;
 	return x;
 }
@@ -1444,10 +1444,8 @@ bool nodeCompare (int columnIndex, void * nodeA, void * nodeB) {
     if (isTable) {
 		Table tableA = (Table) nodeA;
         Table tableB = (Table) nodeB;
-
 		return compare (tableA->name, tableB->name);
 	}
-
 	NodeRecord recordA = (NodeRecord) nodeA;
 	NodeRecord recordB = (NodeRecord) nodeB;
 
@@ -1459,7 +1457,7 @@ bool insertNodeTree (Tree T, Node z){
 
 	Node y = NULL;
 	Node x = T->root;
-
+	
 	while (x) {
 		y = x;
 		if (nodeCompare (T->key, z->nodeValue, y->nodeValue) == LESSER){
@@ -1468,7 +1466,7 @@ bool insertNodeTree (Tree T, Node z){
 			x = x->right;
 		}
 	}
-
+	
 	z->p = y;
 
     if (!y) {
@@ -1724,6 +1722,9 @@ void* allocateBytes(int bytes){
 
 	void* res = NULL;
 	res = malloc(bytes);
+#ifdef DEBUG
+	printf("Trying to allocate %d bytes...\n",bytes);
+#endif
 
 	//same thing if OS returns NULL
 	while(res == NULL && moreThanOneTableAllocated()){
@@ -1733,7 +1734,12 @@ void* allocateBytes(int bytes){
 
 	if(currentTableUsed != NULL)
 		currentTableUsed->heapReference->memorySize += bytes;
-
+	
+#ifdef DEBUG
+	//printf("Allocated %d bytes in table %s\n", bytes, currentTableUsed->name);
+	printf("Current tables usage: %d bytes\n", currentTableUsed->heapReference->memorySize);
+	printf("Total memory usage: %d bytes\n", memoryUsage);
+#endif
 	return res;
 }
 
@@ -1767,7 +1773,7 @@ void bubbleUpHeapElement(TableHeapElement el){
 			swapHeapElement(i, parent);
 			i = parent;
 		}
-	}while(i == parent);
+	}while(i == parent && i != 1);
 }
 void bubbleDownHeapElement(TableHeapElement el){
 	int min = el->position;
@@ -1780,7 +1786,7 @@ void bubbleDownHeapElement(TableHeapElement el){
 		if(l <= memoryHeap->last){
 			if(a[l]->priority < a[i]->priority)
 				min = l;
-			if(a[r] != NULL && a[r]->priority < a[min]->priority)
+			if(r <= memoryHeap->last && a[r] != NULL && a[r]->priority < a[min]->priority)
 				min = r;
 			if(i != min)
 				swapHeapElement(i, min);
