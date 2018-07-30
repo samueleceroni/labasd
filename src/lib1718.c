@@ -40,9 +40,6 @@
 
 // Red Black Tree key type
 #define TABLE -2
-//#define RECORD -3
-// #define TABLE 0
-// #define RECORD 1
 
 //Files
 #define LOG_FILE_NAME "query_results.txt"
@@ -135,23 +132,9 @@ bool executeQuery(char* query){
 	return true;
 }
 
-// This was for list version
-// void initDatabase(Database* db){
-// 	// Trying to allocate the database structure
-// 	(*db) = (Database) malloc (sizeof(struct DatabaseHead));
-// 	// Initializing all the value to NULL
-// 	(*db)->table = NULL;
-// 	(*db)->next = NULL;
-// }
-
 void initDatabase(Database* db){
 	// Trying to allocate the database structure
 	(*db) = (Database) malloc (sizeof(struct RBTree));
-
-	// the key attribute is used to store the column index when
-	// the tree contains information about a specific columns.
-	// here we store all the tables for the whole database
-	// so we set the 'key' attribute to the TABLE value
 
 	(*db)->key = TABLE;
 	(*db)->root = NULL;
@@ -196,21 +179,6 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 		newTable->treeList[i].root = NULL;
 	}
 
-	// the table is ready to be inserted into the database
-	// Case database is empty
-	// if (!(db->table)){
-	// 	db->table = temp;
-	// }
-	// else{
-	// // try to create the newTable structure to be inserted as element of a list
-	// Database newTableHead = (Database)malloc(sizeof(struct DatabaseHead));
-	// if (!newTableHead) {return NULL;} // malloc fails
-
-	// newTableHead->table = temp;
-	// newTableHead->next = db->next;
-	// db->next = newTableHead;
-	// }
-
     Node newTableNode = createNodeRBT((void*) newTable);
 
 	if (insertNodeTree(db, newTableNode) == false) {return NULL;}
@@ -219,9 +187,6 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 } //OK
 
 Table searchTableDb(Database db, char* tableName){
-// 	if (!db || !(db->table)) {return NULL;}	// Db is empty or the end of the queue is reached
-// 	if (compare(db->table->name, tableName)==EQUAL){return db->table;}	// the table is found
-// 	return searchTableDb(db->next, tableName);	// recursevely scroll the list
 	return searchNodeTableDb(db->root, tableName);
 } //OK
 
@@ -240,7 +205,6 @@ Table searchNodeTableDb(Node currentTableNode, char* tableName){
 			return NULL;
 	}
 }
-
 
 NodeRecord createRecord(char** values, int nColumns){
 	NodeRecord newRecord = (NodeRecord) malloc (sizeof(struct Record));
@@ -290,7 +254,7 @@ QueryResultList querySelect(Table t, ParseResult res){
 		break;
 	}
 	return *queryToGet;
-} //TODO
+}
 
 
 void unsuccessfulParse (ParseResult result) {
@@ -308,7 +272,6 @@ bool charIsAllowed (char c, const char * forbiddenCharSet) {
 
 	return true;
 }
-
 
 
 int parseQueryParameter (char * query, char ** parameter, const char * forbiddenCharSet) {
