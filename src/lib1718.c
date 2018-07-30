@@ -1412,7 +1412,7 @@ bool insertNodeTree (Tree T, Node z){
 
 	while (x) {
 		y = x;
-		if (nodeCompare (T->key, z, y) == LESSER){
+		if (nodeCompare (T->key, z->nodeValue, y->nodeValue) == LESSER){
 			x = x->left;
 		} else {
 			x = x->right;
@@ -1421,10 +1421,10 @@ bool insertNodeTree (Tree T, Node z){
 
 	z->p = y;
 
-    if (y == NULL) {
+    if (!y) {
         T->root = z;
     } else {
-        if (nodeCompare (T->key, z, y)==LESSER) {
+        if (nodeCompare (T->key, z->nodeValue, y->nodeValue) == LESSER) {
             y->left = z;
         } else {
             y->right = z;
