@@ -206,6 +206,10 @@ Table searchNodeTableDb(Node currentTableNode, char* tableName){
 	}
 }
 
+void deallocateTable(Table t){
+	//TODO
+}
+
 NodeRecord createRecord(char** values, int nColumns){
 	NodeRecord newRecord = (NodeRecord) malloc (sizeof(struct Record));
 	if (!(newRecord)){return NULL;} // MALLOC FAILS
