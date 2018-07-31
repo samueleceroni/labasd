@@ -70,9 +70,9 @@ typedef struct RBTree* Database;
 
 // Node of a RedBlackTree
 struct RBTNode {
+	bool isValid;
 	bool color;
-	//char nodeType; // can be table or record
-	void * nodeValue;
+	void * nodeValue;	// can be table or record
 	struct RBTree* head;
 	struct RBTNode* p;
 	struct RBTNode* right;
@@ -129,7 +129,7 @@ void updatePriorityMemoryHeap(TableHeapElement element, unsigned long long int p
 // Table
 Table createTableDb(Database db, char* tableName, char** columns, int nColumns);
 Table searchTableDb(Database db, char* tableName);
-void deallocateTable(Table t);
+void deallocateTable(Database db, Table t);
 
 // Record, or Row of the Table
 NodeRecord createRecord(char** values, int nColumns);
