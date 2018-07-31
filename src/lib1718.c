@@ -1,4 +1,4 @@
-#include "lib1718.h"
+#include <lib1718.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -44,7 +44,7 @@
 //Files
 #define LOG_FILE_NAME "query_results.txt"
 
-// Flags di test
+// Flags for test
 #ifdef TEST
 	#define FOLDER "test/"
 	#define TABLE_FOLDER "test/tables/"
@@ -68,13 +68,20 @@ static Table currentTableUsed = NULL;
 bool insertNodeTree(Tree T, Node z);
 bool rbtInsertFixup(Tree T, Node z);
 Node createNodeRBT(void * r);
+void treeTransplant(Tree T, Node u, Node v); // TOCHECK
+void removeNodeRBT(Tree T, Node z); // TOCHECK
+void rbtDeleteFixup(Tree T, Node x); // TOCHECK
+Node treeMinimum(Node x);
 bool leftRotate(Tree T, Node x) ;
 bool rightRotate(Tree T, Node x);
-int searchColumnIndex(Table T, char* key);//todo
+int searchColumnIndex(Table T, char* key);
 void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
 void countForGroupBy(int key, QueryResultList queryToGet);
 void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* keyName);
-Table searchNodeTableDb(Node currentTableNode, char* tableName);
+Node searchNodeTableDb(Node currentTableNode, char* tableName);
+void deleteAllTreeRecordNodes(Node x); // TOCHECK
+void deleteAllRecords(NodeRecord n, int nColumns); // TODO
+
 
 bool charIsAllowed (char c, const char * forbiddenCharSet);
 ParseResult parseQuerySelect (char * query, ParseResult result);
@@ -103,7 +110,7 @@ void bubbleUpHeapElement(TableHeapElement el);
 void bubbleDownHeapElement(TableHeapElement el);
 void swapHeapElement(int a, int b);
 
-//Main functions implematations
+//Main functions implementations
 bool executeQuery(char* query){
 	if(database == NULL)
 		initDatabase(&database);
@@ -210,16 +217,17 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 } //OK
 
 Table searchTableDb(Database db, char* tableName){
-	return searchNodeTableDb(db->root, tableName);
-} //OK
+	Node currentTableNode = searchNodeTableDb(db->root, tableName);
+	return (Table) currentTableNode -> nodeValue;
+} //toBeTested
 
-Table searchNodeTableDb(Node currentTableNode, char* tableName){
+Node searchNodeTableDb(Node currentTableNode, char* tableName){
 	if (!currentTableNode){return NULL;}
 	Table currentTable = (Table) currentTableNode -> nodeValue;
 	
 	switch (compare(currentTable->name, tableName)){
 		case(EQUAL):
-			return currentTable;
+			return currentTableNode;
 		case(LESSER):
 			return searchNodeTableDb(currentTableNode->left, tableName);
 		case(GREATER):
@@ -229,9 +237,161 @@ Table searchNodeTableDb(Node currentTableNode, char* tableName){
 	}
 }
 
-void deallocateTable(Table t){
-	//TODO
+void deallocateTable(Database db, Table t){
+	Node nodeToBeDeallocated = searchNodeTableDb(db->root, t->name);
+	removeNodeRBT(db, nodeToBeDeallocated);
+
+	// deallocate all the values in the table t
+	int i;
+	free(t->name);
+	for (i=0; i < t->nColumns; i++){
+		free(t->columns[i]);
+		deleteAllTreeRecordNodes((t->treeList[i].root));
+	}
+	free(t->columns);
+	deleteAllRecords(t->recordList, t->nColumns);
+	free(t);
+	// deallocate the node
+	free(nodeToBeDeallocated);
 }
+
+void treeTransplant(Tree T, Node u, Node v){
+	if(!T || !u){return;}
+	if (!u->p){
+		T->root = v;
+	}
+	else if (u == u->p->left){
+		u->p->left = v;
+	}
+	else{
+		u->p->right = v;
+	}
+	if(v){
+		v->p = u->p;
+	}
+}
+
+void removeNodeRBT(Tree T, Node z){
+	Node x, y = z;
+	bool yOriginalColor = y->color;
+	if (!z->left){
+		x = z->right;
+		treeTransplant(T, z, z->right);
+	}
+	else if (!z->right){
+		x = z->left;
+		treeTransplant(T, z, z->left);
+	}
+	else {
+		y = treeMinimum(z->right);
+		yOriginalColor = y->color;
+		x = y->right;
+		if (y->p == z){
+			x->p = y;
+		}
+		else {
+			treeTransplant(T, y, y->right);
+			y->right = z->right;
+			y->right->p = y;
+		}
+		treeTransplant(T, z, y);
+		y->left = z->left;
+		y->left->p = y;
+		y->color = z->color;
+	}
+	if (yOriginalColor == BLACK){
+		rbtDeleteFixup(T, x);
+	}
+
+} // TOCHECK
+
+void rbtDeleteFixup(Tree T, Node x){
+	Node w;
+	while(T && x && (x != T->root) && x->color == BLACK){
+		if (x == x->p->left) { // i don't check the existence of x->p because it's not the root
+			w = x->p->right;
+			if (w->color == RED){
+				w->color = BLACK;
+				x->p->color = RED;
+				leftRotate(T, x->p);
+				w = x->p->right;
+			}
+			if (w->left->color == BLACK && w->right->color == BLACK){
+				w->color = RED;
+				x = x->p;
+			}
+			else{
+				if (w->right->color == BLACK){
+					w->left->color = BLACK;
+					w->color = RED;
+					rightRotate(T,w);
+					w = x->p->right;
+				}
+				w->color = x->p->color;
+				x->p->color = BLACK;
+				w->right->color = BLACK;
+				leftRotate(T, x->p);
+				x = T->root;
+			}
+		}
+		else {
+			w = x->p->left;
+			if (w->color == RED){
+				w->color = BLACK;
+				x->p->color = RED;
+				rightRotate(T, x->p);
+				w = x->p->left;
+			}
+			if (w->right->color == BLACK && w->left->color == BLACK){
+				w->color = RED;
+				x = x->p;
+			}
+			else{
+				if (w->left->color == BLACK){
+					w->right->color = BLACK;
+					w->color = RED;
+					rightRotate(T,w);
+					w = x->p->left;
+				}
+				w->color = x->p->color;
+				x->p->color = BLACK;
+				w->left->color = BLACK;
+				rightRotate(T, x->p);
+				x = T->root;
+			}	
+		}
+	}
+	x->color = BLACK;
+} // TOCHECK
+
+Node treeMinimum(Node x){
+	while(x && x->left){
+		x = x->left;
+	}
+	return x;
+}
+
+void deleteAllTreeRecordNodes(Node x){	// specifically for RecordNodes because the nodeValue in this
+	if (!x) {return;}					// case is not allocated but contains an address, while if you need
+	deleteAllTreeRecordNodes(x->left);	// to deallocate all TableNodes you should deallocate the table itself
+	deleteAllTreeRecordNodes(x->right);
+	free(x);
+}// TOCHECK
+
+void deleteAllRecords(NodeRecord n, int nColumns){
+	if (!n){return;}
+	deleteAllRecords(n->next, nColumns);
+	// deallocate the content of each Record
+	int i;
+	for (i=0; i<nColumns; i++){
+		free(n->values[i]);
+	}
+	free(n->values);
+
+	// deallocate the Record itself
+	free(n);
+} //TOCHECK
+
 
 NodeRecord createRecord(char** values, int nColumns){
 	NodeRecord newRecord = (NodeRecord) allocateBytes(sizeof(struct Record));
@@ -246,7 +406,7 @@ NodeRecord createRecord(char** values, int nColumns){
 } //OK
 
 bool insertRecordDb(Table t, NodeRecord r){
-	// table or record are not initilized, impossible to insert the record
+	// table or record are not initialized, impossible to insert the record
 	if(!t || !r){return false;}
 
 	// insert the record into the head of the list of record
@@ -261,7 +421,7 @@ bool insertRecordDb(Table t, NodeRecord r){
 } //OK
 
 QueryResultList querySelect(Table t, ParseResult res){
-	//TODO
+
 	QueryResultList* queryToGet = (QueryResultList*) malloc(sizeof(QueryResultList));
 	*queryToGet = NULL;
 	int keyIndex = searchColumnIndex(t, res->key);
@@ -283,7 +443,6 @@ QueryResultList querySelect(Table t, ParseResult res){
 	return *queryToGet;
 }
 
-
 void unsuccessfulParse (ParseResult result) {
 	result->success = false;
 }
@@ -299,7 +458,6 @@ bool charIsAllowed (char c, const char * forbiddenCharSet) {
 
 	return true;
 }
-
 
 int parseQueryParameter (char * query, char ** parameter, const char * forbiddenCharSet) {
 	const int paramSize = 1024;
@@ -323,8 +481,6 @@ int parseQueryParameter (char * query, char ** parameter, const char * forbidden
 
 	return i;
 }
-
-
 
 int parseQueryType (char * query) {
 	const char * queryType[] = {
@@ -756,7 +912,6 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 			unsuccessfulParse (result);
 			return result;
 	}
-
 }
 
 ParseResult parseQuerySelectWHERE (char * query, ParseResult result) {
@@ -850,8 +1005,6 @@ ParseResult parseQuerySelectGROUPBY (char * query, ParseResult result) {
 	return result;
 }
 
-
-
 ParseResult parseQuerySelectORDERBY (char * query, ParseResult result) {
 	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
 	const char * orderByString = "ORDER BY ";
@@ -889,8 +1042,6 @@ ParseResult parseQuerySelectORDERBY (char * query, ParseResult result) {
 	unsuccessfulParse (result);
 	return result;
 }
-
-
 
 ParseResult parseQuery (char* queryString){
 	ParseResult result = (ParseResult) malloc (sizeof (struct ParseResult));
@@ -936,8 +1087,6 @@ ParseResult parseQuery (char* queryString){
 	return result;
 }
 
-
-
 void freeParseResult(ParseResult res){
 	//TODO
 	return;
@@ -954,23 +1103,23 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 	strcat(buffer, LOG_FILE_NAME);
 
 	#ifdef DEBUG
-	printf("Inserting log into %s ...\n", buffer);
+		printf("Inserting log into %s ...\n", buffer);
 	#endif
 
 	Table t = searchTableDb(db, pRes->tableName);
 	if(t == NULL){
-	#ifdef DEBUG
-		printf("Table %s not found!\nAborting...\n", pRes->tableName);
-	#endif
+		#ifdef DEBUG
+			printf("Table %s not found!\nAborting...\n", pRes->tableName);
+		#endif
 		return;
 	}
 
 	FILE* f = fopen(buffer, "a+");
 
 	if(f == NULL){
-	#ifdef DEBUG
-		printf("Error while creating/opening %s!\nAborting...", buffer);
-	#endif
+		#ifdef DEBUG
+			printf("Error while creating/opening %s!\nAborting...", buffer);
+		#endif
 		return;
 	}
 
@@ -1019,9 +1168,9 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 			int colIndex = 0;
 			colIndex = searchColumnIndex(t, pRes->keyName);
 			if(colIndex == -1){
-#ifdef DEBUG
-				printf("Column %s not found in table %s!Aborting...\n", pRes->columns[i], t->name);
-#endif
+				#ifdef DEBUG
+					printf("Column %s not found in table %s!Aborting...\n", pRes->columns[i], t->name);
+				#endif
 				fclose(f);
 				return;
 			}
@@ -1042,9 +1191,9 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 					int colIndex = i;
 					colIndex = searchColumnIndex(t, pRes->columns[i]);
 					if(colIndex == -1){
-#ifdef DEBUG
-						printf("Column %s not found in table %s!Aborting...\n", pRes->columns[i], t->name);
-#endif
+						#ifdef DEBUG
+							printf("Column %s not found in table %s!Aborting...\n", pRes->columns[i], t->name);
+						#endif
 					}
 					fprintf(f, "%s", records->nodeValue->values[colIndex]);
 					if(i != pRes->nColumns - 1)
@@ -1082,9 +1231,9 @@ Table loadTableFromFile(Database db, char* name){
 
 	FILE* f = fopen(buffer, "r");
 	if(f == NULL){
-	#ifdef DEBUG
-		printf("Table not found!\nAborting...\n");
-	#endif
+		#ifdef DEBUG
+			printf("Table not found!\nAborting...\n");
+		#endif
 		return NULL;
 	}
 
@@ -1102,9 +1251,9 @@ Table loadTableFromFile(Database db, char* name){
 	buffer[strlen(header)] = '\0';
 
 	if(strcmp(buffer, header) != 0){
-	#ifdef DEBUG
-		printf("Incorrect header! (%s)\nAborting...\n", buffer);
-	#endif
+		#ifdef DEBUG
+			printf("Incorrect header! (%s)\nAborting...\n", buffer);
+		#endif
 		return NULL;
 	}
 
@@ -1114,9 +1263,9 @@ Table loadTableFromFile(Database db, char* name){
 	buffer[strlen(name)] = '\0';
 
 	if(strcmp(buffer, name) != 0){
-	#ifdef DEBUG
-		printf("Incorrect table name! (%s)\nAborting...\n", buffer);
-	#endif
+		#ifdef DEBUG
+			printf("Incorrect table name! (%s)\nAborting...\n", buffer);
+		#endif
 		return NULL;
 	}
 
@@ -1126,9 +1275,9 @@ Table loadTableFromFile(Database db, char* name){
 	buffer[strlen(headerSeparator)] = '\0';
 
 	if(strcmp(buffer, headerSeparator) != 0){
-	#ifdef DEBUG
-		printf("Incorrect header separator! (%s)\nAborting...\n", buffer);
-	#endif
+		#ifdef DEBUG
+			printf("Incorrect header separator! (%s)\nAborting...\n", buffer);
+		#endif
 		return NULL;
 	}
 
@@ -1140,9 +1289,9 @@ Table loadTableFromFile(Database db, char* name){
 	do{
 		c = fgetc(f);
 		if(c == EOF){
-	#ifdef DEBUG
-			printf("Incorrect columns separation!\nAborting...\n");
-	#endif
+		#ifdef DEBUG
+				printf("Incorrect columns separation!\nAborting...\n");
+		#endif
 			return NULL;
 		}
 		nColumns++;
@@ -1151,9 +1300,9 @@ Table loadTableFromFile(Database db, char* name){
 		int colLen = 0;
 		while(c != inlineSeparator  && c != endlineSeparator){
 			if(c == EOF){
-	#ifdef DEBUG
-				printf("Incorrect columns separation!\nAborting...\n");
-	#endif
+				#ifdef DEBUG
+					printf("Incorrect columns separation!\nAborting...\n");
+				#endif
 				return NULL;
 			}
 			colLen++;
@@ -1162,9 +1311,9 @@ Table loadTableFromFile(Database db, char* name){
 			c = fgetc(f);
 		}
 		if(colLen == 0){
-	#ifdef DEBUG
-			printf("Incorrect column size!\nAborting...\n");
-	#endif
+			#ifdef DEBUG
+				printf("Incorrect column size!\nAborting...\n");
+			#endif
 			return NULL;
 		}
 		//Insert terminal char
@@ -1174,10 +1323,10 @@ Table loadTableFromFile(Database db, char* name){
 	}while(c != endlineSeparator);
 
 	#ifdef DEBUG
-	printf("Table: %s\n", name);
-	printf("Columns:\n");
-	for(int i = 0; i < nColumns; i++)
-		printf("\t%s\n", columns[i]);
+		printf("Table: %s\n", name);
+		printf("Columns:\n");
+		for(int i = 0; i < nColumns; i++)
+			printf("\t%s\n", columns[i]);
 	#endif
 	c = fgetc(f);
 
@@ -1200,9 +1349,9 @@ Table loadTableFromFile(Database db, char* name){
 		fgets(buffer, strlen(rowHeader)+1, f);
 		buffer[strlen(rowHeader)] = '\0';
 		if(strcmp(buffer, rowHeader) != 0){
-	#ifdef DEBUG
-			printf("Incorrect row header! (%s)\nAborting...\n", buffer);
-	#endif
+			#ifdef DEBUG
+				printf("Incorrect row header! (%s)\nAborting...\n", buffer);
+			#endif
 			return NULL;
 		}
 
@@ -1214,16 +1363,16 @@ Table loadTableFromFile(Database db, char* name){
 			int size = 0;
 			c = fgetc(f);
 			if(c == EOF){
-	#ifdef DEBUG
-				printf("Incorrect return space!\nAborting...\n");
-	#endif
+				#ifdef DEBUG
+					printf("Incorrect return space!\nAborting...\n");
+				#endif
 				return NULL;
 			}
 			while(c != inlineSeparator && c != endlineSeparator){
 				if(c == EOF){
-	#ifdef DEBUG
-					printf("Incorrect return space!\nAborting...\n");
-	#endif
+					#ifdef DEBUG
+						printf("Incorrect return space!\nAborting...\n");
+					#endif
 					return NULL;
 				}
 				size++;
@@ -1235,9 +1384,9 @@ Table loadTableFromFile(Database db, char* name){
 			value[size] = '\0';
 			if(c == endlineSeparator){
 				if(nColumns - 1 != i){
-	#ifdef DEBUG
-					printf("Too few fields! (%d instead of %d)\nAborting...\n", i+1, nColumns);
-	#endif
+					#ifdef DEBUG
+						printf("Too few fields! (%d instead of %d)\nAborting...\n", i+1, nColumns);
+					#endif
 					return NULL;
 				}
 			}
@@ -1248,31 +1397,31 @@ Table loadTableFromFile(Database db, char* name){
 			return NULL;
 		}
 
-	#ifdef DEBUG
-		printf("Inserting row into table... (");
-		for(i = 0; i < nColumns; i++)
-			printf("%s,", row[i]);
-		printf("\b)\n");
-	#endif
+		#ifdef DEBUG
+			printf("Inserting row into table... (");
+			for(i = 0; i < nColumns; i++)
+				printf("%s,", row[i]);
+			printf("\b)\n");
+		#endif
 		if(!insertRecordDb(t, createRecord(row, nColumns))){
-	#ifdef DEBUG
-			printf("Insertion gone wrong!\nAborting...\n");
+			#ifdef DEBUG
+				printf("Insertion gone wrong!\nAborting...\n");
+			#endif
 			return NULL;
-	#endif
 		}
 		c = fgetc(f);
 		if(c != '\n' && c == EOF)
 			break;
 		if(c != '\n'){
-#ifdef DEBUG
-			fprintf(f, "Incorrect return space!\nAborting...");
-#endif
+			#ifdef DEBUG
+				fprintf(f, "Incorrect return space!\nAborting...");
+			#endif
 			return NULL;
 		}
 	}while(fpeek(f) != EOF);
 
 	#ifdef DEBUG
-	printf("Table loaded!\n");
+		printf("Table loaded!\n");
 	#endif
 
 	fclose(f);
@@ -1309,9 +1458,9 @@ TableHeapElement insertMemoryHeap(Table t){
 
 TableHeapElement extractMemoryHeap(){
 	TableHeapElement res = memoryHeap->array[1];
-#ifdef DEBUG
-	printf("Removing table %s\n", res->tableReference->name);
-#endif
+	#ifdef DEBUG
+		printf("Removing table %s\n", res->tableReference->name);
+	#endif
 	int last = memoryHeap->last;
 	if(last == 0)
 		return NULL;
@@ -1433,6 +1582,7 @@ int compare (char * a, char * b) {	// compares two strings
 Node createNodeRBT (void* r) {
 	Node x;
 	if(!(x = (Node) allocateBytes(sizeof(struct RBTNode)))){return NULL;}
+	x->isValid = true;
 	x->nodeValue = r;
 	return x;
 }
@@ -1752,7 +1902,7 @@ int deallocateFurthestTable(){
 	if(furthest == NULL)
 		return 0;
 	int res = furthest->memorySize;
-	deallocateTable(furthest->tableReference);
+	deallocateTable(database, furthest->tableReference); // The pointer to db is needed!
 	free(furthest);
 	return res;
 }
