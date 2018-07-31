@@ -34,6 +34,21 @@ $(ODIR)/%.o: %.c $(DEPS)
 $(ODIR)/test.o: $(TDIR)/test.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+labasdfulldebug: DFLAGS = -D DEBUG -D MIN_DEBUG
+labasdfulldebug: directories clabasd
+
+labasdmindebug: DFLAGS = -D MIN_DEBUG
+labasdmindebug: directories clabasd
+
+labasdtestfulldebug: TFLAGS = -D TEST -D MIN_DEBUG -D DEBUG
+labasdtestfulldebug: directories clabasd
+
+labasdtestmindebug: TFLAGS = -D TEST -D MIN_DEBUG
+labasdtestmindebug: directories clabasd
+
+labasdtest: TFLAGS = -D TEST
+labasdtest: directories clabasd
+
 labasd: directories clabasd 
 clabasd: $(OBJ) $(MAIN)
 	$(CC) -o $(BDIR)/$@ $^ $(CFLAGS)
