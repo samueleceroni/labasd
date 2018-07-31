@@ -146,6 +146,6 @@ void freeQueryResultList(QueryResultList res);
 void generateLog(ParseResult pRes, char* query, QueryResultList records, Database db);
 
 //File part
-bool checkTable(char* name);
-bool createTableFile(char* name, char** columns);
+bool createTableFile(char* name, char** columns, int nColumns);
 Table loadTableFromFile(Database db, char* name);
+bool insertIntoTableFile(char* name, char** columns, char** values, int nColumns);

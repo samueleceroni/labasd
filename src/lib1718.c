@@ -112,43 +112,128 @@ void swapHeapElement(int a, int b);
 
 //Main functions implementations
 bool executeQuery(char* query){
-	if(database == NULL)
+	if(database == NULL){
+		#ifdef MIN_DEBUG
+		printf("Initializing database...\n");
+		#endif
 		initDatabase(&database);
-	if(memoryHeap == NULL)
+	}
+	if(memoryHeap == NULL){
+		#ifdef MIN_DEBUG
+		printf("Initializing memory heap...\n");
+		#endif
 		initMemoryHeap();
+	}
 	ParseResult pRes = parseQuery(query);
-	if(!pRes->success)
+	if(!pRes->success){
+		#ifdef MIN_DEBUG
+		printf("ERROR...Failed to parse query...\nAborting...\n");
+		#endif
 		return false;
+	}
 
+	#ifdef MIN_DEBUG
+	printf("Searching table into database...\n");
+	#endif
 	Table t = searchTableDb(database, pRes->tableName);
 	if(t == NULL){
+		#ifdef MIN_DEBUG
+		printf("WARNING...Table not found in database, trying to load from file...\n");
+		#endif
 		t = loadTableFromFile(database, pRes->tableName);
+		#ifdef MIN_DEBUG
+		if(t == NULL)
+			printf("WARNING...Table cannot be loaded from file...\n");
+		else
+			printf("Table loaded successfully from file...\n");
+		#endif
 	}else{
 		updatePriorityMemoryHeap(t->heapReference, priorityCounter++);
 		currentTableUsed = t;
 	}
 
 	if(pRes->queryType == CREATE_TABLE){
-		if(t != NULL)
+		if(t != NULL){
+			#ifdef MIN_DEBUG
+			printf("ERROR...Cannot create an already existing table!\nAborting...\n");
+			#endif
 			return false;
-		if(!createTableFile(pRes->tableName, pRes->columns))
+		}
+		if(!createTableFile(pRes->tableName, pRes->columns, pRes->nColumns)){
+			#ifdef MIN_DEBUG
+			printf("ERROR...Error on table file creation!\nAborting...\n");
+			#endif
 			return false;
+		}
+
+		#ifdef MIN_DEBUG
+		printf("Table file created...\n");
+		printf("Creating table database structure...\n");
+		#endif
+
 		t = createTableDb(database, pRes->tableName, pRes->columns, pRes->nColumns);
+		if(t == NULL){
+			#ifdef MIN_DEBUG
+			printf("ERROR...Error on table creation!\nAborting...");
+			#endif
+			return false;
+		}
+		#ifdef MIN_DEBUG
+		printf("Table successfully created...\n");
+		#endif
 	}
 	else if(pRes->queryType == INSERT_INTO){
-		if(t == NULL)
+		if(t == NULL){
+			#ifdef MIN_DEBUG
+			printf("ERROR...Cannot insert into a non-existing table!\nAborting...\n");
+			#endif
 			return false;
-		if(!insertRecordDb(t, createRecord(pRes->fieldValues, pRes->nColumns)))
+		}
+		if(!insertRecordDb(t, createRecord(pRes->fieldValues, pRes->nColumns))){
+			#ifdef MIN_DEBUG
+			printf("ERROR...Error while inserting record into table...\nAborting...\n");
+			#endif
 			return false;
+		}
+		#ifdef MIN_DEBUG
+		printf("Successfully inserted record into table database...\n");
+		printf("Inserting record into table file...\n");
+		#endif
+
+		if(!insertIntoTableFile(pRes->tableName, pRes->columns, pRes->fieldValues, pRes->nColumns)){
+			#ifdef MIN_DEBUG
+			printf("ERROR...Error while inserting into table file!\nAborting...\n");
+			#endif
+			return false;
+		}
+
+		#ifdef MIN_DEBUG
+		printf("Successfully inserted record into table file...\n");
+		#endif
 	}
 	else
 	{
 		//SELECT
 		QueryResultList selectResult;
-		if(t == NULL)
+		if(t == NULL){
+			#ifdef MIN_DEBUG
+			printf("ERROR...Cannot select from a non-existing table!\nAborting...\n");
+			#endif
 			return false;
+		}
 
+		#ifdef MIN_DEBUG
+		printf("Selecting rows from table...\n");
+		#endif
 		selectResult = querySelect(t, pRes);
+		if(selectResult == NULL){
+			#ifdef MIN_DEBUG
+			printf("WARNING...No records found that satisfy conditions...\n");
+			#endif
+		}
+		#ifdef MIN_DEBUG
+		printf("Generating log...\n");
+		#endif
 		generateLog(pRes, query, selectResult, database);
 
 		freeQueryResultList(selectResult);
@@ -440,7 +525,11 @@ QueryResultList querySelect(Table t, ParseResult res){
 	default:
 		break;
 	}
-	return *queryToGet;
+	//Deallocating the pointer to the query result list 
+	QueryResultList ret = *queryToGet;
+	free(queryToGet);
+	queryToGet = NULL;
+	return ret;
 }
 
 void unsuccessfulParse (ParseResult result) {
@@ -474,11 +563,13 @@ int parseQueryParameter (char * query, char ** parameter, const char * forbidden
 			// add it to the parsed parameter
 			(*parameter)[i] = query[i];
 		} else {
+			(*parameter)[i] = '\0';
 			// found not-allowed char
 			return i;
 		}
 	}
 
+	(*parameter)[i] = '\0';
 	return i;
 }
 
@@ -1065,6 +1156,7 @@ ParseResult parseQuery (char* queryString){
 	char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
 
 	int queryType = parseQueryType (queryString);
+	result->queryType = queryType;
 
 	switch (queryType) {
 		case CREATE_TABLE:
@@ -1088,13 +1180,46 @@ ParseResult parseQuery (char* queryString){
 }
 
 void freeParseResult(ParseResult res){
-	//TODO
-	return;
+	if(res->tableName != NULL){
+		free(res->tableName);
+		res->tableName = NULL;
+	}
+	if(res->keyName != NULL){
+		free(res->keyName);
+		res->keyName = NULL;
+	}
+	if(res->key != NULL){
+		free(res->key);
+		res->key = NULL;
+	}
+	if(res->columns != NULL){
+		int i;
+		for(i = 0; i < res->nColumns; i++){
+			free(res->columns[i]);
+			res->columns[i] = NULL;
+		}
+		free(res->columns);
+		res->columns = NULL;
+	}
+	if(res->fieldValues != NULL){
+		int i;
+		for(i = 0; i < res->nColumns; i++){
+			free(res->fieldValues[i]);
+			res->fieldValues[i] = NULL;
+		}
+		free(res->fieldValues);
+		res->fieldValues = NULL;
+	}
+	free(res);
+	res = NULL;
 }
 
 void freeQueryResultList(QueryResultList res){
-	//TODO
-	return;
+	if(res != NULL){
+		freeQueryResultList(res->next);
+		free(res);
+		res = NULL;
+	}
 }
 
 void generateLog(ParseResult pRes, char* query, QueryResultList records, Database db){
@@ -1109,7 +1234,7 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 	Table t = searchTableDb(db, pRes->tableName);
 	if(t == NULL){
 		#ifdef DEBUG
-			printf("Table %s not found!\nAborting...\n", pRes->tableName);
+		printf("Table %s not found!\nAborting...\n", pRes->tableName);
 		#endif
 		return;
 	}
@@ -1118,7 +1243,7 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 
 	if(f == NULL){
 		#ifdef DEBUG
-			printf("Error while creating/opening %s!\nAborting...", buffer);
+		printf("Error while creating/opening %s!\nAborting...", buffer);
 		#endif
 		return;
 	}
@@ -1169,7 +1294,7 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 			colIndex = searchColumnIndex(t, pRes->keyName);
 			if(colIndex == -1){
 				#ifdef DEBUG
-					printf("Column %s not found in table %s!Aborting...\n", pRes->columns[i], t->name);
+				printf("Column %s not found in table %s!Aborting...\n", pRes->columns[i], t->name);
 				#endif
 				fclose(f);
 				return;
@@ -1192,7 +1317,7 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 					colIndex = searchColumnIndex(t, pRes->columns[i]);
 					if(colIndex == -1){
 						#ifdef DEBUG
-							printf("Column %s not found in table %s!Aborting...\n", pRes->columns[i], t->name);
+						printf("Column %s not found in table %s!Aborting...\n", pRes->columns[i], t->name);
 						#endif
 					}
 					fprintf(f, "%s", records->nodeValue->values[colIndex]);
@@ -1209,14 +1334,38 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 	fclose(f);
 }
 
-bool checkTable(char* name){
-	//TODO
-	return false;
-}
+bool createTableFile(char* name, char** columns, int nColumns){
+	char buffer[strlen(name) + strlen(TABLE_FOLDER) + 5];
+	strcpy(buffer, TABLE_FOLDER);
+	strcat(buffer, name);
+	strcat(buffer, ".txt");
 
-bool createTableFile(char* name, char** columns){
-	//TODO
-	return false;
+	#ifdef DEBUG
+	printf("Creating and opening table file with path : %s...\n", buffer);
+	#endif
+
+	FILE* f = fopen(buffer, "w");
+	if(f == NULL){
+		#ifdef DEBUG
+		printf("Failed to create table file!\nAborting...\n");
+		#endif
+		return false;
+	}
+
+	//Printing header
+	fprintf(f, "TABLE %s COLUMNS ", name);
+	//Printing columns
+	int i;
+	for(i = 0; i < nColumns; i++){
+		fprintf(f, "%s", columns[i]);
+		if(i != nColumns - 1)
+			fprintf(f, ",");
+		else
+			fprintf(f, ";");
+	}
+
+	fclose(f);
+	return true;
 }
 
 Table loadTableFromFile(Database db, char* name){
@@ -1332,15 +1481,18 @@ Table loadTableFromFile(Database db, char* name){
 
 	t = createTableDb(db, name, columns, nColumns);
 	if(t == NULL){
-	#ifdef DEBUG
+		#ifdef DEBUG
 		printf("Creation gone wrong!\nAborting...\n");
-	#endif
+		#endif
 		return NULL;
 	}
 
 	//Reading rows
 	char rowHeader[] = {"ROW "};
 	char** row = NULL;
+
+	if(c == EOF)
+		return t;
 	
 	int i;
 	do{
@@ -1424,8 +1576,15 @@ Table loadTableFromFile(Database db, char* name){
 		printf("Table loaded!\n");
 	#endif
 
+	free(buffer);
+	buffer = NULL;
 	fclose(f);
 	return t;
+}
+
+bool insertIntoTableFile(char* name, char** columns, char** values, int nColumns){
+	//TODO
+	return false;
 }
 
 void initMemoryHeap(){
@@ -1459,7 +1618,7 @@ TableHeapElement insertMemoryHeap(Table t){
 TableHeapElement extractMemoryHeap(){
 	TableHeapElement res = memoryHeap->array[1];
 	#ifdef DEBUG
-		printf("Removing table %s\n", res->tableReference->name);
+	printf("Removing table %s\n", res->tableReference->name);
 	#endif
 	int last = memoryHeap->last;
 	if(last == 0)
@@ -1838,9 +1997,9 @@ void printAllRecordsBackward(NodeRecord r, Table t, ParseResult pRes, FILE* f){
 			int colIndex = 0;
 			colIndex = searchColumnIndex(t, pRes->columns[i]);
 			if(colIndex == -1){
-#ifdef DEBUG
+	#ifdef DEBUG
 				printf("Column %s not found in table %s!Aborting...\n", pRes->columns[i], t->name);
-#endif
+	#endif
 				fclose(f);
 				return;
 			}
@@ -1872,9 +2031,9 @@ void* allocateBytes(int bytes){
 
 	void* res = NULL;
 	res = malloc(bytes);
-#ifdef DEBUG
+	#ifdef DEBUG
 	printf("Trying to allocate %d bytes...\n",bytes);
-#endif
+	#endif
 
 	//same thing if OS returns NULL
 	while(res == NULL && moreThanOneTableAllocated()){
@@ -1885,11 +2044,11 @@ void* allocateBytes(int bytes){
 	if(currentTableUsed != NULL)
 		currentTableUsed->heapReference->memorySize += bytes;
 	
-#ifdef DEBUG
+	#ifdef DEBUG
 	//printf("Allocated %d bytes in table %s\n", bytes, currentTableUsed->name);
 	printf("Current tables usage: %d bytes\n", currentTableUsed->heapReference->memorySize);
 	printf("Total memory usage: %d bytes\n", memoryUsage);
-#endif
+	#endif
 	return res;
 }
 
