@@ -148,6 +148,9 @@ bool executeQuery(char* query){
 			printf("Table loaded successfully from file...\n");
 		#endif
 	}else{
+		#ifdef MIN_DEBUG
+		printf("Table found in database...\n");
+		#endif
 		updatePriorityMemoryHeap(t->heapReference, priorityCounter++);
 		currentTableUsed = t;
 	}
@@ -189,14 +192,8 @@ bool executeQuery(char* query){
 			#endif
 			return false;
 		}
-		if(!insertRecordDb(t, createRecord(pRes->fieldValues, pRes->nColumns))){
-			#ifdef MIN_DEBUG
-			printf("ERROR...Error while inserting record into table...\nAborting...\n");
-			#endif
-			return false;
-		}
+
 		#ifdef MIN_DEBUG
-		printf("Successfully inserted record into table database...\n");
 		printf("Inserting record into table file...\n");
 		#endif
 
@@ -209,6 +206,18 @@ bool executeQuery(char* query){
 
 		#ifdef MIN_DEBUG
 		printf("Successfully inserted record into table file...\n");
+		printf("Inserting record into table database...\n");
+		#endif
+
+		if(!insertRecordDb(t, createRecord(pRes->fieldValues, pRes->nColumns))){
+			#ifdef MIN_DEBUG
+			printf("ERROR...Error while inserting record into table...\nAborting...\n");
+			#endif
+			return false;
+		}
+
+		#ifdef MIN_DEBUG
+		printf("Successfully inserted record into table database...\n");
 		#endif
 	}
 	else
@@ -303,11 +312,16 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 
 Table searchTableDb(Database db, char* tableName){
 	Node currentTableNode = searchNodeTableDb(db->root, tableName);
+	if(currentTableNode == NULL || currentTableNode->nodeValue == NULL){
+		return NULL;
+	}
 	return (Table) currentTableNode -> nodeValue;
 } //toBeTested
 
 Node searchNodeTableDb(Node currentTableNode, char* tableName){
-	if (!currentTableNode){return NULL;}
+	if (currentTableNode == NULL || currentTableNode->nodeValue == NULL){
+		return NULL;
+	}
 	Table currentTable = (Table) currentTableNode -> nodeValue;
 	
 	switch (compare(currentTable->name, tableName)){
@@ -655,8 +669,7 @@ ParseResult parseQueryCreateTable (char * query, ParseResult result) {
 
 	int i=0;
 	for (i=0; true; i++) {
-
-		if (i > result->nColumns) {
+		if (i >= result->nColumns) {
 			char ** newColumns = (char **) realloc (result->columns, result->nColumns*2);
 
 			if (!newColumns) {
@@ -677,8 +690,7 @@ ParseResult parseQueryCreateTable (char * query, ParseResult result) {
 
 		if (*query == ')') {
 			i++;
-
-			char ** reallocation = (char **) realloc (result->columns, i+1);
+			char ** reallocation = (char **) realloc (result->columns, i*sizeof(char*));
 
 			if (!reallocation) {
 				unsuccessfulParse (result);
@@ -785,7 +797,7 @@ ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 			i++;
 
 			// now we can shrink the column list to fit, and save memory
-			char ** reallocation = (char **) realloc (result->columns, i+1);
+			char ** reallocation = (char **) realloc (result->columns, i*sizeof(char*));
 
 			if (!reallocation) {
 				unsuccessfulParse (result);
@@ -929,7 +941,7 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 				i++;
 
 				// now we can shrink the column list to fit, and save memory
-				char ** reallocation = (char **) realloc (result->columns, i);
+				char ** reallocation = (char **) realloc (result->columns, i*sizeof(char*));
 
 				if (!reallocation) {
 					unsuccessfulParse (result);
@@ -1381,8 +1393,10 @@ Table loadTableFromFile(Database db, char* name){
 	FILE* f = fopen(buffer, "r");
 	if(f == NULL){
 		#ifdef DEBUG
-			printf("Table not found!\nAborting...\n");
+		printf("Table not found!\nAborting...\n");
 		#endif
+		free(buffer);
+		fclose(f);
 		return NULL;
 	}
 
@@ -1401,8 +1415,10 @@ Table loadTableFromFile(Database db, char* name){
 
 	if(strcmp(buffer, header) != 0){
 		#ifdef DEBUG
-			printf("Incorrect header! (%s)\nAborting...\n", buffer);
+		printf("Incorrect header! (%s)\nAborting...\n", buffer);
 		#endif
+		free(buffer);
+		fclose(f);
 		return NULL;
 	}
 
@@ -1413,8 +1429,10 @@ Table loadTableFromFile(Database db, char* name){
 
 	if(strcmp(buffer, name) != 0){
 		#ifdef DEBUG
-			printf("Incorrect table name! (%s)\nAborting...\n", buffer);
+		printf("Incorrect table name! (%s)\nAborting...\n", buffer);
 		#endif
+		free(buffer);
+		fclose(f);
 		return NULL;
 	}
 
@@ -1425,8 +1443,10 @@ Table loadTableFromFile(Database db, char* name){
 
 	if(strcmp(buffer, headerSeparator) != 0){
 		#ifdef DEBUG
-			printf("Incorrect header separator! (%s)\nAborting...\n", buffer);
+		printf("Incorrect header separator! (%s)\nAborting...\n", buffer);
 		#endif
+		free(buffer);
+		fclose(f);
 		return NULL;
 	}
 
@@ -1438,9 +1458,11 @@ Table loadTableFromFile(Database db, char* name){
 	do{
 		c = fgetc(f);
 		if(c == EOF){
-		#ifdef DEBUG
-				printf("Incorrect columns separation!\nAborting...\n");
-		#endif
+			#ifdef DEBUG
+			printf("Incorrect columns separation!\nAborting...\n");
+			#endif
+			free(buffer);
+			fclose(f);
 			return NULL;
 		}
 		nColumns++;
@@ -1450,8 +1472,10 @@ Table loadTableFromFile(Database db, char* name){
 		while(c != inlineSeparator  && c != endlineSeparator){
 			if(c == EOF){
 				#ifdef DEBUG
-					printf("Incorrect columns separation!\nAborting...\n");
+				printf("Incorrect columns separation!\nAborting...\n");
 				#endif
+				free(buffer);
+				fclose(f);
 				return NULL;
 			}
 			colLen++;
@@ -1461,8 +1485,10 @@ Table loadTableFromFile(Database db, char* name){
 		}
 		if(colLen == 0){
 			#ifdef DEBUG
-				printf("Incorrect column size!\nAborting...\n");
+			printf("Incorrect column size!\nAborting...\n");
 			#endif
+			free(buffer);
+			fclose(f);
 			return NULL;
 		}
 		//Insert terminal char
@@ -1472,10 +1498,10 @@ Table loadTableFromFile(Database db, char* name){
 	}while(c != endlineSeparator);
 
 	#ifdef DEBUG
-		printf("Table: %s\n", name);
-		printf("Columns:\n");
-		for(int i = 0; i < nColumns; i++)
-			printf("\t%s\n", columns[i]);
+	printf("Table: %s\n", name);
+	printf("Columns:\n");
+	for(int i = 0; i < nColumns; i++)
+		printf("\t%s\n", columns[i]);
 	#endif
 	c = fgetc(f);
 
@@ -1484,6 +1510,8 @@ Table loadTableFromFile(Database db, char* name){
 		#ifdef DEBUG
 		printf("Creation gone wrong!\nAborting...\n");
 		#endif
+		free(buffer);
+		fclose(f);
 		return NULL;
 	}
 
@@ -1502,8 +1530,10 @@ Table loadTableFromFile(Database db, char* name){
 		buffer[strlen(rowHeader)] = '\0';
 		if(strcmp(buffer, rowHeader) != 0){
 			#ifdef DEBUG
-				printf("Incorrect row header! (%s)\nAborting...\n", buffer);
+			printf("Incorrect row header! (%s)\nAborting...\n", buffer);
 			#endif
+			free(buffer);
+			fclose(f);
 			return NULL;
 		}
 
@@ -1516,15 +1546,19 @@ Table loadTableFromFile(Database db, char* name){
 			c = fgetc(f);
 			if(c == EOF){
 				#ifdef DEBUG
-					printf("Incorrect return space!\nAborting...\n");
+				printf("Incorrect return space!\nAborting...\n");
 				#endif
+				free(buffer);
+				fclose(f);
 				return NULL;
 			}
 			while(c != inlineSeparator && c != endlineSeparator){
 				if(c == EOF){
 					#ifdef DEBUG
-						printf("Incorrect return space!\nAborting...\n");
+					printf("Incorrect return space!\nAborting...\n");
 					#endif
+					free(buffer);
+					fclose(f);
 					return NULL;
 				}
 				size++;
@@ -1537,8 +1571,10 @@ Table loadTableFromFile(Database db, char* name){
 			if(c == endlineSeparator){
 				if(nColumns - 1 != i){
 					#ifdef DEBUG
-						printf("Too few fields! (%d instead of %d)\nAborting...\n", i+1, nColumns);
+					printf("Too few fields! (%d instead of %d)\nAborting...\n", i+1, nColumns);
 					#endif
+					free(buffer);
+					fclose(f);
 					return NULL;
 				}
 			}
@@ -1546,19 +1582,23 @@ Table loadTableFromFile(Database db, char* name){
 		}
 
 		if(c != endlineSeparator){
+			free(buffer);
+			fclose(f);
 			return NULL;
 		}
 
 		#ifdef DEBUG
-			printf("Inserting row into table... (");
-			for(i = 0; i < nColumns; i++)
-				printf("%s,", row[i]);
-			printf("\b)\n");
+		printf("Inserting row into table... (");
+		for(i = 0; i < nColumns; i++)
+			printf("%s,", row[i]);
+		printf("\b)\n");
 		#endif
 		if(!insertRecordDb(t, createRecord(row, nColumns))){
 			#ifdef DEBUG
-				printf("Insertion gone wrong!\nAborting...\n");
+			printf("Insertion gone wrong!\nAborting...\n");
 			#endif
+			free(buffer);
+			fclose(f);
 			return NULL;
 		}
 		c = fgetc(f);
@@ -1566,14 +1606,16 @@ Table loadTableFromFile(Database db, char* name){
 			break;
 		if(c != '\n'){
 			#ifdef DEBUG
-				fprintf(f, "Incorrect return space!\nAborting...");
+			fprintf(f, "Incorrect return space!\nAborting...");
 			#endif
+			free(buffer);
+			fclose(f);
 			return NULL;
 		}
 	}while(fpeek(f) != EOF);
 
 	#ifdef DEBUG
-		printf("Table loaded!\n");
+	printf("Table loaded!\n");
 	#endif
 
 	free(buffer);
@@ -1583,8 +1625,163 @@ Table loadTableFromFile(Database db, char* name){
 }
 
 bool insertIntoTableFile(char* name, char** columns, char** values, int nColumns){
-	//TODO
-	return false;
+	char* buffer = (char*)malloc(sizeof(char) * (strlen(name) + strlen(TABLE_FOLDER) + 5));
+	strcpy(buffer, TABLE_FOLDER);
+	strcat(buffer, name);
+	strcat(buffer, ".txt");
+
+	#ifdef DEBUG
+	printf("Trying to insert into table: %s ...\n", buffer);
+	#endif
+
+	FILE* f = fopen(buffer, "r");
+	if(f == NULL){
+		#ifdef DEBUG
+		printf("Table not found!\nAborting...\n");
+		#endif
+		free(buffer);
+		fclose(f);
+		return false;
+	}
+
+	//Read table name and columns
+	char header[] = {"TABLE "};
+	char headerSeparator[] = {" COLUMNS "};
+	char inlineSeparator = ',';
+	char endlineSeparator = ';';
+
+	//Check first header
+	buffer = (char*)realloc(buffer, sizeof(char) * (strlen(header)+1));
+	buffer = fgets(buffer, strlen(header)+1, f);
+	buffer[strlen(header)] = '\0';
+
+	if(strcmp(buffer, header) != 0){
+		#ifdef DEBUG
+		printf("Incorrect header! (%s)\nAborting...\n", buffer);
+		#endif
+		free(buffer);
+		fclose(f);
+		return false;
+	}
+
+
+	//Check table name
+	buffer = (char*)realloc(buffer, sizeof(char) * (strlen(name)+1));
+	buffer = fgets(buffer, strlen(name)+1, f);
+	buffer[strlen(name)] = '\0';
+
+	if(strcmp(buffer, name) != 0){
+		#ifdef DEBUG
+		printf("Incorrect table name! (%s)\nAborting...\n", buffer);
+		#endif
+		free(buffer);
+		fclose(f);
+		return false;
+	}
+
+	//Check header separator
+	buffer = (char*)realloc(buffer, sizeof(char) * (strlen(headerSeparator)+1));
+	buffer = fgets(buffer, strlen(headerSeparator)+1, f);
+	buffer[strlen(headerSeparator)] = '\0';
+
+	if(strcmp(buffer, headerSeparator) != 0){
+		#ifdef DEBUG
+		printf("Incorrect header separator! (%s)\nAborting...\n", buffer);
+		#endif
+		free(buffer);
+		fclose(f);
+		return false;
+	}
+
+	//Check column names and positions
+	int i;
+	for(i = 0; i < nColumns; i++){
+		char c = fgetc(f);
+		int cont = 0;
+		while(c != ',' && c != ';'){
+			if(c == EOF){
+				#ifdef DEBUG
+				printf("Incorrect endline separator\n");
+				#endif
+				free(buffer);
+				fclose(f);
+				return false;
+			}
+			cont++;
+			buffer = (char*)realloc(buffer, (cont + 1) * sizeof(char));
+			buffer[cont - 1] = c;
+			c = fgetc(f);
+		}
+		if(c == ',' && i == nColumns - 1){
+			#ifdef DEBUG
+			printf("Incorrect endline separator\n");
+			#endif
+			free(buffer);
+			fclose(f);
+			return false;
+		}
+		if(c == ';' && i != nColumns - 1){
+			#ifdef DEBUG
+			printf("Incorrect midline separator\n");
+			#endif
+			free(buffer);
+			fclose(f);
+			return false;
+		}
+		buffer[cont] = '\0';
+
+		char* first;
+		char* second;
+		if(cont > strlen(columns[i])){
+			first = buffer;
+			second = columns[i];
+		} else {
+			first = columns[i];
+			second = buffer;
+		}
+
+		if(strcmp(first, second) != 0){
+			#ifdef DEBUG
+			printf("Incorrect column (%s) in position %d!\nAborting...\n", columns[i], i+1);
+			#endif
+			free(buffer);
+			fclose(f);
+			return false;
+		}
+	}
+	fclose(f);
+
+	//Append into file
+	buffer = (char*)realloc(buffer, sizeof(char) * (strlen(name) + strlen(TABLE_FOLDER) + 5));
+	strcpy(buffer, TABLE_FOLDER);
+	strcat(buffer, name);
+	strcat(buffer, ".txt");
+
+	f = fopen(buffer, "a");
+	if(f == NULL){
+		#ifdef DEBUG
+		printf("Table not found!\nAborting...\n");
+		#endif
+		free(buffer);
+		fclose(f);
+		return false;
+	}
+
+	//Writing header
+	fprintf(f, "\nROW ");
+
+	//Writing values
+	for(i = 0; i < nColumns; i++){
+		fprintf(f, "%s", values[i]);
+		if(i == nColumns - 1)
+			fputc(';', f);
+		else
+			fputc(',', f);
+	}
+
+	free(buffer);
+	fclose(f);
+	return true;
 }
 
 void initMemoryHeap(){
