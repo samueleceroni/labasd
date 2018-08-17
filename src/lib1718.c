@@ -1396,7 +1396,6 @@ Table loadTableFromFile(Database db, char* name){
 		printf("Table not found!\nAborting...\n");
 		#endif
 		free(buffer);
-		fclose(f);
 		return NULL;
 	}
 
