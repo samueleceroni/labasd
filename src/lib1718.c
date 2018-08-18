@@ -306,7 +306,7 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns){
 
     Node newTableNode = createNodeRBT((void*) newTable);
 	if (insertNodeTree(db, newTableNode) == false) {return NULL;}
-
+	newTable->recordList = NULL;
 	return newTable;
 } //OK
 
@@ -316,7 +316,7 @@ Table searchTableDb(Database db, char* tableName){
 		return NULL;
 	}
 	return (Table) currentTableNode -> nodeValue;
-} //toBeTested
+} //OK
 
 Node searchNodeTableDb(Node currentTableNode, char* tableName){
 	if (currentTableNode == NULL || currentTableNode->nodeValue == NULL){
@@ -409,7 +409,7 @@ void removeNodeRBT(Tree T, Node z){
 		rbtDeleteFixup(T, x);
 	}
 
-} // TOCHECK
+} // OK
 
 void rbtDeleteFixup(Tree T, Node x){
 	Node w;
@@ -474,7 +474,7 @@ void rbtDeleteFixup(Tree T, Node x){
 	if (x) {
 		x->color = BLACK;
 	}
-} // TOCHECK
+} // OK
 
 Node treeMinimum(Node x){
 	while(x && x->left){
@@ -488,7 +488,7 @@ void deleteAllTreeRecordNodes(Node x){	// specifically for RecordNodes because t
 	deleteAllTreeRecordNodes(x->left);	// to deallocate all TableNodes you should deallocate the table itself
 	deleteAllTreeRecordNodes(x->right);
 	free(x);
-}// TOCHECK
+}// OK
 
 void deleteAllRecords(NodeRecord n, int nColumns){
 	if (!n){return;}
@@ -502,7 +502,7 @@ void deleteAllRecords(NodeRecord n, int nColumns){
 
 	// deallocate the Record itself
 	free(n);
-} //TOCHECK
+} // OK
 
 
 NodeRecord createRecord(char** values, int nColumns){
@@ -560,6 +560,7 @@ QueryResultList querySelect(Table t, ParseResult res){
 }
 
 void unsuccessfulParse (ParseResult result) {
+	// useless comment for useless function
 	result->success = false;
 }
 
