@@ -324,7 +324,7 @@ Node searchNodeTableDb(Node currentTableNode, char* tableName){
 	}
 	Table currentTable = (Table) currentTableNode -> nodeValue;
 	
-	switch (compare(currentTable->name, tableName)){
+	switch (compare(tableName, currentTable->name)){
 		case(EQUAL):
 			return currentTableNode;
 		case(LESSER):
@@ -371,6 +371,9 @@ void treeTransplant(Tree T, Node u, Node v){
 }
 
 void removeNodeRBT(Tree T, Node z){
+	if( !T || !z ){
+		return;
+	}
 	Node x, y = z;
 	bool yOriginalColor = y->color;
 	if (!z->left){
@@ -385,13 +388,15 @@ void removeNodeRBT(Tree T, Node z){
 		y = treeMinimum(z->right);
 		yOriginalColor = y->color;
 		x = y->right;
-		if (y->p == z){
+		if (x && y->p == z){
 			x->p = y;
 		}
 		else {
 			treeTransplant(T, y, y->right);
 			y->right = z->right;
-			y->right->p = y;
+			if(y->right){
+				y->right->p = y;
+			}
 		}
 		treeTransplant(T, z, y);
 		y->left = z->left;
@@ -415,12 +420,12 @@ void rbtDeleteFixup(Tree T, Node x){
 				leftRotate(T, x->p);
 				w = x->p->right;
 			}
-			if (w->left->color == BLACK && w->right->color == BLACK){
+			if (w->left && w->left->color == BLACK && w->right && w->right->color == BLACK){
 				w->color = RED;
 				x = x->p;
 			}
 			else{
-				if (w->right->color == BLACK){
+				if (w->right && w->left && w->right->color == BLACK){
 					w->left->color = BLACK;
 					w->color = RED;
 					rightRotate(T,w);
@@ -428,25 +433,27 @@ void rbtDeleteFixup(Tree T, Node x){
 				}
 				w->color = x->p->color;
 				x->p->color = BLACK;
-				w->right->color = BLACK;
+				if(w->right){
+					w->right->color = BLACK;
+				}
 				leftRotate(T, x->p);
 				x = T->root;
 			}
 		}
 		else {
 			w = x->p->left;
-			if (w->color == RED){
+			if (w && w->color == RED){
 				w->color = BLACK;
 				x->p->color = RED;
 				rightRotate(T, x->p);
 				w = x->p->left;
 			}
-			if (w->right->color == BLACK && w->left->color == BLACK){
+			if (w->left && w->left->color == BLACK && w->right && w->right->color == BLACK){
 				w->color = RED;
 				x = x->p;
 			}
 			else{
-				if (w->left->color == BLACK){
+				if (w->left && w->right && w->left->color == BLACK){
 					w->right->color = BLACK;
 					w->color = RED;
 					rightRotate(T,w);
@@ -454,13 +461,17 @@ void rbtDeleteFixup(Tree T, Node x){
 				}
 				w->color = x->p->color;
 				x->p->color = BLACK;
-				w->left->color = BLACK;
+				if (w->left){
+					w->left->color = BLACK;
+				}
 				rightRotate(T, x->p);
 				x = T->root;
 			}	
 		}
 	}
-	x->color = BLACK;
+	if (x) {
+		x->color = BLACK;
+	}
 } // TOCHECK
 
 Node treeMinimum(Node x){
@@ -1937,7 +1948,6 @@ int compare (char * a, char * b) {	// compares two strings
 Node createNodeRBT (void* r) {
 	Node x;
 	if(!(x = (Node) allocateBytes(sizeof(struct RBTNode)))){return NULL;}
-	x->isValid = true;
 	x->nodeValue = r;
 	return x;
 }
@@ -1959,7 +1969,7 @@ bool nodeCompare (int columnIndex, void * nodeA, void * nodeB) {
 
 bool insertNodeTree (Tree T, Node z){
 	if (!z || !T) return false;
-
+	z->head = T;
 	Node y = NULL;
 	Node x = T->root;
 	

@@ -70,7 +70,6 @@ typedef struct RBTree* Database;
 
 // Node of a RedBlackTree
 struct RBTNode {
-	bool isValid;
 	bool color;
 	void * nodeValue;	// can be table or record
 	struct RBTree* head;
