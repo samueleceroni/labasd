@@ -337,21 +337,23 @@ Node searchNodeTableDb(Node currentTableNode, char* tableName){
 }
 
 void deallocateTable(Database db, Table t){
+	if (!db || !t){return;}
 	Node nodeToBeDeallocated = searchNodeTableDb(db->root, t->name);
-	removeNodeRBT(db, nodeToBeDeallocated);
-
-	// deallocate all the values in the table t
-	int i;
-	free(t->name);
-	for (i=0; i < t->nColumns; i++){
-		free(t->columns[i]);
-		deleteAllTreeRecordNodes((t->treeList[i].root));
+	if (nodeToBeDeallocated){
+		removeNodeRBT(db, nodeToBeDeallocated);
+		// deallocate all the values in the table t
+		int i;
+		free(t->name);
+		for (i=0; i < t->nColumns; i++){
+			free(t->columns[i]);
+			deleteAllTreeRecordNodes((t->treeList[i].root));
+		}
+		free(t->columns);
+		deleteAllRecords(t->recordList, t->nColumns);
+		free(t);
+		// deallocate the node
+		free(nodeToBeDeallocated);
 	}
-	free(t->columns);
-	deleteAllRecords(t->recordList, t->nColumns);
-	free(t);
-	// deallocate the node
-	free(nodeToBeDeallocated);
 }
 
 void treeTransplant(Tree T, Node u, Node v){
