@@ -316,7 +316,7 @@ Table searchTableDb(Database db, char* tableName){
 		return NULL;
 	}
 	return (Table) currentTableNode -> nodeValue;
-} //OK
+} //toBeTested
 
 Node searchNodeTableDb(Node currentTableNode, char* tableName){
 	if (currentTableNode == NULL || currentTableNode->nodeValue == NULL){
@@ -409,7 +409,7 @@ void removeNodeRBT(Tree T, Node z){
 		rbtDeleteFixup(T, x);
 	}
 
-} // OK
+} // TOCHECK
 
 void rbtDeleteFixup(Tree T, Node x){
 	Node w;
@@ -474,7 +474,7 @@ void rbtDeleteFixup(Tree T, Node x){
 	if (x) {
 		x->color = BLACK;
 	}
-} // OK
+} // TOCHECK
 
 Node treeMinimum(Node x){
 	while(x && x->left){
@@ -488,7 +488,7 @@ void deleteAllTreeRecordNodes(Node x){	// specifically for RecordNodes because t
 	deleteAllTreeRecordNodes(x->left);	// to deallocate all TableNodes you should deallocate the table itself
 	deleteAllTreeRecordNodes(x->right);
 	free(x);
-}// OK
+}// TOCHECK
 
 void deleteAllRecords(NodeRecord n, int nColumns){
 	if (!n){return;}
@@ -502,7 +502,7 @@ void deleteAllRecords(NodeRecord n, int nColumns){
 
 	// deallocate the Record itself
 	free(n);
-} // OK
+} //TOCHECK
 
 
 NodeRecord createRecord(char** values, int nColumns){
@@ -559,9 +559,9 @@ QueryResultList querySelect(Table t, ParseResult res){
 	return ret;
 }
 
-void unsuccessfulParse (ParseResult result) {
-	// useless comment for useless function
+void unsuccessfulParse (ParseResult result, int errorCode) {
 	result->success = false;
+	result->parseErrorCode = errorCode;
 }
 
 bool charIsAllowed (char c, const char * forbiddenCharSet) {
@@ -579,10 +579,10 @@ bool charIsAllowed (char c, const char * forbiddenCharSet) {
 int parseQueryParameter (char * query, char ** parameter, const char * forbiddenCharSet) {
 	const int paramSize = 1024;
 
-	// string parameter = where to save the parsed parameter
+	// parameter = where to save the parsed parameter
 	*parameter = (char *) malloc (sizeof(char) * paramSize);
 
-	if (!*parameter) return 0;
+	if (!*parameter) return -1;
 
 	int i=0;
 
@@ -632,10 +632,13 @@ int parseQueryType (char * query) {
 	return NO_QUERY;
 }
 
+// error code class 100
 ParseResult parseQueryCreateTable (char * query, ParseResult result) {
 	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
 	const char space = ' ';
 	const char comma = ',';
+
+	result->queryType = CREATE_TABLE;
 
 	// CREATE TABLE name
 	//             ^ position 12
@@ -643,7 +646,7 @@ ParseResult parseQueryCreateTable (char * query, ParseResult result) {
 
 	// checking the space
 	if (*query != ' ') {
-		unsuccessfulParse (result);
+		unsuccessfulParse (result, 101);
 		return result;
 	}
 
@@ -653,20 +656,20 @@ ParseResult parseQueryCreateTable (char * query, ParseResult result) {
 	query += parseQueryParameter (query, &(result->tableName), paramForbiddenChars);
 
 	if (!result->tableName) {
-		unsuccessfulParse (result);
+		unsuccessfulParse (result, 102);
 		return result;
 	}
 
 	// checking the space after table name
 	if (*query != ' ') {
-		unsuccessfulParse (result);
+		unsuccessfulParse (result, 103);
 		return result;
 	}
 
 	query++;	// moving the pointer to the open bracket
 
 	if (*query != '(') {
-		unsuccessfulParse (result);
+		unsuccessfulParse (result, 104);
 		return result;
 	}
 
@@ -677,17 +680,17 @@ ParseResult parseQueryCreateTable (char * query, ParseResult result) {
 	result->columns = (char **) malloc (result->nColumns * sizeof (char *));
 
 	if (!result->columns) {
-		unsuccessfulParse (result);
+		unsuccessfulParse (result, 105);
 		return result;
 	}
 
 	int i=0;
 	for (i=0; true; i++) {
 		if (i >= result->nColumns) {
-			char ** newColumns = (char **) realloc (result->columns, result->nColumns*2);
+			char ** newColumns = (char **) realloc (result->columns, 2 * result->nColumns * sizeof (char *));
 
 			if (!newColumns) {
-				unsuccessfulParse(result);
+				unsuccessfulParse(result, 106);
 				return result;
 			}
 
@@ -695,19 +698,28 @@ ParseResult parseQueryCreateTable (char * query, ParseResult result) {
 			result->columns = newColumns;
 		}
 
-		query += parseQueryParameter (query, &(result->columns[i]), paramForbiddenChars);
+		int offset = parseQueryParameter (query, &(result->columns[i]), paramForbiddenChars);
+
+		if (offset == -1) {
+			unsuccessfulParse (result, 111);
+			return result;
+		} else {
+			query += offset;
+		}
 
 		if (*query == ',') {
 			query++;
 			continue;
 		}
 
-		if (*query == ')') {
+		if (*query == ')' && *(query+1) == ';') {
 			i++;
+
+			// shrink columns name array to save space
 			char ** reallocation = (char **) realloc (result->columns, i*sizeof(char*));
 
 			if (!reallocation) {
-				unsuccessfulParse (result);
+				unsuccessfulParse (result, 107);
 				return result;
 			}
 
@@ -716,18 +728,24 @@ ParseResult parseQueryCreateTable (char * query, ParseResult result) {
 			result->success = true;
 
 		} else {
-			unsuccessfulParse (result);
+			unsuccessfulParse (result, 108);
 		}
 
 		return result;
 	}
+
+	unsuccessfulParse (result, 112);
+	return result;
 }
 
+// error code class 200
 ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 
 	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
 	const char space = ' ';
 	const char comma = ',';
+
+	result->queryType = INSERT_INTO;
 
 	// INSERT INTO name
 	//            ^ position 11
@@ -735,7 +753,7 @@ ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 
 	// checking the space
 	if (*query != ' ') {
-		unsuccessfulParse(result);
+		unsuccessfulParse (result, 201);
 		return result;
 	}
 
@@ -745,20 +763,20 @@ ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 	query += parseQueryParameter (query, &(result->tableName), paramForbiddenChars);
 
 	if (!result->tableName) {
-		unsuccessfulParse (result);
+		unsuccessfulParse (result, 202);
 		return result;
 	}
 
 	// checking the space after table name
 	if (*query != ' ') {
-		unsuccessfulParse (result);
+		unsuccessfulParse (result, 203);
 		return result;
 	}
 
 	query++;	// moving the pointer to the open bracket
 
 	if (*query != '(') {
-		unsuccessfulParse (result);
+		unsuccessfulParse (result, 204);
 		return result;
 	}
 
@@ -772,7 +790,7 @@ ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 
 	// checking pointer
 	if (!result->columns) {
-		unsuccessfulParse (result);
+		unsuccessfulParse (result, 205);
 		return result;
 	}
 
@@ -782,12 +800,12 @@ ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 	for (i=0; true; i++) {
 
 		// if there isn't enough space
-		if (i > result->nColumns) {
+		if (i >= result->nColumns) {
 			// double up!
-			char ** newColumns = (char **) realloc (result->columns, result->nColumns*2);
+			char ** newColumns = (char **) realloc (result->columns, 2 * result->nColumns * sizeof(char*));
 
 			if (!newColumns) {
-				unsuccessfulParse(result);
+				unsuccessfulParse (result, 206);
 				return result;
 			}
 
@@ -814,7 +832,7 @@ ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 			char ** reallocation = (char **) realloc (result->columns, i*sizeof(char*));
 
 			if (!reallocation) {
-				unsuccessfulParse (result);
+				unsuccessfulParse (result, 207);
 				return result;
 			}
 
@@ -822,7 +840,7 @@ ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 			result->nColumns = i;
 
 		} else {
-			unsuccessfulParse (result);
+			unsuccessfulParse (result, 208);
 		}
 
 		break;
@@ -835,7 +853,7 @@ ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 
 	for (i=0; i<9; i++) {
 		if (query[i] != values[i]) {
-			unsuccessfulParse (result);
+			unsuccessfulParse (result, 209);
 			return result;
 		}
 	}
@@ -847,7 +865,7 @@ ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 	result->fieldValues = (char **) malloc (sizeof (char *) * result->nColumns);
 
 	if (!result->fieldValues) {
-		unsuccessfulParse(result);
+		unsuccessfulParse (result, 210);
 		return result;
 	}
 
@@ -861,7 +879,7 @@ ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 		}
 
 		// closed bracket, no more values
-		if (*query == ')' ) {
+		if (*query == ')' && *(query+1) == ';') {
 
 			result->success = true;
 			return result;
@@ -869,14 +887,17 @@ ParseResult parseQueryInsertInto (char * query, ParseResult result) {
 		}
 	}
 
-	unsuccessfulParse (result);
+	unsuccessfulParse (result, 211);
 	return result;
 }
 
+// error code class 300
 ParseResult parseQuerySelect (char * query, ParseResult result) {
 	const char * paramForbiddenChars = " ,.;%$#@&^~\"'=+/\n\r!?()[]{}<>";
 	const char space = ' ';
 	const char comma = ',';
+
+	result->queryType = SELECT_WITHOUT_FILTERS;
 
 	// SELECT name
 	//       ^ position 6
@@ -884,7 +905,7 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 
 	// checking the space
 	if (*query != ' ') {
-		unsuccessfulParse(result);
+		unsuccessfulParse (result, 301);
 		return result;
 	}
 
@@ -899,10 +920,19 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 
 		if (result->columns) { // allocation check
 			result->columns[0] = (char *) malloc (sizeof(char) * 2); // two chars '*' and '\0'
+
+			if (!result->columns[0]) {
+				unsuccessfulParse (result, 302);
+				return result;
+			}
+
 			result->columns[0][0] = '*';
 			result->columns[0][1] = '\0';
+
+			query++;
+
 		} else {
-			unsuccessfulParse (result);
+			unsuccessfulParse (result, 303);
 			return result;
 		}
 
@@ -916,7 +946,7 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 
 		// checking pointer
 		if (!result->columns) {
-			unsuccessfulParse (result);
+			unsuccessfulParse (result, 304);
 			return result;
 		}
 
@@ -926,12 +956,12 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 		for (i=0; true; i++) {
 
 			// if there isn't enough space in result->columns
-			if (i > result->nColumns) {
+			if (i >= result->nColumns) {
 				// double up!
-				char ** newColumns = (char **) realloc (result->columns, result->nColumns*2);
+				char ** newColumns = (char **) realloc (result->columns, 2 * result->nColumns * sizeof(char*));
 
 				if (!newColumns) {
-					unsuccessfulParse(result);
+					unsuccessfulParse(result, 305);
 					return result;
 				}
 
@@ -958,7 +988,7 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 				char ** reallocation = (char **) realloc (result->columns, i*sizeof(char*));
 
 				if (!reallocation) {
-					unsuccessfulParse (result);
+					unsuccessfulParse (result, 306);
 					return result;
 				}
 
@@ -966,7 +996,8 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 				result->nColumns = i;
 
 			} else {
-				unsuccessfulParse (result);
+				unsuccessfulParse (result, 307);
+				return result;
 			}
 
 			break;
@@ -982,7 +1013,7 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 
 	for (i=0; i<6; i++) { // 6 is the string length
 		if (query[i] != values[i]) {
-			unsuccessfulParse (result);
+			unsuccessfulParse (result, 308);
 			return result;
 		}
 	}
@@ -993,7 +1024,7 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 	query += parseQueryParameter (query, &(result->tableName), paramForbiddenChars);
 
 	if (!result->tableName) {
-		unsuccessfulParse (result);
+		unsuccessfulParse (result, 309);
 		return result;
 	}
 
@@ -1006,7 +1037,7 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 	}
 
 	if (*query != ' ') {
-		unsuccessfulParse (result);
+		unsuccessfulParse (result, 310);
 		return result;
 	}
 
@@ -1026,20 +1057,23 @@ ParseResult parseQuerySelect (char * query, ParseResult result) {
 			return parseQuerySelectGROUPBY (query, result);
 
 		default:
-			unsuccessfulParse (result);
+			unsuccessfulParse (result, 311);
 			return result;
 	}
 }
 
+// error code class 400
 ParseResult parseQuerySelectWHERE (char * query, ParseResult result) {
 	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
 	const char * whereString = "WHERE ";
-	const int whereStringLength = 9;
+	const int whereStringLength = 6;
 	int i=0, j=0;
+
+	result->queryType = WHERE;
 
 	for (i=0; i<whereStringLength; i++, query++) {
 		if (*query != whereString[i]) {
-			unsuccessfulParse (result);
+			unsuccessfulParse (result, 401);
 			return result;
 		}
 	}
@@ -1081,7 +1115,7 @@ ParseResult parseQuerySelectWHERE (char * query, ParseResult result) {
 	}
 
 	if (result->querySelector == NO_OPERATOR) {
-		unsuccessfulParse (result);
+		unsuccessfulParse (result, 402);
 		return result;
 	}
 
@@ -1094,19 +1128,22 @@ ParseResult parseQuerySelectWHERE (char * query, ParseResult result) {
 		return result;
 	}
 
-	unsuccessfulParse (result);
+	unsuccessfulParse (result, 403);
 	return result;
 }
 
+// error code class 500
 ParseResult parseQuerySelectGROUPBY (char * query, ParseResult result) {
 	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
 	const char * groupByString = "GROUP BY ";
 	const int groupByStringLength = 9;
 	int i=0;
 
+	result->queryType = GROUP_BY;
+
 	for (i=0; i<groupByStringLength; i++, query++) {
 		if (*query != groupByString[i]) {
-			unsuccessfulParse (result);
+			unsuccessfulParse (result, 501);
 			return result;
 		}
 	}
@@ -1118,19 +1155,22 @@ ParseResult parseQuerySelectGROUPBY (char * query, ParseResult result) {
 		return result;
 	}
 
-	unsuccessfulParse (result);
+	unsuccessfulParse (result, 502);
 	return result;
 }
 
+// error code class 600
 ParseResult parseQuerySelectORDERBY (char * query, ParseResult result) {
 	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
 	const char * orderByString = "ORDER BY ";
 	const int orderByStringLength = 9;
 	int i=0, j=0;
 
+	result->queryType = ORDER_BY;
+
 	for (i=0; i<orderByStringLength; i++, query++) {
 		if (*query != orderByString[i]) {
-			unsuccessfulParse (result);
+			unsuccessfulParse (result, 601);
 			return result;
 		}
 	}
@@ -1156,10 +1196,11 @@ ParseResult parseQuerySelectORDERBY (char * query, ParseResult result) {
 		return result;
 	}
 
-	unsuccessfulParse (result);
+	unsuccessfulParse (result, 602);
 	return result;
 }
 
+// error code class 0
 ParseResult parseQuery (char* queryString){
 	ParseResult result = (ParseResult) malloc (sizeof (struct ParseResult));
 
@@ -1178,6 +1219,8 @@ ParseResult parseQuery (char* queryString){
 	result->nColumns = 0;
 	result->fieldValues = NULL;
 	result->order = 0;
+
+	result->parseErrorCode = 0;
 
 	char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
 
@@ -1198,7 +1241,7 @@ ParseResult parseQuery (char* queryString){
 			break;
 
 		default:
-			result->success = false;
+			unsuccessfulParse (result, 1);
 			return result;
 	}
 
@@ -2282,6 +2325,7 @@ void swapHeapElement(int a, int b){
 	memoryHeap->array[a]->position = b;
 	memoryHeap->array[b]->position = a;
 }
+
 void bubbleUpHeapElement(TableHeapElement el){
 	int i = el->position;
 	int parent;
@@ -2293,6 +2337,7 @@ void bubbleUpHeapElement(TableHeapElement el){
 		}
 	}while(i == parent && i != 1);
 }
+
 void bubbleDownHeapElement(TableHeapElement el){
 	int min = el->position;
 	TableHeapElement* a = memoryHeap->array;

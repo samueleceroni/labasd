@@ -104,6 +104,7 @@ struct ParseResult {
 	char** fieldValues;
 	int order; // asc or desc
 	// look at queryselect function in order to understand how to parse commands for select query
+	int parseErrorCode;
 };
 
 typedef struct ParseResult* ParseResult;
