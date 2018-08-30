@@ -1,0 +1,70 @@
+PARSER
+Il parser deve gestire un numero limitato di possibili query, ed ha quindi una struttura molto semplice.
+Tutta l'operaIone di parsing viene eseguita in tempo lineare rispetto alla lunghezza della query.
+L'entry point del parser e' la funzione `ParseResult parseQuery (char * query)`, dalla quale vengono chiamate varie funzioni per capire il tipo di query e farne l'analisi. Durante l'esecuzione viene usato direttamente un puntatore `char *`, che segue il progresso lungo la query tramite degli incrementi.
+La funzione `parseQuery` restituisce un puntatore `ParseResult` alla `struct ParseResult`, cosi' composta: 
+```
+struct ParseResult {
+	bool success;
+	char * tableName;
+	int queryType;
+	char ** columns;
+	int nColumns;
+	char ** fieldValues;
+	int querySelector;
+	char * keyName;
+	char * key;
+	int order;
+	int parseErrorCode;
+};
+```
+dove:
+1. `bool success` contiene il risultato dell'analisi, e di conseguenza la validita' sia della query che dei dati nella struttura
+
+2. `char * tableName` contiene il nome della tabella su cui agisce la query
+
+3. `int queryType` contiene il codice numerico identificativo del tipo di query, tra i possibili seguenti:
+	a. Create Table -1
+	b. Select con filtro Where 0
+	c. Select con filtro Order By 1
+	d. Select con filtro Group By 2
+	e. Insert Into 3
+	f. Select senza filtri 4
+	g. No Query 6
+
+4. `char ** columns` contiene i puntatori di tipo `char *` ai nomi delle colonne interessate dalla query.
+
+5. `int nColumns` contiene il numero di colonne interessate dalla query, e di conseguenza anche il numero di puntatori presenti dentro il campo `char ** columns`.
+
+6. `char ** fieldValues` usata solo nelle query di tipo Insert Into, contiene `nColumns` puntatori di tipo `char *` alle stringhe contenenti i valori da inserire
+
+7. `int querySelector` usato solo in query di tipo Select con filtro Where, contiene il codice numerico identificativo dell'operatore:
+	a. Equal 0
+	b. Greater 1
+	c. Lesser 2
+	d. Greater Equal 3
+	e. Lesser Equal 4
+	f. No Operator 5
+
+8. `char * keyName` usato nelle query di tipo:
+	a. Select con filtro Where, per contenere il nome del campo interessato dalla condizione where.
+	b. Select con filtro Group By, per contenere il nome del campo per cui raggruppare i record.
+	c. Select con filtro Order By, per contenere il nome del campo per cui ordinare i record.
+
+9. `char * key` usato solo nella query di tipo Select con filtro Where, per contenere il valore da paragonare quando si verifica la condizione della query.
+
+10. `int order` usato solo nelle query di tipo Select con filtro Order By, contiene l'ordine desiderato. Puo' assumere i valori:
+	a. ASC 0
+	b. DESC 1
+
+11. `int parseErrorCode` contiene un identificativo numerico hardcoded nel sorgente, unico al punto in cui il parse ha fallito l'esecuzione e terminato prematuramente. Controllando il codice si puo' facilmente risalire al punto in cui si e' manifestato il problema. I codici di errore sono suddivisi in classi:
+	a. 0-99 : Errori Generali
+	b. 101-199: Errori durante il parsing di una query "Create Table"
+	c. 201-299: Errori durante il parsing di una query "Insert Into"
+	d. 301-399: Errori durante il parsing della parte senza filtri di una query "Select"
+	e. 401-499: Errori durante il parsing della parte finale di una query "Select Where"
+	f. 501-599: Errori durante il parsing della parte finale di una query "Select Group By"
+	g. 601-699: Errori durante il parsing della parte finale di una query "Select Order By"
+
+
+
