@@ -268,6 +268,7 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns) 
 	}
 	// Case table is not found in database
 	Table newTable;
+	int i;
 	// Try to allocate the table
 	if (!(newTable = (Table)malloc(sizeof(struct TableDB)))) { return NULL; }
 	//Inserting into memory management heap
@@ -289,7 +290,7 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns) 
 	if (!(newTable->columns = (char**)allocateBytes(nColumns * sizeof(char*)))) { return NULL; }
 
 	// Try to allocate each string and copy all of them
-	for (int i = 0; i<nColumns; i++) {
+	for (i = 0; i<nColumns; i++) {
 		if (!(newTable->columns[i] = (char*)allocateBytes(strlen(columns[i]) * sizeof(char)))) { return NULL; }
 		strcpy(newTable->columns[i], columns[i]);
 	}
@@ -299,7 +300,7 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns) 
 
 	// Initialization of the trees
 
-	for (int i = 0; i<nColumns; i++) {
+	for (i = 0; i<nColumns; i++) {
 		// Create the Tree
 		newTable->treeList[i].key = i;
 		newTable->treeList[i].root = NULL;
@@ -508,10 +509,11 @@ void deleteAllRecords(NodeRecord n, int nColumns) {
 
 NodeRecord createRecord(char** values, int nColumns) {
 	NodeRecord newRecord = (NodeRecord)allocateBytes(sizeof(struct Record));
+	int i;
 	if (!(newRecord)) { return NULL; } // MALLOC FAILS
 	newRecord->next = NULL;
 	if (!(newRecord->values = (char**)allocateBytes(nColumns * sizeof(char*)))) { return NULL; }
-	for (int i = 0; i<nColumns; i++) {
+	for (i = 0; i<nColumns; i++) {
 		if (!(newRecord->values[i] = (char*)allocateBytes(strlen(values[i]) * sizeof(char)))) { return NULL; }
 		strcpy(newRecord->values[i], values[i]);
 	}
@@ -521,13 +523,14 @@ NodeRecord createRecord(char** values, int nColumns) {
 bool insertRecordDb(Table t, NodeRecord r) {
 	// table or record are not initialized, impossible to insert the record
 	if (!t || !r) { return false; }
+	int i;
 
 	// insert the record into the head of the list of record
 	r->next = t->recordList;
 	t->recordList = r;
 
 	// insert the element in each tree
-	for (int i = 0; i < t->nColumns; i++) {
+	for (i = 0; i < t->nColumns; i++) {
 		if (!(insertNodeTree(&(t->treeList[i]), createNodeRBT(r)))) { return false; }
 	}
 	return true;
@@ -1419,8 +1422,7 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 }
 
 bool createTableFile(char* name, char** columns, int nColumns) {
-	int sborning = strlen(name) + strlen(TABLE_FOLDER) + 5;
-	char buffer[sborning];
+	char buffer[strlen(name) + strlen(TABLE_FOLDER) + 5];
 	strcpy(buffer, TABLE_FOLDER);
 	strcat(buffer, name);
 	strcat(buffer, ".txt");
@@ -1572,6 +1574,7 @@ Table loadTableFromFile(Database db, char* name) {
 #ifdef DEBUG
 	printf("Table: %s\n", name);
 	printf("Columns:\n");
+
 	for (int i = 0; i < nColumns; i++)
 		printf("\t%s\n", columns[i]);
 #endif
