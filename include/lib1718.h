@@ -136,6 +136,7 @@ NodeRecord createRecord(char** values, int nColumns);
 bool insertRecordDb(Table t, NodeRecord r);
 
 QueryResultList querySelect(Table t, ParseResult res);
+bool checkQueryIntegrity(Table t, ParseResult res);
 
 // Parser
 ParseResult parseQuery(char* queryString);
