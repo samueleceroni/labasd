@@ -1419,7 +1419,8 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records, Databas
 }
 
 bool createTableFile(char* name, char** columns, int nColumns) {
-	char buffer[strlen(name) + strlen(TABLE_FOLDER) + 5];
+	int sborning = strlen(name) + strlen(TABLE_FOLDER) + 5;
+	char buffer[sborning];
 	strcpy(buffer, TABLE_FOLDER);
 	strcat(buffer, name);
 	strcat(buffer, ".txt");
