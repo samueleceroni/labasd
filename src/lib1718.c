@@ -78,10 +78,10 @@ int searchColumnIndex(Table T, char* key);
 void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
 void countForGroupBy(int key, QueryResultList queryToGet);
 void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* keyName);
+void selectNoFilter(NodeRecord r, QueryResultList* queryToGet);
 Node searchNodeTableDb(Node currentTableNode, char* tableName);
 void deleteAllTreeRecordNodes(Node x); // TOCHECK
 void deleteAllRecords(NodeRecord n, int nColumns); // TODO
-
 
 bool charIsAllowed (char c, const char * forbiddenCharSet);
 ParseResult parseQuerySelect (char * query, ParseResult result);
@@ -536,8 +536,10 @@ QueryResultList querySelect(Table t, ParseResult res){
 
 	QueryResultList* queryToGet = (QueryResultList*) malloc(sizeof(QueryResultList));
 	*queryToGet = NULL;
+	
 	int keyIndex = searchColumnIndex(t, res->key);
 	if(keyIndex == -1){return NULL;}
+
 	switch(res->queryType){
 	case (ORDER_BY):
 		selectOrderBy(t->treeList[keyIndex].root, queryToGet, res->order);
@@ -549,9 +551,12 @@ QueryResultList querySelect(Table t, ParseResult res){
 	case(WHERE):
 		selectWhere(t->recordList, queryToGet, keyIndex, res->querySelector, res->keyName);
 		break;
+	case(SELECT_WITHOUT_FILTERS):
+		selectNoFilter(t->recordList, queryToGet);
 	default:
 		break;
 	}
+
 	//Deallocating the pointer to the query result list 
 	QueryResultList ret = *queryToGet;
 	free(queryToGet);
@@ -1891,10 +1896,10 @@ TableHeapElement extractMemoryHeap(){
 }
 
 void updatePriorityMemoryHeap(TableHeapElement element, unsigned long long int priority){
-	if(priority < element->priority){
+	if (priority < element->priority) {
 		element->priority = priority;
 		bubbleUpHeapElement(element);
-	}else if(priority > element->priority){
+	} else if(priority > element->priority){
 		element->priority = priority;
 		bubbleDownHeapElement(element);
 	}
@@ -2178,7 +2183,7 @@ void countForGroupBy(int key, QueryResultList queryToGet){
 }
 
 void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* key){
-	if (!r || keyIndex<0 || querySelector<0 || querySelector>4 || !key) {return;}
+	if (!r || keyIndex<0 || querySelector<0 || querySelector>4 || !key || !queryToGet) {return;}
 
 	int comparison = compare (r->values[keyIndex], key);
 	bool addToList = false;
@@ -2217,6 +2222,20 @@ void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int qu
 	selectWhere(r->next, queryToGet, keyIndex, querySelector, key);
 	return;
 }
+
+void selectNoFilter(NodeRecord r, QueryResultList* queryToGet){
+	if (!r || !queryToGet) {return;}
+
+	QueryResultList newElement;
+	if (!(newElement = (QueryResultList) malloc (sizeof ( struct QueryResultElement )))) {return;}
+	newElement->next = (*queryToGet);
+	*queryToGet = newElement;
+	newElement->occurrence=1;
+	newElement->nodeValue = r;
+	selectNoFilter(r->next, queryToGet);
+	return;
+}
+
 
 int searchColumnIndex(Table T, char* key){
 	int i = 0;
@@ -2354,5 +2373,41 @@ void bubbleDownHeapElement(TableHeapElement el){
 			if(i != min)
 				swapHeapElement(i, min);
 		}
-	}while(i != min);
+	} while(i != min);
+}
+
+bool checkQueryIntegrity(Table t, ParseResult res){
+
+	if(!t || !res){return false;}
+	int qt = res->queryType, i, j;
+	bool isIntact = true, tempFound;
+
+	if ( compare(t->name, res->tableName) != EQUAL) {isIntact = false;}
+	if ( res->queryType == INSERT_INTO){
+		
+	}
+	switch(res->queryType){
+		case(INSERT_INTO):
+			if (t->nColumns != res->nColumns) {isIntact = false; break;}
+			for(i=0; i < t->nColumns; i++){
+				if ( compare(t->columns[i], res->columns[i]) != EQUAL) {isIntact = false; break;}
+			}
+			break;
+		//  in the following cases i have to check that columns that are requested to be printed really are in the table
+		case(WHERE):
+		case(ORDER_BY):
+		case(GROUP_BY):
+		case(SELECT_WITHOUT_FILTERS):
+			if(res->nColumns > t->nColumns){isIntact = false; break;}
+			for (i=0; i < res->nColumns; i++){
+				tempFound=false;
+				for(j=0; j < t->nColumns; j++){
+					if(compare(t->columns[i], res->columns[j]) == EQUAL){tempFound=true;break;}
+				}
+				if(!tempFound){isIntact = false; break;}
+			}
+		default: break;
+	}
+
+	return isIntact;
 }
