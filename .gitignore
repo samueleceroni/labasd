@@ -13,3 +13,5 @@ src/test/rbt/*.out
 src/test/test.c
 src/test/tables/*.txt
 src/test/log/*.txt
+
+src/*.txt
