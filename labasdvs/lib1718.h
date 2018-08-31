@@ -9,15 +9,6 @@ Output:
 -bool: true/false, se l'esecuzione della query e' andata a buon fine o meno (presenza di eventuali errori)
 */
 
-// DataBase Part
-
-// struct DatabaseHead{
-// 	struct TableDB* table;
-// 	struct DatabaseHead* next;
-// };
-
-//typedef struct DatabaseHead* Database;
-
 //Memory management structs
 struct TableHeapElement {
 	struct TableDB* tableReference;
@@ -37,6 +28,7 @@ struct TableHeap {
 typedef struct TableHeap* TableHeap;
 //End of memory management structs
 
+// DataBase Part
 // A Table of the Database
 struct TableDB {
 	char* name;
@@ -135,7 +127,10 @@ void deallocateTable(Database db, Table t);
 NodeRecord createRecord(char** values, int nColumns);
 bool insertRecordDb(Table t, NodeRecord r);
 
+//Selections
 QueryResultList querySelect(Table t, ParseResult res);
+
+//Checker
 bool checkQueryIntegrity(Table t, ParseResult res);
 
 // Parser

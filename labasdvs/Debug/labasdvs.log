@@ -1,7 +1,5 @@
 ﻿  main.c
   lib1718.c
-c:\users\samuele ceroni\projects\official\labasd\labasdvs\lib1718.c(1423): error C2057: expected constant expression
-c:\users\samuele ceroni\projects\official\labasd\labasdvs\lib1718.c(1423): error C2466: cannot allocate an array of constant size 0
-c:\users\samuele ceroni\projects\official\labasd\labasdvs\lib1718.c(1423): error C2133: 'buffer': unknown size
-c:\users\samuele ceroni\projects\official\labasd\labasdvs\lib1718.c(1807): warning C4018: '>': signed/unsigned mismatch
   Generating Code...
+  labasdvs.vcxproj -> C:\Users\Samuele Ceroni\Projects\official\labasd\labasdvs\Debug\labasdvs.exe
+  labasdvs.vcxproj -> C:\Users\Samuele Ceroni\Projects\official\labasd\labasdvs\Debug\labasdvs.pdb (Partial PDB)
