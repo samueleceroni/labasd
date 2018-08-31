@@ -535,9 +535,9 @@ int parseQueryType(char * query) {
 		SELECT
 	};
 
-	int i = 0, j = 0;
+	int i=0, j=0;
 
-	for (i = 0; i<3; i++) { 
+	for (i=0; i<3; i++) { 
 		for (j = 0; query[j] && queryType[i][j]; j++) {
 			if (query[j] != queryType[i][j]) {
 				break;
@@ -822,8 +822,8 @@ ParseResult parseQuerySelect(char * query, ParseResult result) {
 
 	query++;
 
-			 // SELECT * FROM ...
-			 //        ^
+	// SELECT * FROM ...
+	//        ^
 	if (*query == '*') {
 		result->nColumns = 1;
 
@@ -1129,7 +1129,6 @@ ParseResult parseQuery(char* queryString) {
 	char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
 
 	int queryType = parseQueryType(queryString);
-	result->queryType = queryType;
 
 	switch (queryType) {
 	case CREATE_TABLE:
@@ -1143,7 +1142,6 @@ ParseResult parseQuery(char* queryString) {
 		break;
 	default:
 		unsuccessfulParse(result, 1);
-		return result;
 	}
 
 	return result;
