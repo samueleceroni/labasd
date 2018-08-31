@@ -2114,7 +2114,6 @@ void bubbleDownHeapElement(TableHeapElement el) {
 }
 
 bool checkQueryIntegrity(Table t, ParseResult res) {
-
 	if (!t || !res) { return false; }
 	int qt = res->queryType, i, j;
 	bool isIntact = true, tempFound;
@@ -2148,10 +2147,10 @@ bool checkQueryIntegrity(Table t, ParseResult res) {
 	case(SELECT_WITHOUT_FILTERS):
 		if (res->nColumns > t->nColumns) { isIntact = false; break; }
 		if (res->nColumns == 1 && compare(res->columns[0], "*") == EQUAL) { isIntact = true; break; }
-		for (i = 0; i < t->nColumns; i++) {
+		for (i = 0; i < res->nColumns; i++) {
 			tempFound = false;
-			for (j = 0; j < res->nColumns; j++) {
-				if (compare(t->columns[i], res->columns[j]) == EQUAL) { tempFound = true; break; }
+			for (j = 0; j < t->nColumns; j++) {
+				if (compare(t->columns[j], res->columns[i]) == EQUAL) { tempFound = true; break; }
 			}
 			if (!tempFound) { isIntact = false; break; }
 		}
