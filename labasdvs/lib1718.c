@@ -2066,7 +2066,7 @@ int deallocateFurthestTable() {
 	if (furthest == NULL)
 		return 0;
 	int res = furthest->memorySize;
-	deallocateTable(database, furthest->tableReference); // The pointer to db is needed!
+	deallocateTable(database, furthest->tableReference);
 	free(furthest);
 	return res;
 }
