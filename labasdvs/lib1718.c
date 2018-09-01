@@ -2075,8 +2075,8 @@ void swapHeapElement(int a, int b) {
 	TableHeapElement tmp = memoryHeap->array[a];
 	memoryHeap->array[a] = memoryHeap->array[b];
 	memoryHeap->array[b] = tmp;
-	memoryHeap->array[a]->position = b;
-	memoryHeap->array[b]->position = a;
+	memoryHeap->array[a]->position = a;
+	memoryHeap->array[b]->position = b;
 }
 
 void bubbleUpHeapElement(TableHeapElement el) {
