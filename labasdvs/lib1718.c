@@ -44,7 +44,7 @@
 #define LOG_FILE_NAME "query_results.txt"
 
 //Memory usage max threshold
-#define MEMORY_THRESHOLD 200000
+#define MEMORY_THRESHOLD 100000
 
 static Database database = NULL;
 static TableHeap memoryHeap = NULL;
@@ -1415,6 +1415,7 @@ Table loadTableFromFile(Database db, char* name) {
 		columns[nColumns - 1] = column;
 	} while (c != endlineSeparator);
 
+
 	c = fgetc(f);
 
 	t = createTableDb(db, name, columns, nColumns);
@@ -1423,6 +1424,12 @@ Table loadTableFromFile(Database db, char* name) {
 		fclose(f);
 		return NULL;
 	}
+
+	int i;
+	for (i = 0; i < nColumns; i++) {
+		free(columns[i]);
+	}
+	free(columns);
 
 	//Reading rows
 	char rowHeader[] = { "ROW " };
@@ -1434,7 +1441,6 @@ Table loadTableFromFile(Database db, char* name) {
 		return t;
 	}
 
-	int i;
 	do {
 		//Check row header
 		buffer = (char*)realloc(buffer, sizeof(char) * (strlen(rowHeader) + 1));
@@ -1446,7 +1452,7 @@ Table loadTableFromFile(Database db, char* name) {
 			return NULL;
 		}
 
-		row = (char**)allocateBytes(sizeof(char*) * nColumns);
+		row = (char**)malloc(sizeof(char*) * nColumns);
 
 		//Reding row
 		for (i = 0; i < nColumns; i++) {
@@ -1492,6 +1498,13 @@ Table loadTableFromFile(Database db, char* name) {
 			fclose(f);
 			return NULL;
 		}
+
+		int i;
+		for (i = 0; i < nColumns; i++) {
+			free(row[i]);
+		}
+		free(row);
+
 		c = fgetc(f);
 		if (c != '\n' && c == EOF)
 			break;
