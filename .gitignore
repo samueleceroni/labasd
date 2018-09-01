@@ -19,3 +19,4 @@ labasdvs/Debug/*
 #ignore vs2017 files
 labasdvs/.vs/labasdvs/v15/
 labasdvs/labasdvs.vcxproj.user
+labasdvs/*.out
