@@ -288,31 +288,36 @@ void removeNodeRBT(Tree T, Node z) {
 	if (!T || !z) {
 		return;
 	}
-	Node x, y = z;
+	Node x = NULL, y = z;
 	bool yOriginalColor = y->color;
 	if (!z->left) {
 		x = z->right;
-		treeTransplant(T, z, z->right);
+		treeTransplant(T, z, x);
 	}
 	else if (!z->right) {
 		x = z->left;
-		treeTransplant(T, z, z->left);
+		treeTransplant(T, z, x);
 	}
 	else {
 		y = treeMinimum(z->right);
 		yOriginalColor = y->color;
 		x = y->right;
+		bool changeRight = false;
 		if (x && y->p == z) {
 			x->p = y;
 		}
 		else {
 			treeTransplant(T, y, y->right);
+			changeRight = true;
+		}
+		treeTransplant(T, z, y);
+		if (changeRight) {
 			y->right = z->right;
 			if (y->right) {
 				y->right->p = y;
 			}
 		}
-		treeTransplant(T, z, y);
+
 		y->left = z->left;
 		y->left->p = y;
 		y->color = z->color;
@@ -320,34 +325,38 @@ void removeNodeRBT(Tree T, Node z) {
 	if (yOriginalColor == BLACK) {
 		rbtDeleteFixup(T, x);
 	}
-
 }
 
 void rbtDeleteFixup(Tree T, Node x) {
-	Node w;
+
 	while (T && x && (x != T->root) && x->color == BLACK) {
+		Node w = NULL;
 		if (x == x->p->left) { // i don't check the existence of x->p because it's not the root
 			w = x->p->right;
-			if (w->color == RED) {
+			if (w && w->color == RED) {
 				w->color = BLACK;
 				x->p->color = RED;
 				leftRotate(T, x->p);
 				w = x->p->right;
 			}
-			if (w->left && w->left->color == BLACK && w->right && w->right->color == BLACK) {
+			if (w && (!w->left || w->left->color == BLACK) && (!w->right || w->right->color == BLACK)) {
 				w->color = RED;
 				x = x->p;
 			}
 			else {
-				if (w->right && w->left && w->right->color == BLACK) {
-					w->left->color = BLACK;
+				if (w && (!w->right || w->right->color == BLACK)) {
+					if (w->left) {
+						w->left->color = BLACK;
+					}
 					w->color = RED;
 					rightRotate(T, w);
 					w = x->p->right;
 				}
-				w->color = x->p->color;
+				if (w) {
+					w->color = x->p->color;
+				}
 				x->p->color = BLACK;
-				if (w->right) {
+				if (w && w->right) {
 					w->right->color = BLACK;
 				}
 				leftRotate(T, x->p);
@@ -362,20 +371,24 @@ void rbtDeleteFixup(Tree T, Node x) {
 				rightRotate(T, x->p);
 				w = x->p->left;
 			}
-			if (w->left && w->left->color == BLACK && w->right && w->right->color == BLACK) {
+			if (w && (!w->left || w->left->color == BLACK) && (!w->right || w->right->color == BLACK)) {
 				w->color = RED;
 				x = x->p;
 			}
 			else {
-				if (w->left && w->right && w->left->color == BLACK) {
-					w->right->color = BLACK;
+				if (w && (!w->left || w->left->color == BLACK)) {
+					if (w->right) {
+						w->right->color = BLACK;
+					}
 					w->color = RED;
 					rightRotate(T, w);
 					w = x->p->left;
 				}
-				w->color = x->p->color;
+				if (w) {
+					w->color = x->p->color;
+				}
 				x->p->color = BLACK;
-				if (w->left) {
+				if (w && w->left) {
 					w->left->color = BLACK;
 				}
 				rightRotate(T, x->p);
@@ -387,7 +400,6 @@ void rbtDeleteFixup(Tree T, Node x) {
 		x->color = BLACK;
 	}
 }
-
 Node treeMinimum(Node x) {
 	while (x && x->left) {
 		x = x->left;
@@ -1832,52 +1844,61 @@ bool insertNodeTree(Tree T, Node z) {
 bool rbtInsertFixup(Tree T, Node z) {
 	if (!T || !z) { return false; }
 
-	Node y;
-
-	while (z->p && z->p->color == RED) {
-		if (z->p == z->p->p->left) {
-			y = z->p->p->right;
-			if (y && y->color == RED) {
-				z->p->color = BLACK;
-				y->color = BLACK;
-				z->p->p->color = RED;
-				z = z->p->p;
-			}
-			else {
-				if (z == z->p->right) {
-					z = z->p;
-					if (!(leftRotate(T, z))) { return false; }
+	if (z->p) {
+		Node parent = z->p;
+		while (parent && parent->color == RED) {
+			Node gp = parent->p;
+			if (gp) {
+				Node uncle = NULL;
+				if (parent == gp->left) {
+					uncle = gp->right;
 				}
-				z->p->color = BLACK;
-				z->p->p->color = RED;
-				if (!(rightRotate(T, z->p->p))) { return false; }
-			}
-		}
-		else {
-			y = z->p->p->left;
-			if (y && y->color == RED) {
-				z->p->color = BLACK;
-				y->color = BLACK;
-				z->p->p->color = RED;
-				z = z->p->p;
-			}
-			else {
-				if (z == z->p->left) {
-					z = z->p;
-					if (!(rightRotate(T, z))) { return false; }
+				else {
+					uncle = gp->left;
 				}
-				z->p->color = BLACK;
-				z->p->p->color = RED;
-				if (!(leftRotate(T, z->p->p))) { return false; }
+				if (uncle && uncle->color == RED) {
+					parent->color = BLACK;
+					uncle->color = BLACK;
+					if (gp->p) {
+						gp->color = RED;
+					}
+					z = gp;
+					if (z) {
+						parent = z->p;
+					}
+				}
+				else if (parent == gp->left) {
+					if (z == parent->right) {
+						z = parent;
+						leftRotate(T, z);
+						parent = z->p;
+					}
+					parent->color = BLACK;
+					gp->color = RED;
+					rightRotate(T, gp);
+				}
+				else {
+					if (z == parent->left) {
+						z = parent;
+						rightRotate(T, z);
+						parent = z->p;
+					}
+					parent->color = BLACK;
+					gp->color = RED;
+					leftRotate(T, gp);
+				}
 			}
 		}
 	}
-	T->root->color = BLACK;
+	z->color = BLACK;
 	return true;
 }
 
+
 bool leftRotate(Tree T, Node x) {
 	if (!T || !x) { return false; }
+	if (!x->right) { return true; }
+
 	Node y = x->right;
 	x->right = y->left;
 	if (y->left != NULL)
@@ -1897,10 +1918,10 @@ bool leftRotate(Tree T, Node x) {
 
 bool rightRotate(Tree T, Node x) {
 	if (!T || !x) { return false; }
-
+	if (!x->left) { return true; }
 	Node y = x->left;
 	x->left = y->right;
-	if (y->right != NULL)
+	if (y->right)
 		y->right->p = x;
 	y->p = x->p;
 	if (x->p == NULL)
@@ -2012,7 +2033,6 @@ void selectNoFilter(NodeRecord r, QueryResultList* queryToGet) {
 	selectNoFilter(r->next, queryToGet);
 	return;
 }
-
 
 int searchColumnIndex(Table T, char* key) {
 	int i = 0;
