@@ -26,7 +26,6 @@
 #define SELECT 5
 #define NO_QUERY 6
 
-
 // Query order
 #define ASC 0
 #define DESC 1
@@ -45,13 +44,12 @@
 #define LOG_FILE_NAME "query_results.txt"
 
 //Memory usage max threshold
-#define MEMORY_THRESHOLD 256000000
+#define MEMORY_THRESHOLD 200000
 
 static Database database = NULL;
 static TableHeap memoryHeap = NULL;
 static unsigned long long int priorityCounter = 1;
 static Table currentTableUsed = NULL;
-
 
 // Secondary functions prototypes
 bool insertNodeTree(Tree T, Node z);
@@ -203,7 +201,7 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns) 
 
 	// Try to allocate each string and copy all of them
 	for (i = 0; i<nColumns; i++) {
-		if (!(newTable->columns[i] = (char*)allocateBytes(strlen(columns[i]) * sizeof(char)))) { return NULL; }
+		if (!(newTable->columns[i] = (char*)allocateBytes((strlen(columns[i]) + 1) * sizeof(char)))) { return NULL; }
 		strcpy(newTable->columns[i], columns[i]);
 	}
 
@@ -323,7 +321,7 @@ void removeNodeRBT(Tree T, Node z) {
 		rbtDeleteFixup(T, x);
 	}
 
-} // TOCHECK
+}
 
 void rbtDeleteFixup(Tree T, Node x) {
 	Node w;
@@ -388,7 +386,7 @@ void rbtDeleteFixup(Tree T, Node x) {
 	if (x) {
 		x->color = BLACK;
 	}
-} // TOCHECK
+}
 
 Node treeMinimum(Node x) {
 	while (x && x->left) {
@@ -425,7 +423,7 @@ NodeRecord createRecord(char** values, int nColumns) {
 	newRecord->next = NULL;
 	if (!(newRecord->values = (char**)allocateBytes(nColumns * sizeof(char*)))) { return NULL; }
 	for (i = 0; i<nColumns; i++) {
-		if (!(newRecord->values[i] = (char*)allocateBytes(strlen(values[i]) * sizeof(char)))) { return NULL; }
+		if (!(newRecord->values[i] = (char*)allocateBytes((strlen(values[i]) +1) * sizeof(char)))) { return NULL; }
 		strcpy(newRecord->values[i], values[i]);
 	}
 	return newRecord;
@@ -1635,7 +1633,7 @@ void initMemoryHeap() {
 TableHeapElement insertMemoryHeap(Table t) {
 	if (memoryHeap->last == memoryHeap->size) {
 		memoryHeap->size *= 2;
-		memoryHeap->array = (TableHeapElement*)realloc(memoryHeap->array, memoryHeap->size * sizeof(TableHeapElement) + 1);
+		memoryHeap->array = (TableHeapElement*)realloc(memoryHeap->array, memoryHeap->size * sizeof(TableHeapElement) + sizeof(TableHeapElement));
 		if (memoryHeap->array == NULL)
 			return NULL;
 	}
@@ -2052,8 +2050,9 @@ void* allocateBytes(int bytes) {
 		res = malloc(bytes);
 	}
 
-	if (currentTableUsed != NULL)
+	if (currentTableUsed) {
 		currentTableUsed->heapReference->memorySize += bytes;
+	}
 
 	return res;
 }

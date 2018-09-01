@@ -15,14 +15,17 @@ void flushInput() {
 }
 
 int main() {
+	int i;
+	FILE *f = fopen("queries.txt", "r");
 	bool exit = false;
-	while (!exit) {
-		printf("Inserire la query da lanciare:\n");
+	//while (!exit) {
+	for(i=0; i<12000; i++){
+		if(i%10 == 0) printf("%d\n", i);
 		char buffer[201];
-		fgets(buffer, 200, stdin);
+		fgets(buffer, 200, f);
 		removeReturn(buffer);
 		bool res = executeQuery(buffer);
-		if (res)
+/*		if (res)
 			printf("Query andata a buon fine!\n");
 		else
 			printf("Query non andata a buon fine...\n");
@@ -31,6 +34,7 @@ int main() {
 		if (resp == 'N')
 			exit = true;
 		flushInput();
+*/
 	}
 	return 0;
 }
