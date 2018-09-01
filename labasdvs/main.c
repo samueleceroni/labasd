@@ -20,7 +20,7 @@ int main() {
 	bool exit = false;
 	//while (!exit) {
 	for(i=0; i<12000; i++){
-		if(i%10 == 0) printf("%d\n", i);
+		if(i%100 == 0) printf("%d\n", i);
 		char buffer[201];
 		fgets(buffer, 200, f);
 		removeReturn(buffer);
