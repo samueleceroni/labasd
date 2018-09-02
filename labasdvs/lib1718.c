@@ -44,7 +44,7 @@
 #define LOG_FILE_NAME "query_results.txt"
 
 //Memory usage max threshold
-#define MEMORY_THRESHOLD 100000
+#define MEMORY_THRESHOLD 16000000
 
 static Database database = NULL;
 static TableHeap memoryHeap = NULL;
@@ -106,6 +106,7 @@ bool executeQuery(char* query) {
 	}
 	ParseResult pRes = parseQuery(query);
 	if (!pRes->success) {
+		freeParseResult(pRes);
 		return false;
 	}
 
@@ -122,37 +123,43 @@ bool executeQuery(char* query) {
 
 	if (pRes->queryType == CREATE_TABLE) {
 		if (t != NULL) {
+			freeParseResult(pRes);
 			return false;
 		}
 		if (!createTableFile(pRes->tableName, pRes->columns, pRes->nColumns)) {
+			freeParseResult(pRes);
 			return false;
 		}
 		t = createTableDb(database, pRes->tableName, pRes->columns, pRes->nColumns);
 		if (t == NULL) {
+			freeParseResult(pRes);
 			return false;
 		}
 	}
 	else if (pRes->queryType == INSERT_INTO) {
 		if (t == NULL) {
+			freeParseResult(pRes);
 			return false;
 		}
 		if (!insertIntoTableFile(pRes->tableName, pRes->columns, pRes->fieldValues, pRes->nColumns)) {
+			freeParseResult(pRes);
 			return false;
 		}
 
 		if (!insertRecordDb(t, createRecord(pRes->fieldValues, pRes->nColumns))) {
+			freeParseResult(pRes);
 			return false;
 		}
 	}
 	else
 	{
 		//SELECT
-		QueryResultList selectResult;
 		if (t == NULL) {
+			freeParseResult(pRes);
 			return false;
 		}
 
-		selectResult = querySelect(t, pRes);
+		QueryResultList selectResult = querySelect(t, pRes);
 		generateLog(pRes, query, selectResult, database);
 
 		freeQueryResultList(selectResult);
