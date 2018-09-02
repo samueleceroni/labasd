@@ -15,11 +15,11 @@ void flushInput() {
 }
 
 int main() {
-	int i, nFalse = 0; 
+	int i=0, nFalse = 0; 
 	FILE *f = fopen("queries.txt", "r");
 	bool exit = false;
 	//while (!exit) {
-	for(i=0; i<12000; i++){
+/*	for(i=0; i<12000; i++){
 		char buffer[201];
 		fgets(buffer, 200, f);
 		removeReturn(buffer);
@@ -35,8 +35,9 @@ int main() {
 		if (resp == 'N')
 			exit = true;
 		flushInput();
-*/
+
 	}
+*/
 	i++;
 	bool res = executeQuery("INSERT INTO huge (a,b,c,d,e,f,g,h,i,j) VALUES (a,b,a,b,a,b,a,b,a,b);");
 	if (i % 100 == 0) printf("%d: %d\n", i, getN());
@@ -45,6 +46,11 @@ int main() {
 	res = executeQuery("SELECT * FROM huge;");
 	if (i % 100 == 0) printf("%d: %d\n", i, getN());
 	if (!res) { nFalse++; printf("%d:FALSE:%s\n", i, "SELECT * FROM huge;"); }
+	i++;
+	res = executeQuery("SELECT * FROM huge ORDER BY a ASC;");
+	if (i % 100 == 0) printf("%d: %d\n", i, getN());
+	if (!res) { nFalse++; printf("%d:FALSE:%s\n", i, "SELECT * FROM huge;"); }
+	i++;
 
 
 	printf("%d\n", nFalse);

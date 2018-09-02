@@ -96,18 +96,6 @@ void bubbleUpHeapElement(TableHeapElement el);
 void bubbleDownHeapElement(TableHeapElement el);
 void swapHeapElement(int a, int b);
 
-getNodeN(Node x) {
-	if (!x) { return 0; }
-	return getNodeN(x->left) + getNodeN(x->right) + 1;
-}
-
-
-int getN() {
-	if (!database) { return 0; }
-	return getNodeN(database->root);
-}
-
-
 //Main functions implementations
 bool executeQuery(char* query) {
 	if (database == NULL) {
@@ -437,17 +425,18 @@ void deleteAllTreeRecordNodes(Node x) {  // specifically for RecordNodes because
 }
 
 void deleteAllRecords(NodeRecord n, int nColumns) {
-	if (!n) { return; }
-	deleteAllRecords(n->next, nColumns);
-	// deallocate the content of each Record
-	int i;
-	for (i = 0; i<nColumns; i++) {
-		free(n->values[i]);
+	while (n) {
+		// deallocate the content of each Record
+		int i;
+		for (i = 0; i < nColumns; i++) {
+			free(n->values[i]);
+		}
+		free(n->values);
+		NodeRecord nextTable = n->next;
+		// deallocate the Record itself
+		free(n);
+		n = nextTable;
 	}
-	free(n->values);
-
-	// deallocate the Record itself
-	free(n);
 }
 
 NodeRecord createRecord(char** values, int nColumns) {
@@ -2018,55 +2007,56 @@ void countForGroupBy(int key, QueryResultList queryToGet) {
 void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* key) {
 	if (!r || keyIndex<0 || querySelector<0 || querySelector>4 || !key || !queryToGet) { return; }
 
-	int comparison = compare(r->values[keyIndex], key);
-	bool addToList = false;
+	while (r) {
+		int comparison = compare(r->values[keyIndex], key);
+		bool addToList = false;
 
-	switch (querySelector) {
-	case(GREATER):
-		if (comparison == GREATER) { addToList = true; }
-		break;
+		switch (querySelector) {
+		case(GREATER):
+			if (comparison == GREATER) { addToList = true; }
+			break;
 
-	case(GREATER_EQUAL):
-		if (comparison == GREATER || comparison == EQUAL) { addToList = true; }
-		break;
+		case(GREATER_EQUAL):
+			if (comparison == GREATER || comparison == EQUAL) { addToList = true; }
+			break;
 
-	case(EQUAL):
-		if (comparison == EQUAL) { addToList = true; }
-		break;
+		case(EQUAL):
+			if (comparison == EQUAL) { addToList = true; }
+			break;
 
-	case(LESSER_EQUAL):
-		if (comparison == LESSER || comparison == EQUAL) { addToList = true; }
-		break;
+		case(LESSER_EQUAL):
+			if (comparison == LESSER || comparison == EQUAL) { addToList = true; }
+			break;
 
-	case(LESSER):
-		if (comparison == LESSER) { addToList = true; }
-		break;
-	default:
-		break;
+		case(LESSER):
+			if (comparison == LESSER) { addToList = true; }
+			break;
+		default:
+			break;
+		}
+		if (addToList) {
+			QueryResultList newElement;
+			if (!(newElement = (QueryResultList)malloc(sizeof(struct QueryResultElement)))) { return; }
+			newElement->next = (*queryToGet);
+			*queryToGet = newElement;
+			newElement->occurrence = 1;
+			newElement->nodeValue = r;
+		}
+		r = r->next;
 	}
-	if (addToList) {
+}
+
+void selectNoFilter(NodeRecord r, QueryResultList* queryToGet) {
+	if (!r || !queryToGet) { return; }
+	while (r) {
 		QueryResultList newElement;
 		if (!(newElement = (QueryResultList)malloc(sizeof(struct QueryResultElement)))) { return; }
 		newElement->next = (*queryToGet);
 		*queryToGet = newElement;
 		newElement->occurrence = 1;
 		newElement->nodeValue = r;
+		r = r->next;
 	}
-	selectWhere(r->next, queryToGet, keyIndex, querySelector, key);
-	return;
-}
-
-void selectNoFilter(NodeRecord r, QueryResultList* queryToGet) {
-	if (!r || !queryToGet) { return; }
-
-	QueryResultList newElement;
-	if (!(newElement = (QueryResultList)malloc(sizeof(struct QueryResultElement)))) { return; }
-	newElement->next = (*queryToGet);
-	*queryToGet = newElement;
-	newElement->occurrence = 1;
-	newElement->nodeValue = r;
-	selectNoFilter(r->next, queryToGet);
-	return;
 }
 
 int searchColumnIndex(Table T, char* key) {
