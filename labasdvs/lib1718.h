@@ -112,7 +112,7 @@ bool executeQuery(char*);
 // End of General Part
 
 // DataBase Part
-void initDatabase(Database* db);
+void initDatabase();
 
 // Memory Part
 void initMemoryHeap();
