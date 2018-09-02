@@ -15,17 +15,18 @@ void flushInput() {
 }
 
 int main() {
-	int i;
+	int i, nFalse = 0; 
 	FILE *f = fopen("queries.txt", "r");
 	bool exit = false;
 	//while (!exit) {
 	for(i=0; i<12000; i++){
-		if(i%100 == 0) printf("%d\n", i);
 		char buffer[201];
 		fgets(buffer, 200, f);
 		removeReturn(buffer);
 		bool res = executeQuery(buffer);
-/*		if (res)
+		if (i % 100 == 0) printf("%d: %d\n", i, getN());
+		if (!res) { nFalse++; printf("%d:FALSE:%s\n", i, buffer);}
+		/*		if (res)
 			printf("Query andata a buon fine!\n");
 		else
 			printf("Query non andata a buon fine...\n");
@@ -36,5 +37,17 @@ int main() {
 		flushInput();
 */
 	}
+	i++;
+	bool res = executeQuery("INSERT INTO huge (a,b,c,d,e,f,g,h,i,j) VALUES (a,b,a,b,a,b,a,b,a,b);");
+	if (i % 100 == 0) printf("%d: %d\n", i, getN());
+	if (!res) { nFalse++; printf("%d:FALSE:%s\n", i, "INSERT INTO huge (a,b,c,d,e,f,g,h,i,j) VALUES (a,b,a,b,a,b,a,b,a,b);"); }
+	i++;
+	res = executeQuery("SELECT * FROM huge;");
+	if (i % 100 == 0) printf("%d: %d\n", i, getN());
+	if (!res) { nFalse++; printf("%d:FALSE:%s\n", i, "SELECT * FROM huge;"); }
+
+
+	printf("%d\n", nFalse);
+	system("pause");
 	return 0;
 }

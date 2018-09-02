@@ -96,6 +96,18 @@ void bubbleUpHeapElement(TableHeapElement el);
 void bubbleDownHeapElement(TableHeapElement el);
 void swapHeapElement(int a, int b);
 
+getNodeN(Node x) {
+	if (!x) { return 0; }
+	return getNodeN(x->left) + getNodeN(x->right) + 1;
+}
+
+
+int getN() {
+	if (!database) { return 0; }
+	return getNodeN(database->root);
+}
+
+
 //Main functions implementations
 bool executeQuery(char* query) {
 	if (database == NULL) {
@@ -106,6 +118,7 @@ bool executeQuery(char* query) {
 	}
 	ParseResult pRes = parseQuery(query);
 	if (!pRes->success) {
+		freeParseResult(pRes);
 		return false;
 	}
 
@@ -118,29 +131,38 @@ bool executeQuery(char* query) {
 		currentTableUsed = t;
 	}
 
-	if (t != NULL && !checkQueryIntegrity(t, pRes)) { return false; }
+	if (t != NULL && !checkQueryIntegrity(t, pRes)) {
+		freeParseResult(pRes);
+		return false;
+	}
 
 	if (pRes->queryType == CREATE_TABLE) {
 		if (t != NULL) {
+			freeParseResult(pRes);
 			return false;
 		}
 		if (!createTableFile(pRes->tableName, pRes->columns, pRes->nColumns)) {
+			freeParseResult(pRes);
 			return false;
 		}
 		t = createTableDb(database, pRes->tableName, pRes->columns, pRes->nColumns);
 		if (t == NULL) {
+			freeParseResult(pRes);
 			return false;
 		}
 	}
 	else if (pRes->queryType == INSERT_INTO) {
 		if (t == NULL) {
+			freeParseResult(pRes);
 			return false;
 		}
 		if (!insertIntoTableFile(pRes->tableName, pRes->columns, pRes->fieldValues, pRes->nColumns)) {
+			freeParseResult(pRes);
 			return false;
 		}
 
 		if (!insertRecordDb(t, createRecord(pRes->fieldValues, pRes->nColumns))) {
+			freeParseResult(pRes);
 			return false;
 		}
 	}
@@ -149,6 +171,7 @@ bool executeQuery(char* query) {
 		//SELECT
 		QueryResultList selectResult;
 		if (t == NULL) {
+			freeParseResult(pRes);
 			return false;
 		}
 
@@ -158,7 +181,6 @@ bool executeQuery(char* query) {
 		freeQueryResultList(selectResult);
 	}
 	freeParseResult(pRes);
-
 	return true;
 }
 
