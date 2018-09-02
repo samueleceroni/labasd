@@ -121,9 +121,9 @@ TableHeapElement extractMemoryHeap();
 void updatePriorityMemoryHeap(TableHeapElement element, unsigned long long int priority);
 
 // Table
-Table createTableDb(Database db, char* tableName, char** columns, int nColumns);
-Table searchTableDb(Database db, char* tableName);
-void deallocateTable(Database db, Table t);
+Table createTableDb(char* tableName, char** columns, int nColumns);
+Table searchTableDb(char* tableName);
+void deallocateTable(Table t);
 
 // Record, or Row of the Table
 NodeRecord createRecord(char** values, int nColumns);
@@ -141,9 +141,9 @@ void freeParseResult(ParseResult res);
 void freeQueryResultList(QueryResultList res);
 
 //Logger
-void generateLog(ParseResult pRes, char* query, QueryResultList records, Database db);
+void generateLog(ParseResult pRes, char* query, QueryResultList records);
 
 //File part
 bool createTableFile(char* name, char** columns, int nColumns);
-Table loadTableFromFile(Database db, char* name);
+Table loadTableFromFile(char* name);
 bool insertIntoTableFile(char* name, char** columns, char** values, int nColumns);
