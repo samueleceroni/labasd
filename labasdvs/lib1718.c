@@ -1214,10 +1214,10 @@ void freeParseResult(ParseResult res) {
 }
 
 void freeQueryResultList(QueryResultList res) {
-	if (res != NULL) {
-		freeQueryResultList(res->next);
+	while (res != NULL) {
+		QueryResultList next = res->next;
 		free(res);
-		res = NULL;
+		res = next;
 	}
 }
 
