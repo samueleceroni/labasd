@@ -122,9 +122,9 @@ bool executeQuery(char* query) {
 		return false;
 	}
 
-	Table t = searchTableDb(database, pRes->tableName);
+	Table t = searchTableDb(pRes->tableName);
 	if (t == NULL) {
-		t = loadTableFromFile(database, pRes->tableName);
+		t = loadTableFromFile(pRes->tableName);
 	}
 	else {
 		updatePriorityMemoryHeap(t->heapReference, priorityCounter++);
@@ -145,7 +145,7 @@ bool executeQuery(char* query) {
 			freeParseResult(pRes);
 			return false;
 		}
-		t = createTableDb(database, pRes->tableName, pRes->columns, pRes->nColumns);
+		t = createTableDb(pRes->tableName, pRes->columns, pRes->nColumns);
 		if (t == NULL) {
 			freeParseResult(pRes);
 			return false;
@@ -175,7 +175,7 @@ bool executeQuery(char* query) {
 		}
 
 		QueryResultList selectResult = querySelect(t, pRes);
-		generateLog(pRes, query, selectResult, database);
+		generateLog(pRes, query, selectResult);
 
 		freeQueryResultList(selectResult);
 	}
@@ -191,10 +191,10 @@ void initDatabase(Database* db) {
 	(*db)->root = NULL;
 }
 
-Table createTableDb(Database db, char* tableName, char** columns, int nColumns) {
+Table createTableDb(char* tableName, char** columns, int nColumns) {
 	// creates the table and insert it into the DB
 	// Case: Trying to create an existing table
-	if (searchTableDb(db, tableName)) {
+	if (searchTableDb(tableName)) {
 		return NULL;
 	}
 	// Case table is not found in database
@@ -238,13 +238,13 @@ Table createTableDb(Database db, char* tableName, char** columns, int nColumns) 
 	}
 
 	Node newTableNode = createNodeRBT((void*)newTable);
-	if (insertNodeTree(db, newTableNode) == false) { return NULL; }
+	if (insertNodeTree(database, newTableNode) == false) { return NULL; }
 	newTable->recordList = NULL;
 	return newTable;
 }
 
-Table searchTableDb(Database db, char* tableName) {
-	Node currentTableNode = searchNodeTableDb(db->root, tableName);
+Table searchTableDb(char* tableName) {
+	Node currentTableNode = searchNodeTableDb(database->root, tableName);
 	if (currentTableNode == NULL || currentTableNode->nodeValue == NULL) {
 		return NULL;
 	}
@@ -269,11 +269,11 @@ Node searchNodeTableDb(Node currentTableNode, char* tableName) {
 	}
 }
 
-void deallocateTable(Database db, Table t) {
-	if (!db || !t) { return; }
-	Node nodeToBeDeallocated = searchNodeTableDb(db->root, t->name);
+void deallocateTable(Table t) {
+	if (!database || !t) { return; }
+	Node nodeToBeDeallocated = searchNodeTableDb(database->root, t->name);
 	if (nodeToBeDeallocated) {
-		removeNodeRBT(db, nodeToBeDeallocated);
+		removeNodeRBT(database,nodeToBeDeallocated);
 		// deallocate all the values in the table t
 		int i;
 		free(t->name);
@@ -421,6 +421,7 @@ void rbtDeleteFixup(Tree T, Node x) {
 		x->color = BLACK;
 	}
 }
+
 Node treeMinimum(Node x) {
 	while (x && x->left) {
 		x = x->left;
@@ -1221,11 +1222,11 @@ void freeQueryResultList(QueryResultList res) {
 	}
 }
 
-void generateLog(ParseResult pRes, char* query, QueryResultList records, Database db) {
+void generateLog(ParseResult pRes, char* query, QueryResultList records) {
 	char* buffer = (char*)malloc(sizeof(char) * (strlen(LOG_FILE_NAME) + 1));
 	strcpy(buffer, LOG_FILE_NAME);
 
-	Table t = searchTableDb(db, pRes->tableName);
+	Table t = searchTableDb(pRes->tableName);
 	if (t == NULL) {
 		free(buffer);
 		return;
@@ -1346,7 +1347,7 @@ bool createTableFile(char* name, char** columns, int nColumns) {
 	return true;
 }
 
-Table loadTableFromFile(Database db, char* name) {
+Table loadTableFromFile(char* name) {
 	char* buffer = (char*)malloc(sizeof(char) * (strlen(name) + 5));
 	strcpy(buffer, name);
 	strcat(buffer, ".txt");
@@ -1439,7 +1440,7 @@ Table loadTableFromFile(Database db, char* name) {
 
 	c = fgetc(f);
 
-	t = createTableDb(db, name, columns, nColumns);
+	t = createTableDb(name, columns, nColumns);
 	if (t == NULL) {
 		free(buffer);
 		fclose(f);
@@ -2120,7 +2121,7 @@ int deallocateFurthestTable() {
 	if (furthest == NULL)
 		return 0;
 	int res = furthest->memorySize;
-	deallocateTable(database, furthest->tableReference);
+	deallocateTable(furthest->tableReference);
 	free(furthest);
 	return res;
 }
