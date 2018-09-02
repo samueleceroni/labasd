@@ -128,7 +128,7 @@ void swapHeapElement(int a, int b);
 // General Part
 bool executeQuery(char* query) {
 	if (database == NULL) {
-		initDatabase(&database);
+		initDatabase();
 	}
 	if (memoryHeap == NULL) {
 		initMemoryHeap();
@@ -201,12 +201,12 @@ bool executeQuery(char* query) {
 }
 
 // DataBase Part
-void initDatabase(Database* db) {
+void initDatabase() {
 	// Trying to allocate the database structure
-	(*db) = (Database)malloc(sizeof(struct RBTree));
+	database = (Database)malloc(sizeof(struct RBTree));
 
-	(*db)->key = TABLE;
-	(*db)->root = NULL;
+	database->key = TABLE;
+	database->root = NULL;
 }
 
 Table createTableDb(char* tableName, char** columns, int nColumns) {

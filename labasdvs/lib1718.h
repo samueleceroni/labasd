@@ -109,7 +109,7 @@ typedef struct ParseResult* ParseResult;
 bool executeQuery(char*);
 
 // DataBase Part
-void initDatabase(Database* db);
+void initDatabase();
 Table createTableDb(char* tableName, char** columns, int nColumns);
 Table searchTableDb(char* tableName);
 void deallocateTable(Table t);
