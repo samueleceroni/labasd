@@ -44,7 +44,7 @@
 #define LOG_FILE_NAME "query_results.txt"
 
 //Memory usage max threshold
-#define MEMORY_THRESHOLD 100000
+#define MEMORY_THRESHOLD 16000000
 
 static Database database = NULL;
 static TableHeap memoryHeap = NULL;
@@ -169,13 +169,12 @@ bool executeQuery(char* query) {
 	else
 	{
 		//SELECT
-		QueryResultList selectResult;
 		if (t == NULL) {
 			freeParseResult(pRes);
 			return false;
 		}
 
-		selectResult = querySelect(t, pRes);
+		QueryResultList selectResult = querySelect(t, pRes);
 		generateLog(pRes, query, selectResult, database);
 
 		freeQueryResultList(selectResult);
