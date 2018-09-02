@@ -101,42 +101,35 @@ struct ParseResult {
 
 typedef struct ParseResult* ParseResult;
 
-///////////////
-/* Functions */
-///////////////
+//===========//
+// Functions //
+//===========//
 
 // General Part
 bool executeQuery(char*);
-// End of General Part
 
 // DataBase Part
 void initDatabase(Database* db);
+Table createTableDb(char* tableName, char** columns, int nColumns);
+Table searchTableDb(char* tableName);
+void deallocateTable(Table t);
+NodeRecord createRecord(char** values, int nColumns);
+bool insertRecordDb(Table t, NodeRecord r);
+QueryResultList querySelect(Table t, ParseResult res);
 
 // Memory Part
 void initMemoryHeap();
 TableHeapElement insertMemoryHeap(Table t);
 TableHeapElement extractMemoryHeap();
 void updatePriorityMemoryHeap(TableHeapElement element, unsigned long long int priority);
-
-// Table
-Table createTableDb(char* tableName, char** columns, int nColumns);
-Table searchTableDb(char* tableName);
-void deallocateTable(Table t);
-
-// Record, or Row of the Table
-NodeRecord createRecord(char** values, int nColumns);
-bool insertRecordDb(Table t, NodeRecord r);
-
-//Selections
-QueryResultList querySelect(Table t, ParseResult res);
+void freeParseResult(ParseResult res);
+void freeQueryResultList(QueryResultList res);
 
 //Checker
 bool checkQueryIntegrity(Table t, ParseResult res);
 
 // Parser
 ParseResult parseQuery(char* queryString);
-void freeParseResult(ParseResult res);
-void freeQueryResultList(QueryResultList res);
 
 //Logger
 void generateLog(ParseResult pRes, char* query, QueryResultList records);

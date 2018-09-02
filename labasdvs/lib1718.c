@@ -1,12 +1,21 @@
+//=========//
+// Include //
+//=========//
+
+// Standard libraries
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
 
+// Header file for this library
 #include "lib1718.h"
 
-// Defines
+
+//=========//
+// Defines //
+//=========//
 
 // Query selectors
 #define EQUAL 0
@@ -40,36 +49,48 @@
 // Red Black Tree key type
 #define TABLE -2
 
-//Files
+// Files
 #define LOG_FILE_NAME "query_results.txt"
 
-//Memory usage max threshold
-#define MEMORY_THRESHOLD 16000000
+// Memory usage max threshold
+#define MEMORY_THRESHOLD 256000
+
+
+//=================================//
+// Declaration of global variables //
+//=================================//
 
 static Database database = NULL;
 static TableHeap memoryHeap = NULL;
 static unsigned long long int priorityCounter = 1;
 static Table currentTableUsed = NULL;
 
-// Secondary functions prototypes
+
+//================================//
+// Secondary functions prototypes //
+//================================//
+
+// Database
+Node createNodeRBT(void * r);
 bool insertNodeTree(Tree T, Node z);
 bool rbtInsertFixup(Tree T, Node z);
-Node createNodeRBT(void * r);
-void treeTransplant(Tree T, Node u, Node v);
 void removeNodeRBT(Tree T, Node z);
 void rbtDeleteFixup(Tree T, Node x);
+void treeTransplant(Tree T, Node u, Node v);
 Node treeMinimum(Node x);
 bool leftRotate(Tree T, Node x);
 bool rightRotate(Tree T, Node x);
-int searchColumnIndex(Table T, char* key);
+bool nodeCompare(int columnIndex, void * nodeA, void * nodeB);
 void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
-void countForGroupBy(int key, QueryResultList queryToGet);
 void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* keyName);
 void selectNoFilter(NodeRecord r, QueryResultList* queryToGet);
-Node searchNodeTableDb(Node currentTableNode, char* tableName);
+void countForGroupBy(int key, QueryResultList queryToGet);
 void deleteAllTreeRecordNodes(Node x);
 void deleteAllRecords(NodeRecord n, int nColumns);
+Node searchNodeTableDb(Node currentTableNode, char* tableName);
+int searchColumnIndex(Table T, char* key);
 
+// Parser
 bool charIsAllowed(char c, const char * forbiddenCharSet);
 ParseResult parseQuerySelect(char * query, ParseResult result);
 ParseResult parseQueryCreateTable(char * query, ParseResult result);
@@ -77,26 +98,34 @@ ParseResult parseQueryInsertInto(char * query, ParseResult result);
 ParseResult parseQuerySelectWHERE(char * query, ParseResult result);
 ParseResult parseQuerySelectORDERBY(char * query, ParseResult result);
 ParseResult parseQuerySelectGROUPBY(char * query, ParseResult result);
-
-
 double parseDouble(char * s);
+void unsuccessfulParse(ParseResult result, int errorCode);
+int parseQueryParameter(char * query, char ** parameter, const char * forbiddenCharSet);
+int parseQueryType(char * query);
+
+// Comparison
 int compare(char * a, char * b);
 int strCompare(char * a, char * b);
 int strIsNumber(char * s);
 int strAreBothNumbers(char * a, char * b);
 
+// File
 int fpeek(FILE * const fp);
 
-//Memory management secondary functions
+//Memory management
 void* allocateBytes(int bytes);
 bool moreThanOneTableAllocated();
 int deallocateFurthestTable();
-
 void bubbleUpHeapElement(TableHeapElement el);
 void bubbleDownHeapElement(TableHeapElement el);
 void swapHeapElement(int a, int b);
 
-//Main functions implementations
+
+//================================//
+// Main functions implementations //
+//================================//
+
+// General Part
 bool executeQuery(char* query) {
 	if (database == NULL) {
 		initDatabase(&database);
@@ -171,6 +200,7 @@ bool executeQuery(char* query) {
 	return true;
 }
 
+// DataBase Part
 void initDatabase(Database* db) {
 	// Trying to allocate the database structure
 	(*db) = (Database)malloc(sizeof(struct RBTree));
@@ -239,24 +269,6 @@ Table searchTableDb(char* tableName) {
 	return (Table)currentTableNode->nodeValue;
 }
 
-Node searchNodeTableDb(Node currentTableNode, char* tableName) {
-	if (currentTableNode == NULL || currentTableNode->nodeValue == NULL) {
-		return NULL;
-	}
-	Table currentTable = (Table)currentTableNode->nodeValue;
-
-	switch (compare(tableName, currentTable->name)) {
-	case(EQUAL):
-		return currentTableNode;
-	case(LESSER):
-		return searchNodeTableDb(currentTableNode->left, tableName);
-	case(GREATER):
-		return searchNodeTableDb(currentTableNode->right, tableName);
-	default:
-		return NULL;
-	}
-}
-
 void deallocateTable(Table t) {
 	if (!database || !t) { return; }
 	Node nodeToBeDeallocated = searchNodeTableDb(database->root, t->name);
@@ -273,169 +285,6 @@ void deallocateTable(Table t) {
 		deleteAllRecords(t->recordList, t->nColumns);
 		free(t);
 		free(nodeToBeDeallocated);
-	}
-}
-
-void treeTransplant(Tree T, Node u, Node v) {
-	if (!T || !u) { return; }
-
-	if (!u->p) {
-		T->root = v;
-	}
-	else if (u == u->p->left) {
-		u->p->left = v;
-	}
-	else {
-		u->p->right = v;
-	}
-	if (v) {
-		v->p = u->p;
-	}
-}
-
-void removeNodeRBT(Tree T, Node z) {
-	if (!T || !z) {
-		return;
-	}
-	Node x = NULL, y = z;
-	bool yOriginalColor = y->color;
-	if (!z->left) {
-		x = z->right;
-		treeTransplant(T, z, x);
-	}
-	else if (!z->right) {
-		x = z->left;
-		treeTransplant(T, z, x);
-	}
-	else {
-		y = treeMinimum(z->right);
-		yOriginalColor = y->color;
-		x = y->right;
-		bool changeRight = false;
-		if (x && y->p == z) {
-			x->p = y;
-		}
-		else {
-			treeTransplant(T, y, y->right);
-			changeRight = true;
-		}
-		treeTransplant(T, z, y);
-		if (changeRight) {
-			y->right = z->right;
-			if (y->right) {
-				y->right->p = y;
-			}
-		}
-
-		y->left = z->left;
-		y->left->p = y;
-		y->color = z->color;
-	}
-	if (yOriginalColor == BLACK) {
-		rbtDeleteFixup(T, x);
-	}
-}
-
-void rbtDeleteFixup(Tree T, Node x) {
-
-	while (T && x && (x != T->root) && x->color == BLACK) {
-		Node w = NULL;
-		if (x == x->p->left) { // i don't check the existence of x->p because it's not the root
-			w = x->p->right;
-			if (w && w->color == RED) {
-				w->color = BLACK;
-				x->p->color = RED;
-				leftRotate(T, x->p);
-				w = x->p->right;
-			}
-			if (w && (!w->left || w->left->color == BLACK) && (!w->right || w->right->color == BLACK)) {
-				w->color = RED;
-				x = x->p;
-			}
-			else {
-				if (w && (!w->right || w->right->color == BLACK)) {
-					if (w->left) {
-						w->left->color = BLACK;
-					}
-					w->color = RED;
-					rightRotate(T, w);
-					w = x->p->right;
-				}
-				if (w) {
-					w->color = x->p->color;
-				}
-				x->p->color = BLACK;
-				if (w && w->right) {
-					w->right->color = BLACK;
-				}
-				leftRotate(T, x->p);
-				x = T->root;
-			}
-		}
-		else {
-			w = x->p->left;
-			if (w && w->color == RED) {
-				w->color = BLACK;
-				x->p->color = RED;
-				rightRotate(T, x->p);
-				w = x->p->left;
-			}
-			if (w && (!w->left || w->left->color == BLACK) && (!w->right || w->right->color == BLACK)) {
-				w->color = RED;
-				x = x->p;
-			}
-			else {
-				if (w && (!w->left || w->left->color == BLACK)) {
-					if (w->right) {
-						w->right->color = BLACK;
-					}
-					w->color = RED;
-					rightRotate(T, w);
-					w = x->p->left;
-				}
-				if (w) {
-					w->color = x->p->color;
-				}
-				x->p->color = BLACK;
-				if (w && w->left) {
-					w->left->color = BLACK;
-				}
-				rightRotate(T, x->p);
-				x = T->root;
-			}
-		}
-	}
-	if (x) {
-		x->color = BLACK;
-	}
-}
-
-Node treeMinimum(Node x) {
-	while (x && x->left) {
-		x = x->left;
-	}
-	return x;
-}
-
-void deleteAllTreeRecordNodes(Node x) {  // specifically for RecordNodes because the nodeValue in this
-	if (!x) { return; }                   // case is not allocated but contains an address, while if you need
-	deleteAllTreeRecordNodes(x->left);  // to deallocate all TableNodes you should deallocate the table itself
-	deleteAllTreeRecordNodes(x->right);
-	free(x);
-}
-
-void deleteAllRecords(NodeRecord n, int nColumns) {
-	while (n) {
-		// deallocate the content of each Record
-		int i;
-		for (i = 0; i < nColumns; i++) {
-			free(n->values[i]);
-		}
-		free(n->values);
-		NodeRecord nextTable = n->next;
-		// deallocate the Record itself
-		free(n);
-		n = nextTable;
 	}
 }
 
@@ -502,670 +351,63 @@ QueryResultList querySelect(Table t, ParseResult res) {
 	return ret;
 }
 
-void unsuccessfulParse(ParseResult result, int errorCode) {
-	
-	result->success = false;
-	result->parseErrorCode = errorCode;
+// Memory Part
+void initMemoryHeap() {
+	memoryHeap = (TableHeap)malloc(sizeof(struct TableHeap));
+	memoryHeap->array = (TableHeapElement*)malloc(2 * sizeof(TableHeapElement));
+	memoryHeap->size = 1;
+	memoryHeap->last = 0;
 }
 
-bool charIsAllowed(char c, const char * forbiddenCharSet) {
-	int i;
-	for (i = 0; forbiddenCharSet[i]; i++) {
-		if (c == forbiddenCharSet[i]) {
-			return false;
-		}
+TableHeapElement insertMemoryHeap(Table t) {
+	if (memoryHeap->last == memoryHeap->size) {
+		memoryHeap->size *= 2;
+		memoryHeap->array = (TableHeapElement*)realloc(memoryHeap->array, memoryHeap->size * sizeof(TableHeapElement) + sizeof(TableHeapElement));
+		if (memoryHeap->array == NULL)
+			return NULL;
 	}
-	return true;
+
+	TableHeapElement newElement = (TableHeapElement)malloc(sizeof(struct TableHeapElement));
+	newElement->tableReference = t;
+	newElement->priority = priorityCounter++;
+	newElement->memorySize = 0;
+	newElement->position = memoryHeap->last + 1;
+
+	memoryHeap->array[memoryHeap->last + 1] = newElement;
+	memoryHeap->last = memoryHeap->last + 1;
+	if (memoryHeap->last != 1)
+		bubbleUpHeapElement(newElement);
+	return newElement;
 }
 
-int parseQueryParameter(char * query, char ** parameter, const char * forbiddenCharSet) {
-	const int paramSize = 1024;
-	int i;
-
-	// parameter = where to save the parsed parameter
-	*parameter = (char *)malloc(sizeof(char) * paramSize);
-
-	if (!*parameter) return -1;
-	
-	for (i = 0; query[i] && i<paramSize - 1; i++) {
-		if (charIsAllowed(query[i], forbiddenCharSet)) {
-			// add it to the parsed parameter
-			(*parameter)[i] = query[i];
-		}
-		else {
-			(*parameter)[i] = '\0';
-			// found not-allowed char
-			return i;
-		}
-	}
-
-	(*parameter)[i] = '\0';
-	return i;
-}
-
-int parseQueryType(char * query) {
-	const char * queryType[] = {
-		"CREATE TABLE",
-		"INSERT INTO",
-		"SELECT"
-	};
-
-	int queryDefinedValues[] = {
-		CREATE_TABLE,
-		INSERT_INTO,
-		SELECT
-	};
-
-	int i=0, j=0;
-
-	for (i=0; i<3; i++) { 
-		for (j = 0; query[j] && queryType[i][j]; j++) {
-			if (query[j] != queryType[i][j]) {
-				break;
-			}
-		}
-		if (queryType[i][j] == 0) {
-			return queryDefinedValues[i];
-		}
-	}
-	return NO_QUERY;
-}
-
-// error code class 100
-ParseResult parseQueryCreateTable(char * query, ParseResult result) {
-	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
-	const char space = ' ';
-	const char comma = ',';
-
-	result->queryType = CREATE_TABLE;
-
-	// CREATE TABLE name
-	//             ^ position 12
-	query += 12;
-
-	// checking the space
-	if (*query != ' ') {
-		unsuccessfulParse(result, 101);
-		return result;
-	}
-
-	query++; // first char of tableName
-
-			 // parsing table name and shifting forward the pointer
-	query += parseQueryParameter(query, &(result->tableName), paramForbiddenChars);
-
-	if (!result->tableName) {
-		unsuccessfulParse(result, 102);
-		return result;
-	}
-
-	if (*query != ' ') {
-		unsuccessfulParse(result, 103);
-		return result;
-	}
-
-	query++;
-	if (*query != '(') {
-		unsuccessfulParse(result, 104);
-		return result;
-	}
-	query++;
-
-	result->nColumns = 128;
-
-	result->columns = (char **)malloc(result->nColumns * sizeof(char *));
-
-	if (!result->columns) {
-		unsuccessfulParse(result, 105);
-		return result;
-	}
-
-	int i = 0;
-	for (i = 0; true; i++) {
-		if (i >= result->nColumns) {
-			char ** newColumns = (char **)realloc(result->columns, 2 * result->nColumns * sizeof(char *));
-
-			if (!newColumns) {
-				unsuccessfulParse(result, 106);
-				return result;
-			}
-
-			result->nColumns *= 2;
-			result->columns = newColumns;
-		}
-
-		int offset = parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars);
-
-		if (offset == -1) {
-			unsuccessfulParse(result, 111);
-			return result;
-		}
-		else {
-			query += offset;
-		}
-
-		if (*query == ',') {
-			query++;
-			continue;
-		}
-
-		if (*query == ')' && *(query + 1) == ';') {
-			i++;
-
-			// shrink columns name array to save space
-			char ** reallocation = (char **)realloc(result->columns, i * sizeof(char*));
-
-			if (!reallocation) {
-				unsuccessfulParse(result, 107);
-				return result;
-			}
-
-			result->columns = reallocation;
-			result->nColumns = i;
-			result->success = true;
-
-		}
-		else {
-			unsuccessfulParse(result, 108);
-		}
-
-		return result;
-	}
-
-	unsuccessfulParse(result, 112);
-	return result;
-}
-
-// error code class 200
-ParseResult parseQueryInsertInto(char * query, ParseResult result) {
-	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
-	const char space = ' ';
-	const char comma = ',';
-
-	result->queryType = INSERT_INTO;
-
-	// INSERT INTO name
-	//            ^ position 11
-	query += 11;
-
-	if (*query != ' ') {
-		unsuccessfulParse(result, 201);
-		return result;
-	}
-	query++;
-
-	// parsing table name and shifting forward the pointer
-	query += parseQueryParameter(query, &(result->tableName), paramForbiddenChars);
-
-	if (!result->tableName) {
-		unsuccessfulParse(result, 202);
-		return result;
-	}
-
-	if (*query != ' ') {
-		unsuccessfulParse(result, 203);
-		return result;
-	}
-	query++;
-
-	if (*query != '(') {
-		unsuccessfulParse(result, 204);
-		return result;
-	}
-	query++;
-
-	// arbitrary number of columns
-	result->nColumns = 128;
-
-	result->columns = (char **)malloc(result->nColumns * sizeof(char *));
-
-	if (!result->columns) {
-		unsuccessfulParse(result, 205);
-		return result;
-	}
-
-	int i;
-
-	// gettin' those column names
-	for (i = 0; true; i++) {
-
-		// if there isn't enough space
-		if (i >= result->nColumns) {
-			// double up!
-			char ** newColumns = (char **)realloc(result->columns, 2 * result->nColumns * sizeof(char*));
-
-			if (!newColumns) {
-				unsuccessfulParse(result, 206);
-				return result;
-			}
-
-			result->nColumns *= 2;
-			result->columns = newColumns;
-		}
-
-		// now there is space for sure
-		// and we parse the next parameter
-		query += parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars);
-		// shifting the pointer @ the same time
-
-		// comma = gotta read another column name
-		if (*query == ',') {
-			query++;
-			continue;
-		}
-
-		// closed bracket, no more column names
-		if (*query == ')') {
-			i++;
-
-			// now we can shrink the column list to fit, and save memory
-			char ** reallocation = (char **)realloc(result->columns, i * sizeof(char*));
-
-			if (!reallocation) {
-				unsuccessfulParse(result, 207);
-				return result;
-			}
-
-			result->columns = reallocation;
-			result->nColumns = i;
-		}
-		else {
-			unsuccessfulParse(result, 208);
-		}
-
-		break;
-	}
-	query++;
-
-	// check for " VALUES ("
-	const char values[] = " VALUES (";
-
-	for (i = 0; i<9; i++) {
-		if (query[i] != values[i]) {
-			unsuccessfulParse(result, 209);
-			return result;
-		}
-	}
-
-	query += 9; // shift that pointer!
-
-	// we expect N columns and N values
-	// we already have nColumns so let's use it to init the array
-	result->fieldValues = (char **)malloc(sizeof(char *) * result->nColumns);
-
-	if (!result->fieldValues) {
-		unsuccessfulParse(result, 210);
-		return result;
-	}
-
-	int contFieldsValues = 0;
-
-	for (i = 0; i<result->nColumns; i++) {
-		contFieldsValues++;
-		query += parseQueryParameter(query, &(result->fieldValues[i]), paramForbiddenChars);
-
-		// comma = gotta read another value
-		if (*query == ',') {
-			query++;
-			continue;
-		}
-
-		// closed bracket, no more values
-		if (*query == ')' && *(query + 1) == ';') {
-			if (result->nColumns == contFieldsValues)
-				result->success = true;
-			else
-				result->success = false;
-			return result;
-		}
-	}
-	unsuccessfulParse(result, 211);
-	return result;
-}
-
-// error code class 300
-ParseResult parseQuerySelect(char * query, ParseResult result) {
-	const char * paramForbiddenChars = " ,.;%$#@&^~\"'=+/\n\r!?()[]{}<>";
-	const char space = ' ';
-	const char comma = ',';
-
-	result->queryType = SELECT_WITHOUT_FILTERS;
-
-	// SELECT name
-	//       ^ position 6
-	query += 6;
-
-	// checking the space
-	if (*query != ' ') {
-		unsuccessfulParse(result, 301);
-		return result;
-	}
-
-	query++;
-
-	// SELECT * FROM ...
-	//        ^
-	if (*query == '*') {
-		result->nColumns = 1;
-
-		result->columns = (char **)malloc(sizeof(char *));
-
-		if (result->columns) {
-			result->columns[0] = (char *)malloc(sizeof(char) * 2);
-
-			if (!result->columns[0]) {
-				unsuccessfulParse(result, 302);
-				return result;
-			}
-
-			result->columns[0][0] = '*';
-			result->columns[0][1] = '\0';
-
-			query++;
-		}
-		else {
-			unsuccessfulParse(result, 303);
-			return result;
-		}
-
+TableHeapElement extractMemoryHeap() {
+	TableHeapElement res = memoryHeap->array[1];
+	int last = memoryHeap->last;
+	if (last == 0)
+		return NULL;
+	res->position = -1;
+	if (last == 1) {
+		memoryHeap->array[1] = NULL;
 	}
 	else {
-		// arbitrary number of columns
-		result->nColumns = 128;
-
-		result->columns = (char **)malloc(result->nColumns * sizeof(char *));
-
-		if (!result->columns) {
-			unsuccessfulParse(result, 304);
-			return result;
-		}
-
-		int i = 0;
-
-		// gettin' those column names
-		for (i = 0; true; i++) {
-
-			// if there isn't enough space in result->columns
-			if (i >= result->nColumns) {
-				// double up!
-				char ** newColumns = (char **)realloc(result->columns, 2 * result->nColumns * sizeof(char*));
-
-				if (!newColumns) {
-					unsuccessfulParse(result, 305);
-					return result;
-				}
-
-				result->nColumns *= 2;
-				result->columns = newColumns;
-			}
-
-			// now there is space for sure
-			// and we parse the next parameter
-			query += parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars);
-			// shifting the pointer @ the same time
-
-			// comma = gotta read another column name
-			if (*query == ',') {
-				query++;
-				continue;
-			}
-
-			// closed bracket, no more column names
-			if (*query == ' ') {
-				i++;
-
-				// now we can shrink the column list to fit, and save memory
-				char ** reallocation = (char **)realloc(result->columns, i * sizeof(char*));
-
-				if (!reallocation) {
-					unsuccessfulParse(result, 306);
-					return result;
-				}
-
-				result->columns = reallocation;
-				result->nColumns = i;
-			}
-			else {
-				unsuccessfulParse(result, 307);
-				return result;
-			}
-			break;
-		}
+		swapHeapElement(1, last);
+		memoryHeap->array[last] = NULL;
+		memoryHeap->last = last - 1;
+		if (last > 2)
+			bubbleDownHeapElement(memoryHeap->array[1]);
 	}
-
-	// check for " FROM "
-	// SELECT sborn FROM banana;
-	//             ^^^^^^
-	const char values[] = " FROM ";
-
-	int i = 0;
-
-	for (i = 0; i<6; i++) { // 6 is the string length
-		if (query[i] != values[i]) {
-			unsuccessfulParse(result, 308);
-			return result;
-		}
-	}
-
-	query += 6; // shift that pointer!
-
-	// parse table name
-	query += parseQueryParameter(query, &(result->tableName), paramForbiddenChars);
-
-	if (!result->tableName) {
-		unsuccessfulParse(result, 309);
-		return result;
-	}
-
-	// SELECT * FROM banana;
-	//                     ^
-	if (*query == ';') {
-		result->queryType = SELECT_WITHOUT_FILTERS;
-		result->success = true;
-		return result;
-	}
-
-	if (*query != ' ') {
-		unsuccessfulParse(result, 310);
-		return result;
-	}
-
-	query++;
-
-	// SELECT * FROM banana WHERE
-	//                      ^
-
-	switch (*query) {
-	case 'W': // WHERE
-		return parseQuerySelectWHERE(query, result);
-
-	case 'O': // ORDER BY
-		return parseQuerySelectORDERBY(query, result);
-
-	case 'G': // GROUP BY
-		return parseQuerySelectGROUPBY(query, result);
-
-	default:
-		unsuccessfulParse(result, 311);
-		return result;
-	}
+	return res;
 }
 
-// error code class 400
-ParseResult parseQuerySelectWHERE(char * query, ParseResult result) {
-	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
-	const char * whereString = "WHERE ";
-	const int whereStringLength = 6;
-	int i = 0, j = 0;
-
-	result->queryType = WHERE;
-
-	for (i = 0; i<whereStringLength; i++, query++) {
-		if (*query != whereString[i]) {
-			unsuccessfulParse(result, 401);
-			return result;
-		}
+void updatePriorityMemoryHeap(TableHeapElement element, unsigned long long int priority) {
+	if (priority < element->priority) {
+		element->priority = priority;
+		bubbleUpHeapElement(element);
 	}
-
-	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars);
-
-	const char operators[][5] = {
-		" < ",
-		" <= ",
-		" == ",
-		" >= ",
-		" > "
-	};
-
-	const int operatorValue[] = {
-		LESSER,
-		LESSER_EQUAL,
-		EQUAL,
-		GREATER_EQUAL,
-		GREATER
-	};
-
-	const int operatorLength[] = { 3, 4, 4, 4, 3 };
-	const int operatorNumber = 5;
-
-	for (i = 0; i<operatorNumber; i++) {
-		for (j = 0; operators[i][j]; j++) {
-			if (query[j] != operators[i][j]) {
-				break;
-			}
-		}
-
-		if (operators[i][j] == 0) { // meaning it finished, didn't break out
-			result->querySelector = operatorValue[i];
-			query += operatorLength[i];
-			break;
-		}
+	else if (priority > element->priority) {
+		element->priority = priority;
+		bubbleDownHeapElement(element);
 	}
-
-	if (result->querySelector == NO_OPERATOR) {
-		unsuccessfulParse(result, 402);
-		return result;
-	}
-
-	query += parseQueryParameter(query, &(result->key), paramForbiddenChars);
-
-	if (query[0] == ';') {
-		result->success = true;
-		return result;
-	}
-
-	unsuccessfulParse(result, 403);
-	return result;
-}
-
-// error code class 500
-ParseResult parseQuerySelectGROUPBY(char * query, ParseResult result) {
-	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
-	const char * groupByString = "GROUP BY ";
-	const int groupByStringLength = 9;
-	int i = 0;
-
-	result->queryType = GROUP_BY;
-
-	for (i = 0; i<groupByStringLength; i++, query++) {
-		if (*query != groupByString[i]) {
-			unsuccessfulParse(result, 501);
-			return result;
-		}
-	}
-
-	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars);
-
-	if (*query == ';') {
-		result->success = true;
-		return result;
-	}
-
-	unsuccessfulParse(result, 502);
-	return result;
-}
-
-// error code class 600
-ParseResult parseQuerySelectORDERBY(char * query, ParseResult result) {
-	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
-	const char * orderByString = "ORDER BY ";
-	const int orderByStringLength = 9;
-	int i = 0, j = 0;
-
-	result->queryType = ORDER_BY;
-
-	for (i = 0; i<orderByStringLength; i++, query++) {
-		if (*query != orderByString[i]) {
-			unsuccessfulParse(result, 601);
-			return result;
-		}
-	}
-
-	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars);
-
-	// SELECT * FROM banana ORDER BY giovanni ASC
-	//                                       ^
-
-	const char * orderASC = " ASC;";
-	const char * orderDESC = " DESC;";
-
-	if (strcmp(query, orderASC) == 0) {
-		result->success = true;
-		result->order = ASC;
-		return result;
-	}
-
-	if (strcmp(query, orderDESC) == 0) {
-		result->success = true;
-		result->order = DESC;
-		return result;
-	}
-
-	unsuccessfulParse(result, 602);
-	return result;
-}
-
-// error code class 0
-ParseResult parseQuery(char* queryString) {
-	ParseResult result = (ParseResult)malloc(sizeof(struct ParseResult));
-
-	if (!result) {
-		return NULL;
-	}
-
-	// init result
-	result->success = false;
-	result->tableName = NULL;
-	result->queryType = NO_QUERY;
-	result->querySelector = NO_OPERATOR;
-	result->keyName = NULL;
-	result->key = NULL;
-	result->columns = NULL;
-	result->nColumns = 0;
-	result->fieldValues = NULL;
-	result->order = 0;
-
-	result->parseErrorCode = 0;
-
-	char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
-
-	int queryType = parseQueryType(queryString);
-
-	switch (queryType) {
-	case CREATE_TABLE:
-		parseQueryCreateTable(queryString, result);
-		break;
-	case INSERT_INTO:
-		parseQueryInsertInto(queryString, result);
-		break;
-	case SELECT:
-		parseQuerySelect(queryString, result);
-		break;
-	default:
-		unsuccessfulParse(result, 1);
-	}
-
-	return result;
 }
 
 void freeParseResult(ParseResult res) {
@@ -1211,6 +453,99 @@ void freeQueryResultList(QueryResultList res) {
 	}
 }
 
+// Checker
+bool checkQueryIntegrity(Table t, ParseResult res) {
+	if (!t || !res) { return false; }
+	int qt = res->queryType, i, j;
+	bool isIntact = true, tempFound;
+
+	if (compare(t->name, res->tableName) != EQUAL) { isIntact = false; }
+
+	switch (res->queryType) {
+	case(INSERT_INTO):
+		if (t->nColumns != res->nColumns) { isIntact = false; break; }
+		for (i = 0; i < t->nColumns; i++) {
+			if (compare(t->columns[i], res->columns[i]) != EQUAL) { isIntact = false; break; }
+		}
+		break;
+		//  in the following cases i have to check that columns that are requested to be printed really are in the table
+	case(WHERE):
+	case(ORDER_BY):
+		if (res->queryType == WHERE || res->queryType == ORDER_BY) {
+			isIntact = false;
+			for (i = 0; i < t->nColumns; i++) {
+				if (compare(t->columns[i], res->keyName) == EQUAL) {
+					isIntact = true;
+					break;
+				}
+			}
+		}
+	case(GROUP_BY):
+		if (res->queryType == GROUP_BY) {
+			if (res->nColumns != 1) { isIntact = false; break; }
+			if (compare(res->keyName, res->columns[0]) != EQUAL) { isIntact = false; break; }
+		}
+	case(SELECT_WITHOUT_FILTERS):
+		if (res->nColumns > t->nColumns) { isIntact = false; break; }
+		if (res->nColumns == 1 && compare(res->columns[0], "*") == EQUAL) { isIntact = true; break; }
+		for (i = 0; i < res->nColumns; i++) {
+			tempFound = false;
+			for (j = 0; j < t->nColumns; j++) {
+				if (compare(t->columns[j], res->columns[i]) == EQUAL) { tempFound = true; break; }
+			}
+			if (!tempFound) { isIntact = false; break; }
+		}
+	default: break;
+	}
+
+	return isIntact;
+}
+
+// Parser
+ParseResult parseQuery(char* queryString) {
+	// error code class 0
+	ParseResult result = (ParseResult)malloc(sizeof(struct ParseResult));
+
+	if (!result) {
+		return NULL;
+	}
+
+	// init result
+	result->success = false;
+	result->tableName = NULL;
+	result->queryType = NO_QUERY;
+	result->querySelector = NO_OPERATOR;
+	result->keyName = NULL;
+	result->key = NULL;
+	result->columns = NULL;
+	result->nColumns = 0;
+	result->fieldValues = NULL;
+	result->order = 0;
+
+	result->parseErrorCode = 0;
+
+	char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
+
+	int queryType = parseQueryType(queryString);
+
+	switch (queryType) {
+	case CREATE_TABLE:
+		parseQueryCreateTable(queryString, result);
+		break;
+	case INSERT_INTO:
+		parseQueryInsertInto(queryString, result);
+		break;
+	case SELECT:
+		parseQuerySelect(queryString, result);
+		break;
+	default:
+		unsuccessfulParse(result, 1);
+	}
+
+	return result;
+}
+
+// Logger
 void generateLog(ParseResult pRes, char* query, QueryResultList records) {
 	char* buffer = (char*)malloc(sizeof(char) * (strlen(LOG_FILE_NAME) + 1));
 	strcpy(buffer, LOG_FILE_NAME);
@@ -1308,6 +643,8 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records) {
 	free(buffer);
 }
 
+
+// File Part
 bool createTableFile(char* name, char** columns, int nColumns) {
 	char* buffer = (char*)malloc(strlen(name) + 5);
 	strcpy(buffer, name);
@@ -1659,173 +996,17 @@ bool insertIntoTableFile(char* name, char** columns, char** values, int nColumns
 	return true;
 }
 
-void initMemoryHeap() {
-	memoryHeap = (TableHeap)malloc(sizeof(struct TableHeap));
-	memoryHeap->array = (TableHeapElement*)malloc(2 * sizeof(TableHeapElement));
-	memoryHeap->size = 1;
-	memoryHeap->last = 0;
-}
 
-TableHeapElement insertMemoryHeap(Table t) {
-	if (memoryHeap->last == memoryHeap->size) {
-		memoryHeap->size *= 2;
-		memoryHeap->array = (TableHeapElement*)realloc(memoryHeap->array, memoryHeap->size * sizeof(TableHeapElement) + sizeof(TableHeapElement));
-		if (memoryHeap->array == NULL)
-			return NULL;
-	}
+//===================================//
+// Secondary Function Implementation //
+//===================================//
 
-	TableHeapElement newElement = (TableHeapElement)malloc(sizeof(struct TableHeapElement));
-	newElement->tableReference = t;
-	newElement->priority = priorityCounter++;
-	newElement->memorySize = 0;
-	newElement->position = memoryHeap->last + 1;
-
-	memoryHeap->array[memoryHeap->last + 1] = newElement;
-	memoryHeap->last = memoryHeap->last + 1;
-	if (memoryHeap->last != 1)
-		bubbleUpHeapElement(newElement);
-	return newElement;
-}
-
-TableHeapElement extractMemoryHeap() {
-	TableHeapElement res = memoryHeap->array[1];
-	int last = memoryHeap->last;
-	if (last == 0)
-		return NULL;
-	res->position = -1;
-	if (last == 1) {
-		memoryHeap->array[1] = NULL;
-	}
-	else {
-		swapHeapElement(1, last);
-		memoryHeap->array[last] = NULL;
-		memoryHeap->last = last - 1;
-		if (last > 2)
-			bubbleDownHeapElement(memoryHeap->array[1]);
-	}
-	return res;
-}
-
-void updatePriorityMemoryHeap(TableHeapElement element, unsigned long long int priority) {
-	if (priority < element->priority) {
-		element->priority = priority;
-		bubbleUpHeapElement(element);
-	}
-	else if (priority > element->priority) {
-		element->priority = priority;
-		bubbleDownHeapElement(element);
-	}
-}
-
-// Secondary functions implementation
-int strCompare(char * a, char * b) {
-	int res = strcmp(a, b);
-
-	if (res < 0) {
-		return LESSER;
-	}
-	if (res > 0) {
-		return GREATER;
-	}
-
-	return EQUAL;
-}
-
-int strIsNumber(char * s) {
-	int size = 0;
-	int i = 0;
-	int isNumber = true;
-
-	for (i = 0; s[i]; i++, size++) {
-		if (s[0] == '-') {
-			continue;
-		}
-
-		if ((s[i] < '0' || s[i] > '9') && s[i] != DECIMAL_SEPARATOR) {
-			isNumber = false;
-			break;
-		}
-	}
-
-	return isNumber;
-}
-
-int strAreBothNumbers(char * a, char * b) {
-	// useless comment
-	return strIsNumber(a) && strIsNumber(b);
-}
-
-double parseDouble(char * s) {
-	int i = 0;
-	int separatorFound = false;
-	int exponent = -1;
-	int iStart = 0;
-
-	double signMultiplier = 1.0;
-	double result = 0;
-
-	if (s[0] == '-') {  // if negative
-		signMultiplier = -1.0;  // at the end, multiply by -1
-		iStart = 1; // start the conversion from 1 (0 is '-')
-	}
-
-	// increment by one the exponent 'till the separator or terminator is found
-	for (i = iStart; s[i] != '.' && s[i]; i++, exponent++) {}
-
-	// convert the number
-	for (i = iStart; s[i]; i++, exponent--) {
-		if (s[i] == '.') { // you want to skip the '.'
-			exponent++; // and compensate the exponent decrementation
-			continue;
-		}
-
-		// char to int times the correct ten power, casted as double
-		result += (double)((s[i] - '0') * pow(10, exponent));
-	}
-
-	return result * signMultiplier;
-}
-
-int compare(char * a, char * b) {  // compares two strings
-	double numA = 0, numB = 0;
-
-	if (strAreBothNumbers(a, b)) {
-		numA = parseDouble(a);
-		numB = parseDouble(b);
-
-		if (numA > numB) {
-			return GREATER;
-		}
-		if (numA < numB) {
-			return LESSER;
-		}
-
-		return EQUAL;
-	}
-
-	return strCompare(a, b);
-}
-
+// Database
 Node createNodeRBT(void* r) {
 	Node x;
 	if (!(x = (Node)allocateBytes(sizeof(struct RBTNode)))) { return NULL; }
 	x->nodeValue = r;
 	return x;
-}
-
-
-bool nodeCompare(int columnIndex, void * nodeA, void * nodeB) {
-	bool isTable = (columnIndex == TABLE);
-
-	if (isTable) {
-		Table tableA = (Table)nodeA;
-		Table tableB = (Table)nodeB;
-		return compare(tableA->name, tableB->name);
-	}
-	NodeRecord recordA = (NodeRecord)nodeA;
-	NodeRecord recordB = (NodeRecord)nodeB;
-
-	return compare(recordA->values[columnIndex], recordB->values[columnIndex]);
 }
 
 bool insertNodeTree(Tree T, Node z) {
@@ -1918,6 +1099,146 @@ bool rbtInsertFixup(Tree T, Node z) {
 	return true;
 }
 
+void removeNodeRBT(Tree T, Node z) {
+	if (!T || !z) {
+		return;
+	}
+	Node x = NULL, y = z;
+	bool yOriginalColor = y->color;
+	if (!z->left) {
+		x = z->right;
+		treeTransplant(T, z, x);
+	}
+	else if (!z->right) {
+		x = z->left;
+		treeTransplant(T, z, x);
+	}
+	else {
+		y = treeMinimum(z->right);
+		yOriginalColor = y->color;
+		x = y->right;
+		bool changeRight = false;
+		if (x && y->p == z) {
+			x->p = y;
+		}
+		else {
+			treeTransplant(T, y, y->right);
+			changeRight = true;
+		}
+		treeTransplant(T, z, y);
+		if (changeRight) {
+			y->right = z->right;
+			if (y->right) {
+				y->right->p = y;
+			}
+		}
+
+		y->left = z->left;
+		y->left->p = y;
+		y->color = z->color;
+	}
+	if (yOriginalColor == BLACK) {
+		rbtDeleteFixup(T, x);
+	}
+}
+
+void rbtDeleteFixup(Tree T, Node x) {
+
+	while (T && x && (x != T->root) && x->color == BLACK) {
+		Node w = NULL;
+		if (x == x->p->left) { // i don't check the existence of x->p because it's not the root
+			w = x->p->right;
+			if (w && w->color == RED) {
+				w->color = BLACK;
+				x->p->color = RED;
+				leftRotate(T, x->p);
+				w = x->p->right;
+			}
+			if (w && (!w->left || w->left->color == BLACK) && (!w->right || w->right->color == BLACK)) {
+				w->color = RED;
+				x = x->p;
+			}
+			else {
+				if (w && (!w->right || w->right->color == BLACK)) {
+					if (w->left) {
+						w->left->color = BLACK;
+					}
+					w->color = RED;
+					rightRotate(T, w);
+					w = x->p->right;
+				}
+				if (w) {
+					w->color = x->p->color;
+				}
+				x->p->color = BLACK;
+				if (w && w->right) {
+					w->right->color = BLACK;
+				}
+				leftRotate(T, x->p);
+				x = T->root;
+			}
+		}
+		else {
+			w = x->p->left;
+			if (w && w->color == RED) {
+				w->color = BLACK;
+				x->p->color = RED;
+				rightRotate(T, x->p);
+				w = x->p->left;
+			}
+			if (w && (!w->left || w->left->color == BLACK) && (!w->right || w->right->color == BLACK)) {
+				w->color = RED;
+				x = x->p;
+			}
+			else {
+				if (w && (!w->left || w->left->color == BLACK)) {
+					if (w->right) {
+						w->right->color = BLACK;
+					}
+					w->color = RED;
+					rightRotate(T, w);
+					w = x->p->left;
+				}
+				if (w) {
+					w->color = x->p->color;
+				}
+				x->p->color = BLACK;
+				if (w && w->left) {
+					w->left->color = BLACK;
+				}
+				rightRotate(T, x->p);
+				x = T->root;
+			}
+		}
+	}
+	if (x) {
+		x->color = BLACK;
+	}
+}
+
+void treeTransplant(Tree T, Node u, Node v) {
+	if (!T || !u) { return; }
+
+	if (!u->p) {
+		T->root = v;
+	}
+	else if (u == u->p->left) {
+		u->p->left = v;
+	}
+	else {
+		u->p->right = v;
+	}
+	if (v) {
+		v->p = u->p;
+	}
+}
+
+Node treeMinimum(Node x) {
+	while (x && x->left) {
+		x = x->left;
+	}
+	return x;
+}
 
 bool leftRotate(Tree T, Node x) {
 	if (!T || !x) { return false; }
@@ -1962,6 +1283,20 @@ bool rightRotate(Tree T, Node x) {
 	return true;
 }
 
+bool nodeCompare(int columnIndex, void * nodeA, void * nodeB) {
+	bool isTable = (columnIndex == TABLE);
+
+	if (isTable) {
+		Table tableA = (Table)nodeA;
+		Table tableB = (Table)nodeB;
+		return compare(tableA->name, tableB->name);
+	}
+	NodeRecord recordA = (NodeRecord)nodeA;
+	NodeRecord recordB = (NodeRecord)nodeB;
+
+	return compare(recordA->values[columnIndex], recordB->values[columnIndex]);
+}
+
 void selectOrderBy(Node x, QueryResultList* queryToGet, int order) {
 	if (!x) { return; }
 	if (order != ASC && order != DESC) { return; }
@@ -1986,21 +1321,6 @@ void selectOrderBy(Node x, QueryResultList* queryToGet, int order) {
 	}
 	else {
 		selectOrderBy(x->right, queryToGet, order);
-	}
-}
-
-void countForGroupBy(int key, QueryResultList queryToGet) {
-	QueryResultList temp = queryToGet, temp2;
-	while (temp && temp->next) {
-		if (compare(temp->nodeValue->values[key], temp->next->nodeValue->values[key]) == EQUAL) {
-			temp->occurrence++;
-			temp2 = temp->next;
-			temp->next = temp2->next;
-			free(temp2);
-		}
-		else {
-			temp = temp->next;
-		}
 	}
 }
 
@@ -2059,6 +1379,61 @@ void selectNoFilter(NodeRecord r, QueryResultList* queryToGet) {
 	}
 }
 
+void countForGroupBy(int key, QueryResultList queryToGet) {
+	QueryResultList temp = queryToGet, temp2;
+	while (temp && temp->next) {
+		if (compare(temp->nodeValue->values[key], temp->next->nodeValue->values[key]) == EQUAL) {
+			temp->occurrence++;
+			temp2 = temp->next;
+			temp->next = temp2->next;
+			free(temp2);
+		}
+		else {
+			temp = temp->next;
+		}
+	}
+}
+
+void deleteAllTreeRecordNodes(Node x) {
+	if (!x) { return; }                 // specifically for RecordNodes because the nodeValue in this
+	deleteAllTreeRecordNodes(x->left);  // case is not allocated but contains an address, while if you need
+	deleteAllTreeRecordNodes(x->right); // to deallocate all TableNodes you should deallocate the table itself
+	free(x);
+}
+
+void deleteAllRecords(NodeRecord n, int nColumns) {
+	while (n) {
+		// deallocate the content of each Record
+		int i;
+		for (i = 0; i < nColumns; i++) {
+			free(n->values[i]);
+		}
+		free(n->values);
+		NodeRecord nextTable = n->next;
+		// deallocate the Record itself
+		free(n);
+		n = nextTable;
+	}
+}
+
+Node searchNodeTableDb(Node currentTableNode, char* tableName) {
+	if (currentTableNode == NULL || currentTableNode->nodeValue == NULL) {
+		return NULL;
+	}
+	Table currentTable = (Table)currentTableNode->nodeValue;
+
+	switch (compare(tableName, currentTable->name)) {
+	case(EQUAL):
+		return currentTableNode;
+	case(LESSER):
+		return searchNodeTableDb(currentTableNode->left, tableName);
+	case(GREATER):
+		return searchNodeTableDb(currentTableNode->right, tableName);
+	default:
+		return NULL;
+	}
+}
+
 int searchColumnIndex(Table T, char* key) {
 	int i = 0;
 	while (i < T->nColumns) {
@@ -2068,11 +1443,727 @@ int searchColumnIndex(Table T, char* key) {
 	return -1;
 }
 
+// Parser
+bool charIsAllowed(char c, const char * forbiddenCharSet) {
+	int i;
+	for (i = 0; forbiddenCharSet[i]; i++) {
+		if (c == forbiddenCharSet[i]) {
+			return false;
+		}
+	}
+	return true;
+}
+
+ParseResult parseQuerySelect(char * query, ParseResult result) {
+	// error code class 300
+	const char * paramForbiddenChars = " ,.;%$#@&^~\"'=+/\n\r!?()[]{}<>";
+	const char space = ' ';
+	const char comma = ',';
+
+	result->queryType = SELECT_WITHOUT_FILTERS;
+
+	// SELECT name
+	//       ^ position 6
+	query += 6;
+
+	// checking the space
+	if (*query != ' ') {
+		unsuccessfulParse(result, 301);
+		return result;
+	}
+
+	query++;
+
+	// SELECT * FROM ...
+	//        ^
+	if (*query == '*') {
+		result->nColumns = 1;
+
+		result->columns = (char **)malloc(sizeof(char *));
+
+		if (result->columns) {
+			result->columns[0] = (char *)malloc(sizeof(char) * 2);
+
+			if (!result->columns[0]) {
+				unsuccessfulParse(result, 302);
+				return result;
+			}
+
+			result->columns[0][0] = '*';
+			result->columns[0][1] = '\0';
+
+			query++;
+		}
+		else {
+			unsuccessfulParse(result, 303);
+			return result;
+		}
+
+	}
+	else {
+		// arbitrary number of columns
+		result->nColumns = 128;
+
+		result->columns = (char **)malloc(result->nColumns * sizeof(char *));
+
+		if (!result->columns) {
+			unsuccessfulParse(result, 304);
+			return result;
+		}
+
+		int i = 0;
+
+		// gettin' those column names
+		for (i = 0; true; i++) {
+
+			// if there isn't enough space in result->columns
+			if (i >= result->nColumns) {
+				// double up!
+				char ** newColumns = (char **)realloc(result->columns, 2 * result->nColumns * sizeof(char*));
+
+				if (!newColumns) {
+					unsuccessfulParse(result, 305);
+					return result;
+				}
+
+				result->nColumns *= 2;
+				result->columns = newColumns;
+			}
+
+			// now there is space for sure
+			// and we parse the next parameter
+			query += parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars);
+			// shifting the pointer @ the same time
+
+			// comma = gotta read another column name
+			if (*query == ',') {
+				query++;
+				continue;
+			}
+
+			// closed bracket, no more column names
+			if (*query == ' ') {
+				i++;
+
+				// now we can shrink the column list to fit, and save memory
+				char ** reallocation = (char **)realloc(result->columns, i * sizeof(char*));
+
+				if (!reallocation) {
+					unsuccessfulParse(result, 306);
+					return result;
+				}
+
+				result->columns = reallocation;
+				result->nColumns = i;
+			}
+			else {
+				unsuccessfulParse(result, 307);
+				return result;
+			}
+			break;
+		}
+	}
+
+	// check for " FROM "
+	// SELECT sborn FROM banana;
+	//             ^^^^^^
+	const char values[] = " FROM ";
+
+	int i = 0;
+
+	for (i = 0; i<6; i++) { // 6 is the string length
+		if (query[i] != values[i]) {
+			unsuccessfulParse(result, 308);
+			return result;
+		}
+	}
+
+	query += 6; // shift that pointer!
+
+	// parse table name
+	query += parseQueryParameter(query, &(result->tableName), paramForbiddenChars);
+
+	if (!result->tableName) {
+		unsuccessfulParse(result, 309);
+		return result;
+	}
+
+	// SELECT * FROM banana;
+	//                     ^
+	if (*query == ';') {
+		result->queryType = SELECT_WITHOUT_FILTERS;
+		result->success = true;
+		return result;
+	}
+
+	if (*query != ' ') {
+		unsuccessfulParse(result, 310);
+		return result;
+	}
+
+	query++;
+
+	// SELECT * FROM banana WHERE
+	//                      ^
+
+	switch (*query) {
+	case 'W': // WHERE
+		return parseQuerySelectWHERE(query, result);
+
+	case 'O': // ORDER BY
+		return parseQuerySelectORDERBY(query, result);
+
+	case 'G': // GROUP BY
+		return parseQuerySelectGROUPBY(query, result);
+
+	default:
+		unsuccessfulParse(result, 311);
+		return result;
+	}
+}
+
+ParseResult parseQueryCreateTable(char * query, ParseResult result) {
+	// error code class 100
+	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
+	const char space = ' ';
+	const char comma = ',';
+
+	result->queryType = CREATE_TABLE;
+
+	// CREATE TABLE name
+	//             ^ position 12
+	query += 12;
+
+	// checking the space
+	if (*query != ' ') {
+		unsuccessfulParse(result, 101);
+		return result;
+	}
+
+	query++; // first char of tableName
+
+			 // parsing table name and shifting forward the pointer
+	query += parseQueryParameter(query, &(result->tableName), paramForbiddenChars);
+
+	if (!result->tableName) {
+		unsuccessfulParse(result, 102);
+		return result;
+	}
+
+	if (*query != ' ') {
+		unsuccessfulParse(result, 103);
+		return result;
+	}
+
+	query++;
+	if (*query != '(') {
+		unsuccessfulParse(result, 104);
+		return result;
+	}
+	query++;
+
+	result->nColumns = 128;
+
+	result->columns = (char **)malloc(result->nColumns * sizeof(char *));
+
+	if (!result->columns) {
+		unsuccessfulParse(result, 105);
+		return result;
+	}
+
+	int i = 0;
+	for (i = 0; true; i++) {
+		if (i >= result->nColumns) {
+			char ** newColumns = (char **)realloc(result->columns, 2 * result->nColumns * sizeof(char *));
+
+			if (!newColumns) {
+				unsuccessfulParse(result, 106);
+				return result;
+			}
+
+			result->nColumns *= 2;
+			result->columns = newColumns;
+		}
+
+		int offset = parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars);
+
+		if (offset == -1) {
+			unsuccessfulParse(result, 111);
+			return result;
+		}
+		else {
+			query += offset;
+		}
+
+		if (*query == ',') {
+			query++;
+			continue;
+		}
+
+		if (*query == ')' && *(query + 1) == ';') {
+			i++;
+
+			// shrink columns name array to save space
+			char ** reallocation = (char **)realloc(result->columns, i * sizeof(char*));
+
+			if (!reallocation) {
+				unsuccessfulParse(result, 107);
+				return result;
+			}
+
+			result->columns = reallocation;
+			result->nColumns = i;
+			result->success = true;
+
+		}
+		else {
+			unsuccessfulParse(result, 108);
+		}
+
+		return result;
+	}
+
+	unsuccessfulParse(result, 112);
+	return result;
+}
+
+ParseResult parseQueryInsertInto(char * query, ParseResult result) {
+	// error code class 200
+	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
+	const char space = ' ';
+	const char comma = ',';
+
+	result->queryType = INSERT_INTO;
+
+	// INSERT INTO name
+	//            ^ position 11
+	query += 11;
+
+	if (*query != ' ') {
+		unsuccessfulParse(result, 201);
+		return result;
+	}
+	query++;
+
+	// parsing table name and shifting forward the pointer
+	query += parseQueryParameter(query, &(result->tableName), paramForbiddenChars);
+
+	if (!result->tableName) {
+		unsuccessfulParse(result, 202);
+		return result;
+	}
+
+	if (*query != ' ') {
+		unsuccessfulParse(result, 203);
+		return result;
+	}
+	query++;
+
+	if (*query != '(') {
+		unsuccessfulParse(result, 204);
+		return result;
+	}
+	query++;
+
+	// arbitrary number of columns
+	result->nColumns = 128;
+
+	result->columns = (char **)malloc(result->nColumns * sizeof(char *));
+
+	if (!result->columns) {
+		unsuccessfulParse(result, 205);
+		return result;
+	}
+
+	int i;
+
+	// gettin' those column names
+	for (i = 0; true; i++) {
+
+		// if there isn't enough space
+		if (i >= result->nColumns) {
+			// double up!
+			char ** newColumns = (char **)realloc(result->columns, 2 * result->nColumns * sizeof(char*));
+
+			if (!newColumns) {
+				unsuccessfulParse(result, 206);
+				return result;
+			}
+
+			result->nColumns *= 2;
+			result->columns = newColumns;
+		}
+
+		// now there is space for sure
+		// and we parse the next parameter
+		query += parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars);
+		// shifting the pointer @ the same time
+
+		// comma = gotta read another column name
+		if (*query == ',') {
+			query++;
+			continue;
+		}
+
+		// closed bracket, no more column names
+		if (*query == ')') {
+			i++;
+
+			// now we can shrink the column list to fit, and save memory
+			char ** reallocation = (char **)realloc(result->columns, i * sizeof(char*));
+
+			if (!reallocation) {
+				unsuccessfulParse(result, 207);
+				return result;
+			}
+
+			result->columns = reallocation;
+			result->nColumns = i;
+		}
+		else {
+			unsuccessfulParse(result, 208);
+		}
+
+		break;
+	}
+	query++;
+
+	// check for " VALUES ("
+	const char values[] = " VALUES (";
+
+	for (i = 0; i<9; i++) {
+		if (query[i] != values[i]) {
+			unsuccessfulParse(result, 209);
+			return result;
+		}
+	}
+
+	query += 9; // shift that pointer!
+
+	// we expect N columns and N values
+	// we already have nColumns so let's use it to init the array
+	result->fieldValues = (char **)malloc(sizeof(char *) * result->nColumns);
+
+	if (!result->fieldValues) {
+		unsuccessfulParse(result, 210);
+		return result;
+	}
+
+	int contFieldsValues = 0;
+
+	for (i = 0; i<result->nColumns; i++) {
+		contFieldsValues++;
+		query += parseQueryParameter(query, &(result->fieldValues[i]), paramForbiddenChars);
+
+		// comma = gotta read another value
+		if (*query == ',') {
+			query++;
+			continue;
+		}
+
+		// closed bracket, no more values
+		if (*query == ')' && *(query + 1) == ';') {
+			if (result->nColumns == contFieldsValues)
+				result->success = true;
+			else
+				result->success = false;
+			return result;
+		}
+	}
+	unsuccessfulParse(result, 211);
+	return result;
+}
+
+ParseResult parseQuerySelectWHERE(char * query, ParseResult result) {
+	// error code class 400
+	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
+	const char * whereString = "WHERE ";
+	const int whereStringLength = 6;
+	int i = 0, j = 0;
+
+	result->queryType = WHERE;
+
+	for (i = 0; i<whereStringLength; i++, query++) {
+		if (*query != whereString[i]) {
+			unsuccessfulParse(result, 401);
+			return result;
+		}
+	}
+
+	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars);
+
+	const char operators[][5] = {
+		" < ",
+		" <= ",
+		" == ",
+		" >= ",
+		" > "
+	};
+
+	const int operatorValue[] = {
+		LESSER,
+		LESSER_EQUAL,
+		EQUAL,
+		GREATER_EQUAL,
+		GREATER
+	};
+
+	const int operatorLength[] = { 3, 4, 4, 4, 3 };
+	const int operatorNumber = 5;
+
+	for (i = 0; i<operatorNumber; i++) {
+		for (j = 0; operators[i][j]; j++) {
+			if (query[j] != operators[i][j]) {
+				break;
+			}
+		}
+
+		if (operators[i][j] == 0) { // meaning it finished, didn't break out
+			result->querySelector = operatorValue[i];
+			query += operatorLength[i];
+			break;
+		}
+	}
+
+	if (result->querySelector == NO_OPERATOR) {
+		unsuccessfulParse(result, 402);
+		return result;
+	}
+
+	query += parseQueryParameter(query, &(result->key), paramForbiddenChars);
+
+	if (query[0] == ';') {
+		result->success = true;
+		return result;
+	}
+
+	unsuccessfulParse(result, 403);
+	return result;
+}
+
+ParseResult parseQuerySelectORDERBY(char * query, ParseResult result) {
+	// error code class 600
+	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
+	const char * orderByString = "ORDER BY ";
+	const int orderByStringLength = 9;
+	int i = 0, j = 0;
+
+	result->queryType = ORDER_BY;
+
+	for (i = 0; i<orderByStringLength; i++, query++) {
+		if (*query != orderByString[i]) {
+			unsuccessfulParse(result, 601);
+			return result;
+		}
+	}
+
+	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars);
+
+	// SELECT * FROM banana ORDER BY giovanni ASC
+	//                                       ^
+
+	const char * orderASC = " ASC;";
+	const char * orderDESC = " DESC;";
+
+	if (strcmp(query, orderASC) == 0) {
+		result->success = true;
+		result->order = ASC;
+		return result;
+	}
+
+	if (strcmp(query, orderDESC) == 0) {
+		result->success = true;
+		result->order = DESC;
+		return result;
+	}
+
+	unsuccessfulParse(result, 602);
+	return result;
+}
+
+ParseResult parseQuerySelectGROUPBY(char * query, ParseResult result) {
+	// error code class 500
+	const char * paramForbiddenChars = " ,.;*%$#@&^~\"'=+/\n\r!?()[]{}<>";
+	const char * groupByString = "GROUP BY ";
+	const int groupByStringLength = 9;
+	int i = 0;
+
+	result->queryType = GROUP_BY;
+
+	for (i = 0; i<groupByStringLength; i++, query++) {
+		if (*query != groupByString[i]) {
+			unsuccessfulParse(result, 501);
+			return result;
+		}
+	}
+
+	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars);
+
+	if (*query == ';') {
+		result->success = true;
+		return result;
+	}
+
+	unsuccessfulParse(result, 502);
+	return result;
+}
+
+double parseDouble(char * s) {
+	int i = 0;
+	int separatorFound = false;
+	int exponent = -1;
+	int iStart = 0;
+
+	double signMultiplier = 1.0;
+	double result = 0;
+
+	if (s[0] == '-') {  // if negative
+		signMultiplier = -1.0;  // at the end, multiply by -1
+		iStart = 1; // start the conversion from 1 (0 is '-')
+	}
+
+	// increment by one the exponent 'till the separator or terminator is found
+	for (i = iStart; s[i] != '.' && s[i]; i++, exponent++) {}
+
+	// convert the number
+	for (i = iStart; s[i]; i++, exponent--) {
+		if (s[i] == '.') { // you want to skip the '.'
+			exponent++; // and compensate the exponent decrementation
+			continue;
+		}
+
+		// char to int times the correct ten power, casted as double
+		result += (double)((s[i] - '0') * pow(10, exponent));
+	}
+
+	return result * signMultiplier;
+}
+
+void unsuccessfulParse(ParseResult result, int errorCode) {
+	
+	result->success = false;
+	result->parseErrorCode = errorCode;
+}
+
+int parseQueryParameter(char * query, char ** parameter, const char * forbiddenCharSet) {
+	const int paramSize = 1024;
+	int i;
+
+	// parameter = where to save the parsed parameter
+	*parameter = (char *)malloc(sizeof(char) * paramSize);
+
+	if (!*parameter) return -1;
+	
+	for (i = 0; query[i] && i<paramSize - 1; i++) {
+		if (charIsAllowed(query[i], forbiddenCharSet)) {
+			// add it to the parsed parameter
+			(*parameter)[i] = query[i];
+		}
+		else {
+			(*parameter)[i] = '\0';
+			// found not-allowed char
+			return i;
+		}
+	}
+
+	(*parameter)[i] = '\0';
+	return i;
+}
+
+int parseQueryType(char * query) {
+	const char * queryType[] = {
+		"CREATE TABLE",
+		"INSERT INTO",
+		"SELECT"
+	};
+
+	int queryDefinedValues[] = {
+		CREATE_TABLE,
+		INSERT_INTO,
+		SELECT
+	};
+
+	int i=0, j=0;
+
+	for (i=0; i<3; i++) { 
+		for (j = 0; query[j] && queryType[i][j]; j++) {
+			if (query[j] != queryType[i][j]) {
+				break;
+			}
+		}
+		if (queryType[i][j] == 0) {
+			return queryDefinedValues[i];
+		}
+	}
+	return NO_QUERY;
+}
+
+// Comparison
+int compare(char * a, char * b) {
+	// compares two strings
+	double numA = 0, numB = 0;
+
+	if (strAreBothNumbers(a, b)) {
+		numA = parseDouble(a);
+		numB = parseDouble(b);
+
+		if (numA > numB) {
+			return GREATER;
+		}
+		if (numA < numB) {
+			return LESSER;
+		}
+
+		return EQUAL;
+	}
+
+	return strCompare(a, b);
+}
+
+int strCompare(char * a, char * b) {
+	int res = strcmp(a, b);
+
+	if (res < 0) {
+		return LESSER;
+	}
+	if (res > 0) {
+		return GREATER;
+	}
+
+	return EQUAL;
+}
+
+int strIsNumber(char * s) {
+	int size = 0;
+	int i = 0;
+	int isNumber = true;
+
+	for (i = 0; s[i]; i++, size++) {
+		if (s[0] == '-') {
+			continue;
+		}
+
+		if ((s[i] < '0' || s[i] > '9') && s[i] != DECIMAL_SEPARATOR) {
+			isNumber = false;
+			break;
+		}
+	}
+
+	return isNumber;
+}
+
+int strAreBothNumbers(char * a, char * b) {
+	// useless comment
+	return strIsNumber(a) && strIsNumber(b);
+}
+
+// File
 int fpeek(FILE * const fp) {
 	const int c = getc(fp);
 	return c == EOF ? EOF : ungetc(c, fp);
 }
 
+// Memory management
 void* allocateBytes(int bytes) {
 	//static variable that keeps track of heap size
 	static int memoryUsage = 0;
@@ -2116,14 +2207,6 @@ int deallocateFurthestTable() {
 	return res;
 }
 
-void swapHeapElement(int a, int b) {
-	TableHeapElement tmp = memoryHeap->array[a];
-	memoryHeap->array[a] = memoryHeap->array[b];
-	memoryHeap->array[b] = tmp;
-	memoryHeap->array[a]->position = a;
-	memoryHeap->array[b]->position = b;
-}
-
 void bubbleUpHeapElement(TableHeapElement el) {
 	int i = el->position;
 	int parent;
@@ -2155,49 +2238,10 @@ void bubbleDownHeapElement(TableHeapElement el) {
 	} while (i != min);
 }
 
-bool checkQueryIntegrity(Table t, ParseResult res) {
-	if (!t || !res) { return false; }
-	int qt = res->queryType, i, j;
-	bool isIntact = true, tempFound;
-
-	if (compare(t->name, res->tableName) != EQUAL) { isIntact = false; }
-
-	switch (res->queryType) {
-	case(INSERT_INTO):
-		if (t->nColumns != res->nColumns) { isIntact = false; break; }
-		for (i = 0; i < t->nColumns; i++) {
-			if (compare(t->columns[i], res->columns[i]) != EQUAL) { isIntact = false; break; }
-		}
-		break;
-		//  in the following cases i have to check that columns that are requested to be printed really are in the table
-	case(WHERE):
-	case(ORDER_BY):
-		if (res->queryType == WHERE || res->queryType == ORDER_BY) {
-			isIntact = false;
-			for (i = 0; i < t->nColumns; i++) {
-				if (compare(t->columns[i], res->keyName) == EQUAL) {
-					isIntact = true;
-					break;
-				}
-			}
-		}
-	case(GROUP_BY):
-		if (res->queryType == GROUP_BY) {
-			if (res->nColumns != 1) { isIntact = false; break; }
-			if (compare(res->keyName, res->columns[0]) != EQUAL) { isIntact = false; break; }
-		}
-	case(SELECT_WITHOUT_FILTERS):
-		if (res->nColumns > t->nColumns) { isIntact = false; break; }
-		if (res->nColumns == 1 && compare(res->columns[0], "*") == EQUAL) { isIntact = true; break; }
-		for (i = 0; i < res->nColumns; i++) {
-			tempFound = false;
-			for (j = 0; j < t->nColumns; j++) {
-				if (compare(t->columns[j], res->columns[i]) == EQUAL) { tempFound = true; break; }
-			}
-			if (!tempFound) { isIntact = false; break; }
-		}
-	default: break;
-	}
-
-	return isIntact;
+void swapHeapElement(int a, int b) {
+	TableHeapElement tmp = memoryHeap->array[a];
+	memoryHeap->array[a] = memoryHeap->array[b];
+	memoryHeap->array[b] = tmp;
+	memoryHeap->array[a]->position = a;
+	memoryHeap->array[b]->position = b;
 }
