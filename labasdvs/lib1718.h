@@ -105,8 +105,6 @@ typedef struct ParseResult* ParseResult;
 /* Functions */
 ///////////////
 
-
-int getN();
 // General Part
 bool executeQuery(char*);
 // End of General Part
