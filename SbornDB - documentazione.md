@@ -75,9 +75,10 @@ Per la implementazione si è preso spunto da un paper redatto da O. Tamir, A. Mo
 # 3. Database e Strutture dati
 Il database è accessibile da un unico puntatore dichiarato globale e statico. È stata fatta questa scelta in quanto si assume di lavorare sempre su un unico database, seguendo le linee guida del progetto. In questo modo si evita di appesantire lo stack di sistema a ogni chiamata di funzione. Segue uno schema grafico della sua struttura interna e la spiegazione di ogni elemento di cui è composto.
 
-<img
+<img src="database-scheme.jpg" alt="schema del database">
 
 Nel database vengono utilizzate:
+
 1.	Linked List
 2.	Red-Black Tree 
 3.	Heap con Update Dinamico
