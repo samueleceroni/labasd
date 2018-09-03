@@ -8,6 +8,10 @@
     * 2.3 Scopo
     * 2.4 Definizione delle caratteristiche
     * 2.5 Descrizione
+        * _2.5.1 Perchè un limite di memoria_
+        * _2.5.2 Modalità di implementazione_
+        * _2.5.3 Operazioni nell'heap a seguito delle query_
+        * _2.5.4 Update Dinamico con complessità logaritmica_
 3. **Strutture dati**
     * 3.1 Linked List
     * 3.2 Red-Black Tree
@@ -20,10 +24,10 @@
         * _3.4.2 Struttura ParseResult_
         * _3.4.3 Struttura QueryResultElement_
 4. **Corpo centrale**
-    * 4.1 Fase di Inizializzazione
-    * 4.2 Fase di Parsing
-    * 4.3 Fase di Ricerca
-    * 4.4 Fase di Esecuzione
+    * 4.1 Inizializzazione
+    * 4.2 Parsing
+    * 4.3 Recupero della tabella
+    * 4.4 Esecuzione Query
         * _4.4.1 Fase di Controllo_
         * _4.4.2 Creazione_
         * _4.4.3 Inserimento_
@@ -56,24 +60,28 @@ Limitare l’utilizzo di RAM per mantenere alte le prestazioni di tutto il siste
 ## 2.4 Definizione delle caratteristiche
 1.	Possibilità di definire una soglia di memoria, sopra la quale è necessario deallocare per avere altra memoria.
 2.	Deve permettere al database di caricare almeno una tabella per volta.
-3.	Migliorare il processo di allocazione e deallocazione tramite un sistema di cacheing basilare.
+3.	Migliorare il processo di allocazione e deallocazione tramite un sistema di caching basilare.
 
 ## 2.5 Descrizione
 ### 2.5.1 Perchè un limite di memoria
-Si è voluto simulare un ambiente in cui ci siano limiti di memoria: per questo si è pensato di imitare il funzionamento di un sistema di caching temporale, ovvero assegnare delle priorità alle tabelle ed eliminare, in caso di eccessivo uso della memoria, quelle che non vengono utilizzate da più tempo.
-Ovviamente, questo sistema basilare può comportare un maggior numero di allocazioni/deallocazioni, a discapito delle performance, in caso di accessi a tabelle random e non sequenziali, ma in casi di disponibilità di memoria ridotta si pensa essere la soluzione migliore.
+Supponendo un utilizzo con dataset grandi, un sistema di caching ben realizzato può fornire speed-up importanti, limitando i caricamenti da disco.
+Se non gestito, il sistema di caching arriverebbe ad avere tutti i dati in RAM, senza caricare nulla da disco e potenzialmente rallentando l'intera macchina.
+Considerando un caching completo una strada non sempre percorribile, il sistema di limitazione della memoria serve a prevenire eccessivi rallentamenti, eliminando le tabelle dalla RAM secondo un criterio temporale.
+In caso di pessime prestazioni con cambi repentini di tabelle, si suggerisce di aumentare il limite di memoria.
+
 ### 2.5.2 Modalità di implementazione
-Il sistema è stato implementato come un heap con update dinamico. Come chiave si è utilizzato un intero, che descrive, in ordine temporale, il momento in cui viene effettuata l'ultima operazione alla tabella (creazioni/inserimenti/query) e come valore la tabella stessa. Il funzionamento è simile a una coda di priorità con update dinamico.
-Esiste anche un contatore che serve a tener traccia della quantità di memoria totale utilizzata dal programma per gestire tutte le tabelle.
+Il sistema usa un heap con update dinamico per approssimare una coda di priorità con update dinamico.
+La chiave dell'heap è un intero che indica l'indice dell'ultima query su quella tabella. La tabella è memorizzata come valore.
+La memoria utilizzata da ogni tabella viene sommata in un contatore generale, usato per i confronti con il limite impostato.
+
 ### 2.5.3 Operazioni nell'heap a seguito delle query
-Quando una tabella viene creata, questa viene allocata e inserita nella coda. Siccome l’intero che rappresenta la chiave dell’heap descrive l’istante in cui la tabella viene usata, questa tabella avrà la chiave maggiore di tutte le altre all’interno dell’heap.
-La coda di priorità mantiene in testa la tabella utilizzata meno di recente, ossia quella con chiave minore.
-Quando viene fatta una qualsiasi operazione su una tabella già esistente nell’heap, la sua chiave viene aggiornata (update dinamico).
-Nel caso in cui sia necessario allocare memoria per una tabella quando lo spazio disponibile è esaurito, vengono eliminate dalla memoria le tabelle dalla cima della coda, finche non rimane abbastanza spazio, o finche non c'è una sola tabella.
+Ad ogni query, la chiave della tabella interessata viene aggiornata, spostando la tabella in una foglia dell'heap.
+Quando la memoria raggiunge il limite impostato, il sistema procede a deallocare tabelle dalla radice dell'heap, fino a quando non c'è abbastanza spazio a disposizione, o rimane una sola tabella.
+
 ### 2.5.4 Update Dinamico con complessità logaritmica
-Per poter effettuare un update dinamico sull'heap, con complessità logaritmica, è necessario un riferimento reciproco tra l'elemento nell’heap e la tabella corrispondente, infatti in entrambe le strutture è presente un puntatore (nell'elemento dell'heap alla tabella e nella tabella all'elemento dell'heap).
-L’heap è una struttura dati vista a lezione, è stata aumentata per gestire l’update dinamico in O(log n).
-Per la implementazione si è preso spunto da un paper redatto da O. Tamir, A. Morrison and N. Rinetzky (link al paper https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf ), osservando in particolare la sezione numero 3 : “A Sequential Heap with Mutable Priorities”
+Per poter effettuare l'update dinamico sull'heap con complessità logaritmica, è necessario un riferimento reciproco tra l'elemento nell’heap e la tabella corrispondente: nel nodo dell'heap è presente un puntatore alla tabella e vice versa.
+L’heap è una struttura dati vista a lezione che è stata aumentata per gestire l’update dinamico in `O(log n)`.
+Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf">_A Heap-Based Concurrent Priority Queue with Mutable Priorities for Faster Parallel Algorithms_</a> redatto da O. Tamir, A. Morrison e N. Rinetzky [1], osservando in particolare la sezione numero 3 : _“A Sequential Heap with Mutable Priorities”_.
 
 ---
 # 3. Database e Strutture dati
@@ -150,56 +158,64 @@ A cui si aggiungono tre fasi minori:
 * 	Controllo query _(tra parsing ed esecuzione della query)_
 *	Deallocazione della memoria _(dopo aver eseguito la query)_
 
-## 4.1 Fase di Inizializzazione
+## 4.1 Inizializzazione
 Viene inizializzata la struttura che conterrà il database e l’heap per la gestione della memoria.
 Viene eseguita solo una volta, alla prima chiamata della funzione “executeQuery” e poi viene saltata.
 
-## 4.2 Fase di Parsing
-Viene chiamata la funzione “parseQuery” che, appunto, fa il parsing della query passata per argomento alla funzione “executeQuery”.
-Essa ritorna una struttura chiamata “ParseResult” che contiene il risultato del parsing (a buon fine o meno) e tutte le informazione necessarie per eseguire la query/creazione/inserimento.
-Se la queryString non era correttamente formattata (quindi il parse non ha successo), viene interrotta l’esecuzione con ritorno a false.
+## 4.2 Parsing
+Il parsing viene gestito dalla funzione `parseQuery()`, che ritorna una `struct ParseResult` con tutte le informazioni contenute nella query.
+In caso quest'ultima fosse malformata, l'esecuzione viene interrotta e la proprietà `success` del `ParseResult` avrà valore `false`.
 
-## 4.3 Fase di Ricerca
-Viene ricercata la tabella sul cui si vuole lavorare nel database tramite la funzione “searchTableDb”. Se viene trovata, viene aggiornata la sua chiava nella coda di priorità per la gestione della memoria.
-Altrimenti si prova a caricarla da file con la funzione “loadTableFromFile”.
-Questa fase rilascia una struttura di tipo “Table” che può contenere o no una tabella in base al successo del caricamento.
+## 4.3 Recupero della tabella
+La tabella richiesta dalla query viene cercata in RAM dalla funzione `searchTableDb()`. Se la ricerca ha esito positivo, viene aggiornata la chiave associata alla tabella nella coda di priorità per la gestione della memoria.
+In caso di esito negativo, la tabella viene caricata da disco tramite `loadTableFromFile()`.
+Alla fine della fase di recupero della tabella, si ottiene una `struct Table` contenente l'esito dell'operazione e, in caso sia positivo, la tabella.
 
-## 4.4 Fase di Esecuzione
-Viene eseguita la query vera e propria.
+## 4.4 Esecuzione Query
+Viene eseguita la query.
 
-### 4.4.1 Fase di Controllo
-Prima di tutto, viene controllata la query/creazione/inserimento ora che si conoscono tutte le informazione della tabella a cui si sta facendo riferimento (se è stata caricata in memoria dalla fase precedente).
-Dopodichè la query viene eseguita in base al suo tipo.
+### 4.4.1 Controllo della query
+Ora che si hanno tutte le informazioni, si procede a un check della validità delle informazioni richieste dalla query.
 
-### 4.4.2 Creazione
-Se la tabella non esiste (quindi non era stata caricata), viene creata. Prima viene generato il file e poi viene creata la struttura della tabella nel database.
+> E.g.: Le colonne richieste esistono.
 
-### 4.4.3 Inserimento
-Se la tabella esiste (quindi è stata caricata), viene eseguito l’inserimento di un record. Prima viene aggiornato il file e poi aggiunto il record nella struttura della tabella a database.
+### 4.4.2 Create Table
+Una query `CREATE TABLE` valida prevede che non venga caricata nessuna tabella.
+Viene generato il file su disco e caricato in memoria tramite la stessa procedura applicata alle altre tabelle.
+
+### 4.4.3 Insert Into
+Il record specificato viene aggiunto prima nel file su disco, poi nelle strutture in memoria.
 
 ### 4.4.4 Selezione
-Se la tabella esiste, viene eseguita la selezione. Attraverso la funzione “querySelect” viene creata una struttura di tipo “QueryResultList” contenente il risultato della query
-Dopodichè viene generato il log della query eseguita, chiamando la funzione “generateLog”.
-Viene poi liberata la memoria contenente la struttra della “QueryResultList”.
+Attraverso la funzione `querySelect()` viene creata una `struct QueryResultList`, che contiene il risultato della query. Il contenuto viene loggato tramite una chiamata a `generateLog()` e la struttura deallocata.
 
-## 4.5 Fase di Liberazione della memoria
-Vengono liberate tutte le strutture utilizzate per la query in corso. Nel nostro caso solo una che rimane ancora non liberata, ossia il “ParseResult”
+## 4.5 Deallocazione della memoria
+Al termine dell'esecuzione vengono eliminate le strutture superflue, in questo caso la `struct ParseResult`.
+
+
 
 # 5. Parser
-Il parser deve gestire un numero limitato di possibili query, ed ha quindi una struttura molto semplice.
-Tutta l'operaIone di parsing viene eseguita in tempo lineare rispetto alla lunghezza della query.
-L'entry point del parser è la funzione `ParseResult parseQuery (char * query)`, dalla quale vengono chiamate varie funzioni per capire il tipo di query e farne l'analisi. Durante l'esecuzione viene usato direttamente un puntatore `char *`, che segue il progresso lungo la query tramite degli incrementi.
-La funzione `parseQuery` restituisce un puntatore `ParseResult` alla `struct ParseResult`, così composta: 
+Il parser deve gestire un numero limitato di possibili query, ha quindi una struttura molto semplice.
+Tutta l'operazione di parsing viene eseguita in tempo lineare rispetto alla lunghezza della query.
+
+L'entry point del parser è la funzione: 
+
+``` c
+ParseResult parseQuery (char * query);
+```
+
+Durante l'esecuzione viene usato direttamente un puntatore `char *`, che segue il progresso del parsing.
+Il parser restituisce un puntatore alla `struct ParseResult`, così composta: 
 
 ``` c
 struct ParseResult {
     bool success;
     char * tableName;
     int queryType;
-    char ** columns;
-    int nColumns;
-    char ** fieldValues;
     int querySelector;
+    int nColumns;
+    char ** columns;
+    char ** fieldValues;
     char * keyName;
     char * key;
     int order;
@@ -208,10 +224,10 @@ struct ParseResult {
 ```
 dove:
 
-1. `bool success`: contiene il risultato dell'analisi, e di conseguenza la validità sia della query che dei dati nella struttura
- 
+1. `bool success`: contiene l'esito dell'analisi.
+
 2. `char * tableName`: contiene il nome della tabella su cui agisce la query
- 
+
 3. `int queryType`: contiene il codice numerico identificativo del tipo di query, tra i possibili seguenti:
     * Create Table: `-1`
     * Select con filtro Where: `0`
@@ -220,31 +236,31 @@ dove:
     * Insert Into: `3`
     * Select senza filtri: `4`
     * No Query: `6`
- 
+    
 4. `char ** columns`: contiene i puntatori di tipo `char *` ai nomi delle colonne interessate dalla query.
- 
-5. `int nColumns`: contiene il numero di colonne interessate dalla query, e di conseguenza anche il numero di puntatori presenti dentro il campo `char ** columns`.
- 
-6. `char ** fieldValues`: usata solo nelle query di tipo Insert Into, contiene `nColumns` puntatori di tipo `char *` alle stringhe contenenti i valori da inserire
- 
+
+5. `int nColumns`: contiene il numero di colonne interessate dalla query, xhe corrisponde al numero di puntatori presenti nel campo `char ** columns`.
+
+6. `char ** fieldValues`: usata solo nelle query di tipo Insert Into. Contiene `nColumns` puntatori di tipo `char *` alle stringhe contenenti i valori da inserire.
+
 7. `int querySelector`: usato solo in query di tipo Select con filtro Where, contiene il codice numerico identificativo dell'operatore:
-    * Equal `0`
-    * Greater `1`
-    * Lesser `2`
-    * Greater Equal `3`
-    * Lesser Equal `4`
-    * No Operator `5`
+    * Equal: `0`
+    * Greater: `1`
+    * Lesser: `2`
+    * Greater Equal: `3`
+    * Lesser Equal: `4`
+    * No Operator: `5`
  
 8. `char * keyName`: usato nelle query di tipo:
     * Select con filtro Where, per contenere il nome del campo interessato dalla condizione where.
     * Select con filtro Group By, per contenere il nome del campo per cui raggruppare i record.
     * Select con filtro Order By, per contenere il nome del campo per cui ordinare i record.
  
-9. `char * key`: usato solo nella query di tipo Select con filtro Where, per contenere il valore da paragonare quando si verifica la condizione della query.
+9. `char * key`: usato solo nella query di tipo Select con filtro Where, per contenere il valore da paragonare quando si controlla la condizione.
  
 10. `int order`: usato solo nelle query di tipo Select con filtro Order By, contiene l'ordine desiderato. Può assumere i valori:
-    * ASC 0
-    * DESC 1
+    * `ASC`: 0
+    * `DESC`: 1
  
 11. `int parseErrorCode`: contiene un identificativo numerico hardcoded nel sorgente, unico al punto in cui il parse ha fallito l'esecuzione e terminato prematuramente. Controllando il codice si può facilmente risalire al punto in cui si è manifestato il problema. I codici di errore sono suddivisi in classi:
     * `0-99`: Errori Generali
@@ -256,4 +272,4 @@ dove:
     * `601-699`: Errori durante il parsing della parte finale di una query "Select Order By"
  
 ## 6 Riferimenti esterni:
-[1] <a href="https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf">https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf</a>
+[1] <a href="https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf">_A Heap-Based Concurrent Priority Queue with Mutable Priorities for Faster Parallel Algorithms_</a>, by O. Tamir, A. Morrison e N. Rinetzky.
