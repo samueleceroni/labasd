@@ -1,4 +1,4 @@
-#define bool char
+#define bool int
 #define true 1
 #define false 0
 
@@ -9,14 +9,17 @@ Output:
 -bool: true/false, se l'esecuzione della query e' andata a buon fine o meno (presenza di eventuali errori)
 */
 
-//Memory management structs
+//============//
+// STRUCTURES //
+//============//
+
+//Memory management
 struct TableHeapElement {
 	struct TableDB* tableReference;
 	unsigned long long int priority;
 	int memorySize;
 	int position;
 };
-
 typedef struct TableHeapElement* TableHeapElement;
 
 struct TableHeap {
@@ -24,12 +27,10 @@ struct TableHeap {
 	int last;
 	int size;
 };
-
 typedef struct TableHeap* TableHeap;
-//End of memory management structs
 
-// DataBase Part
-// A Table of the Database
+
+// DataBase
 struct TableDB {
 	char* name;
 	char** columns;
@@ -39,29 +40,25 @@ struct TableDB {
 
 	TableHeapElement heapReference; // Reference to the memory management system
 };
-
 typedef struct TableDB* Table;
 
-//Record, or Row of the table
-struct Record {
+
+struct Record {		// Record, or Row of the table
 	char** values;
 	struct Record* next;
 };
-
 typedef struct Record* NodeRecord;
 
-// Head of a RedBlackTree
-struct RBTree {
+
+struct RBTree {		// Head of a RedBlackTree
 	int key;
 	struct RBTNode* root;
 };
-
 typedef struct RBTree* Tree;
 typedef struct RBTree* Database;
 
 
-// Node of a RedBlackTree
-struct RBTNode {
+struct RBTNode {	// Node of a RedBlackTree
 	bool color;
 	void * nodeValue;	// can be table or record
 	struct RBTree* head;
@@ -70,18 +67,16 @@ struct RBTNode {
 	struct RBTNode* left;
 
 };
-
 typedef struct RBTNode* Node;
+
 
 struct QueryResultElement {
 	int occurrence;
 	struct Record* nodeValue;
 	struct QueryResultElement* next;
 };
-
 typedef struct QueryResultElement* QueryResultList;
 
-// End of Database Part
 
 //Parser
 struct ParseResult {
@@ -95,11 +90,11 @@ struct ParseResult {
 	int nColumns;
 	char** fieldValues;
 	int order; // asc or desc
-			   // look at queryselect function in order to understand how to parse commands for select query
 	int parseErrorCode;
 };
-
 typedef struct ParseResult* ParseResult;
+
+
 
 //===========//
 // Functions //
