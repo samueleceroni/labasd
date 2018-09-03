@@ -59,15 +59,19 @@ Limitare l’utilizzo di RAM per mantenere alte le prestazioni di tutto il siste
 3.	Migliorare il processo di allocazione e deallocazione tramite un sistema di cacheing basilare.
 
 ## 2.5 Descrizione
-Si è pensato di imitare in funzionamento di un sistema di caching temporale, ovvero assegnare delle priorità alle tabelle ed eliminare, in caso di eccessivo uso della memoria, quelle che non vengono utilizzate da più tempo.
-Ovviamente, questo sistema basilare può non rivelarsi ottimo a livello di quantità di allocazione/deallocazione, ma è molto più probabile che tutte le query/inserimenti fatti su una tabella vengano eseguiti uno dopo l’altro piuttosto che distanziati.
-Il sistema è stato implementato come un heap con update dinamico. Come chiave si è utilizzato in intero (esso descrive il numero della operazione eseguita e cresce con il numero delle operazioni creazioni/inserimenti/query) e come valore la tabella stessa. Il funzionamento è simile a una coda di priorità con update dinamico.
-Viene anche tenuto traccia della quantità di memoria utilizzata dal programma per gestire le tabelle.
+### 2.5.1 Perchè un limite di memoria
+Si è voluto simulare un ambiente in cui ci siano limiti di memoria: per questo si è pensato di imitare il funzionamento di un sistema di caching temporale, ovvero assegnare delle priorità alle tabelle ed eliminare, in caso di eccessivo uso della memoria, quelle che non vengono utilizzate da più tempo.
+Ovviamente, questo sistema basilare può comportare un maggior numero di allocazioni/deallocazioni, a discapito delle performance, in caso di accessi a tabelle random e non sequenziali, ma in casi di disponibilità di memoria ridotta si pensa essere la soluzione migliore.
+### 2.5.2 Modalità di implementazione
+Il sistema è stato implementato come un heap con update dinamico. Come chiave si è utilizzato un intero, che descrive, in ordine temporale, il momento in cui viene effettuata l'ultima operazione alla tabella (creazioni/inserimenti/query) e come valore la tabella stessa. Il funzionamento è simile a una coda di priorità con update dinamico.
+Esiste anche un contatore che serve a tener traccia della quantità di memoria totale utilizzata dal programma per gestire tutte le tabelle.
+### 2.5.3 Operazioni nell'heap a seguito delle query
 Quando una tabella viene creata, questa viene allocata e inserita nella coda. Siccome l’intero che rappresenta la chiave dell’heap descrive l’istante in cui la tabella viene usata, questa tabella avrà la chiave maggiore di tutte le altre all’interno dell’heap.
-La coda di priorità mantiene in testa la tabella più “vecchia” ossia quella utilizzata meno di recente ossia quella con chiave minore.
+La coda di priorità mantiene in testa la tabella utilizzata meno di recente, ossia quella con chiave minore.
 Quando viene fatta una qualsiasi operazione su una tabella già esistente nell’heap, la sua chiave viene aggiornata (update dinamico).
-Quando deve essere allocata memoria per una tabella ma non c’è abbastanza spazio per farlo, viene eliminata la tabella in cima alla coda fino a che non rimane abbastanza spazio per quella che deve essere allocata in quel momento.
-Siccome l’heap ha bisogno della proprietà di update dinamico (con complessità logaritmica) è necessario un riferimento uno ad uno tra elemento nell’heap e tabella corrispondente (puntatore all tabella nell’elemento dell’heap e puntatore all’elemento dell’heap nella tabella).
+Nel caso in cui sia necessario allocare memoria per una tabella quando lo spazio disponibile è esaurito, vengono eliminate dalla memoria le tabelle dalla cima della coda, finche non rimane abbastanza spazio, o finche non c'è una sola tabella.
+### 2.5.4 Update Dinamico con complessità logaritmica
+Per poter effettuare un update dinamico sull'heap, con complessità logaritmica, è necessario un riferimento reciproco tra l'elemento nell’heap e la tabella corrispondente, infatti in entrambe le strutture è presente un puntatore (nell'elemento dell'heap alla tabella e nella tabella all'elemento dell'heap).
 L’heap è una struttura dati vista a lezione, è stata aumentata per gestire l’update dinamico in O(log n).
 Per la implementazione si è preso spunto da un paper redatto da O. Tamir, A. Morrison and N. Rinetzky (link al paper https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf ), osservando in particolare la sezione numero 3 : “A Sequential Heap with Mutable Priorities”
 
