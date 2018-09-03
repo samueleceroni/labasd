@@ -513,7 +513,14 @@ div.prism-show-language > div.prism-show-language-label {
 <li>2.2 Assunzioni</li>
 <li>2.3 Scopo</li>
 <li>2.4 Definizione delle caratteristiche</li>
-<li>2.5 Descrizione</li>
+<li>2.5 Descrizione
+
+<ul>
+<li><em>2.5.1 Perchè un limite di memoria</em></li>
+<li><em>2.5.2 Modalità di implementazione</em></li>
+<li><em>2.5.3 Operazioni nell&#39;heap a seguito delle query</em></li>
+<li><em>2.5.4 Update Dinamico con complessità logaritmica</em></li>
+</ul></li>
 </ul></li>
 <li><strong>Strutture dati</strong>
 
@@ -538,10 +545,10 @@ div.prism-show-language > div.prism-show-language-label {
 <li><strong>Corpo centrale</strong>
 
 <ul>
-<li>4.1 Fase di Inizializzazione</li>
-<li>4.2 Fase di Parsing</li>
-<li>4.3 Fase di Ricerca</li>
-<li>4.4 Fase di Esecuzione
+<li>4.1 Inizializzazione</li>
+<li>4.2 Parsing</li>
+<li>4.3 Recupero della tabella</li>
+<li>4.4 Esecuzione Query
 
 <ul>
 <li><em>4.4.1 Fase di Controllo</em></li>
@@ -589,26 +596,38 @@ Il database mantiene i dati su disco secondo le specifiche del progetto, in RAM 
 <ol>
 <li> Possibilità di definire una soglia di memoria, sopra la quale è necessario deallocare per avere altra memoria.</li>
 <li> Deve permettere al database di caricare almeno una tabella per volta.</li>
-<li> Migliorare il processo di allocazione e deallocazione tramite un sistema di cacheing basilare.</li>
+<li> Migliorare il processo di allocazione e deallocazione tramite un sistema di caching basilare.</li>
 </ol>
 
 <h2 id="toc_7">2.5 Descrizione</h2>
 
-<p>Si è pensato di imitare in funzionamento di un sistema di caching temporale, ovvero assegnare delle priorità alle tabelle ed eliminare, in caso di eccessivo uso della memoria, quelle che non vengono utilizzate da più tempo.
-Ovviamente, questo sistema basilare può non rivelarsi ottimo a livello di quantità di allocazione/deallocazione, ma è molto più probabile che tutte le query/inserimenti fatti su una tabella vengano eseguiti uno dopo l’altro piuttosto che distanziati.
-Il sistema è stato implementato come un heap con update dinamico. Come chiave si è utilizzato in intero (esso descrive il numero della operazione eseguita e cresce con il numero delle operazioni creazioni/inserimenti/query) e come valore la tabella stessa. Il funzionamento è simile a una coda di priorità con update dinamico.
-Viene anche tenuto traccia della quantità di memoria utilizzata dal programma per gestire le tabelle.
-Quando una tabella viene creata, questa viene allocata e inserita nella coda. Siccome l’intero che rappresenta la chiave dell’heap descrive l’istante in cui la tabella viene usata, questa tabella avrà la chiave maggiore di tutte le altre all’interno dell’heap.
-La coda di priorità mantiene in testa la tabella più “vecchia” ossia quella utilizzata meno di recente ossia quella con chiave minore.
-Quando viene fatta una qualsiasi operazione su una tabella già esistente nell’heap, la sua chiave viene aggiornata (update dinamico).
-Quando deve essere allocata memoria per una tabella ma non c’è abbastanza spazio per farlo, viene eliminata la tabella in cima alla coda fino a che non rimane abbastanza spazio per quella che deve essere allocata in quel momento.
-Siccome l’heap ha bisogno della proprietà di update dinamico (con complessità logaritmica) è necessario un riferimento uno ad uno tra elemento nell’heap e tabella corrispondente (puntatore all tabella nell’elemento dell’heap e puntatore all’elemento dell’heap nella tabella).
-L’heap è una struttura dati vista a lezione, è stata aumentata per gestire l’update dinamico in O(log n).
-Per la implementazione si è preso spunto da un paper redatto da O. Tamir, A. Morrison and N. Rinetzky (link al paper https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf ), osservando in particolare la sezione numero 3 : “A Sequential Heap with Mutable Priorities”</p>
+<h3 id="toc_8">2.5.1 Perchè un limite di memoria</h3>
+
+<p>Supponendo un utilizzo con dataset grandi, un sistema di caching ben realizzato può fornire speed-up importanti, limitando i caricamenti da disco.
+Se non gestito, il sistema di caching arriverebbe ad avere tutti i dati in RAM, senza caricare nulla da disco e potenzialmente rallentando l&#39;intera macchina.
+Considerando un caching completo una strada non sempre percorribile, il sistema di limitazione della memoria serve a prevenire eccessivi rallentamenti, eliminando le tabelle dalla RAM secondo un criterio temporale.
+In caso di pessime prestazioni con cambi repentini di tabelle, si suggerisce di aumentare il limite di memoria.</p>
+
+<h3 id="toc_9">2.5.2 Modalità di implementazione</h3>
+
+<p>Il sistema usa un heap con update dinamico per approssimare una coda di priorità con update dinamico.
+La chiave dell&#39;heap è un intero che indica l&#39;indice dell&#39;ultima query su quella tabella. La tabella è memorizzata come valore.
+La memoria utilizzata da ogni tabella viene sommata in un contatore generale, usato per i confronti con il limite impostato.</p>
+
+<h3 id="toc_10">2.5.3 Operazioni nell&#39;heap a seguito delle query</h3>
+
+<p>Ad ogni query, la chiave della tabella interessata viene aggiornata, spostando la tabella in una foglia dell&#39;heap.
+Quando la memoria raggiunge il limite impostato, il sistema procede a deallocare tabelle dalla radice dell&#39;heap, fino a quando non c&#39;è abbastanza spazio a disposizione, o rimane una sola tabella.</p>
+
+<h3 id="toc_11">2.5.4 Update Dinamico con complessità logaritmica</h3>
+
+<p>Per poter effettuare l&#39;update dinamico sull&#39;heap con complessità logaritmica, è necessario un riferimento reciproco tra l&#39;elemento nell’heap e la tabella corrispondente: nel nodo dell&#39;heap è presente un puntatore alla tabella e vice versa.
+L’heap è una struttura dati vista a lezione che è stata aumentata per gestire l’update dinamico in <code>O(log n)</code>.
+Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf"><em>A Heap-Based Concurrent Priority Queue with Mutable Priorities for Faster Parallel Algorithms</em></a> redatto da O. Tamir, A. Morrison e N. Rinetzky [1], osservando in particolare la sezione numero 3 : <em>“A Sequential Heap with Mutable Priorities”</em>.</p>
 
 <hr>
 
-<h1 id="toc_8">3. Database e Strutture dati</h1>
+<h1 id="toc_12">3. Database e Strutture dati</h1>
 
 <p>Il database è accessibile da un unico puntatore dichiarato globale e statico. È stata fatta questa scelta in quanto si assume di lavorare sempre su un unico database, seguendo le linee guida del progetto. In questo modo si evita di appesantire lo stack di sistema a ogni chiamata di funzione. Segue uno schema grafico della sua struttura interna e la spiegazione di ogni elemento di cui è composto.</p>
 
@@ -622,15 +641,15 @@ Per la implementazione si è preso spunto da un paper redatto da O. Tamir, A. Mo
 <li> Heap con Update Dinamico</li>
 </ol>
 
-<h2 id="toc_9">3.1 Linked List</h2>
+<h2 id="toc_13">3.1 Linked List</h2>
 
 <p>Le linked list utilizzate sono implementate nel modo classico.</p>
 
-<h2 id="toc_10">3.2 Red-Black Tree</h2>
+<h2 id="toc_14">3.2 Red-Black Tree</h2>
 
 <p>I Red-Black Tree (d’ora in poi chiamati anche RBT) utilizzati sono stati modificati per l’applicazione specifica. L’implementazione delle funzioni core si è ispirata allo pseudo-codice presente sul libro di testo consigliato dal docente “Introduction to Algorithms” di Cormen, Leiserson, Rivest e Stein.</p>
 
-<h3 id="toc_11">3.2.1 Struct RBT</h3>
+<h3 id="toc_15">3.2.1 Struct RBT</h3>
 
 <p>La struct utilizzata per rappresentare l’albero contiene:</p>
 
@@ -645,7 +664,7 @@ Per la implementazione si è preso spunto da un paper redatto da O. Tamir, A. Mo
 </ul></li>
 </ol>
 
-<h3 id="toc_12">3.2.2 Struct RBTNode</h3>
+<h3 id="toc_16">3.2.2 Struct RBTNode</h3>
 
 <p>La struct utilizzata per rappresentare i nodi dell’albero contiene:</p>
 
@@ -658,17 +677,17 @@ Per la implementazione si è preso spunto da un paper redatto da O. Tamir, A. Mo
 <li> Puntatore al record o alla tabella <code>void * nodeValue</code></li>
 </ol>
 
-<h3 id="toc_13">3.2.3 Uso</h3>
+<h3 id="toc_17">3.2.3 Uso</h3>
 
 <p>La struct Database è un RBT contenente le tabelle caricate in memoria.</p>
 
-<h2 id="toc_14">3.3 Heap con Update Dinamico</h2>
+<h2 id="toc_18">3.3 Heap con Update Dinamico</h2>
 
 <p>L’Heap è stato modificato, aggiungendo la possibilità di fare Update Dinamici in tempo logaritmico, ispirandosi al paper redatto da O. Tamir, A. Morrison e N. Rinetzky [1], osservando in particolare la sezione numero 3: “A Sequential Heap with Mutable Priorities”.</p>
 
-<h2 id="toc_15">3.4 Strutture</h2>
+<h2 id="toc_19">3.4 Strutture</h2>
 
-<h3 id="toc_16">3.4.1 Struttura TableDB</h3>
+<h3 id="toc_20">3.4.1 Struttura TableDB</h3>
 
 <p>La struttura tabella (<code>struct TableDB</code>) contiene:</p>
 
@@ -682,17 +701,17 @@ Per la implementazione si è preso spunto da un paper redatto da O. Tamir, A. Mo
 
 <p>L’array degli RBT contiene tanti RBT quante sono le colonne della tabella, e ognuno di questi mantiene i record ordinati per quel campo.</p>
 
-<h3 id="toc_17">3.4.2 Struttura ParseResult</h3>
+<h3 id="toc_21">3.4.2 Struttura ParseResult</h3>
 
 <p><code>struct ParseResult</code> ha un campo per ogni possibile informazione di cui può essere necessario fare il parse e un campo di controllo (<code>bool success</code>) che indica se esso è andato a buon fine o meno.</p>
 
-<h3 id="toc_18">3.4.3 Struttura QueryResultElement</h3>
+<h3 id="toc_22">3.4.3 Struttura QueryResultElement</h3>
 
 <p><code>struct QueryResultElement</code> è una struttura che serve a contenere il risultato delle query. È una semplice linked list, in cui il campo “occurrence” viene utilizzato nelle query “group by” per memorizzare le occorrenze del valore e il campo “nodeValue” punta al record a cui si vuol riferire questo nodo della lista.</p>
 
 <hr>
 
-<h1 id="toc_19">4. Corpo centrale</h1>
+<h1 id="toc_23">4. Corpo centrale</h1>
 
 <p>Il corpo centrale è diviso in tre parti principali:</p>
 
@@ -710,65 +729,71 @@ Per la implementazione si è preso spunto da un paper redatto da O. Tamir, A. Mo
 <li>  Deallocazione della memoria <em>(dopo aver eseguito la query)</em></li>
 </ul>
 
-<h2 id="toc_20">4.1 Fase di Inizializzazione</h2>
+<h2 id="toc_24">4.1 Inizializzazione</h2>
 
 <p>Viene inizializzata la struttura che conterrà il database e l’heap per la gestione della memoria.
 Viene eseguita solo una volta, alla prima chiamata della funzione “executeQuery” e poi viene saltata.</p>
 
-<h2 id="toc_21">4.2 Fase di Parsing</h2>
+<h2 id="toc_25">4.2 Parsing</h2>
 
-<p>Viene chiamata la funzione “parseQuery” che, appunto, fa il parsing della query passata per argomento alla funzione “executeQuery”.
-Essa ritorna una struttura chiamata “ParseResult” che contiene il risultato del parsing (a buon fine o meno) e tutte le informazione necessarie per eseguire la query/creazione/inserimento.
-Se la queryString non era correttamente formattata (quindi il parse non ha successo), viene interrotta l’esecuzione con ritorno a false.</p>
+<p>Il parsing viene gestito dalla funzione <code>parseQuery()</code>, che ritorna una <code>struct ParseResult</code> con tutte le informazioni contenute nella query.
+In caso quest&#39;ultima fosse malformata, l&#39;esecuzione viene interrotta e la proprietà <code>success</code> del <code>ParseResult</code> avrà valore <code>false</code>.</p>
 
-<h2 id="toc_22">4.3 Fase di Ricerca</h2>
+<h2 id="toc_26">4.3 Recupero della tabella</h2>
 
-<p>Viene ricercata la tabella sul cui si vuole lavorare nel database tramite la funzione “searchTableDb”. Se viene trovata, viene aggiornata la sua chiava nella coda di priorità per la gestione della memoria.
-Altrimenti si prova a caricarla da file con la funzione “loadTableFromFile”.
-Questa fase rilascia una struttura di tipo “Table” che può contenere o no una tabella in base al successo del caricamento.</p>
+<p>La tabella richiesta dalla query viene cercata in RAM dalla funzione <code>searchTableDb()</code>. Se la ricerca ha esito positivo, viene aggiornata la chiave associata alla tabella nella coda di priorità per la gestione della memoria.
+In caso di esito negativo, la tabella viene caricata da disco tramite <code>loadTableFromFile()</code>.
+Alla fine della fase di recupero della tabella, si ottiene una <code>struct Table</code> contenente l&#39;esito dell&#39;operazione e, in caso sia positivo, la tabella.</p>
 
-<h2 id="toc_23">4.4 Fase di Esecuzione</h2>
+<h2 id="toc_27">4.4 Esecuzione Query</h2>
 
-<p>Viene eseguita la query vera e propria.</p>
+<p>Viene eseguita la query.</p>
 
-<h3 id="toc_24">4.4.1 Fase di Controllo</h3>
+<h3 id="toc_28">4.4.1 Controllo della query</h3>
 
-<p>Prima di tutto, viene controllata la query/creazione/inserimento ora che si conoscono tutte le informazione della tabella a cui si sta facendo riferimento (se è stata caricata in memoria dalla fase precedente).
-Dopodichè la query viene eseguita in base al suo tipo.</p>
+<p>Ora che si hanno tutte le informazioni, si procede a un check della validità delle informazioni richieste dalla query.</p>
 
-<h3 id="toc_25">4.4.2 Creazione</h3>
+<blockquote>
+<p>E.g.: Le colonne richieste esistono.</p>
+</blockquote>
 
-<p>Se la tabella non esiste (quindi non era stata caricata), viene creata. Prima viene generato il file e poi viene creata la struttura della tabella nel database.</p>
+<h3 id="toc_29">4.4.2 Create Table</h3>
 
-<h3 id="toc_26">4.4.3 Inserimento</h3>
+<p>Una query <code>CREATE TABLE</code> valida prevede che non venga caricata nessuna tabella.
+Viene generato il file su disco e caricato in memoria tramite la stessa procedura applicata alle altre tabelle.</p>
 
-<p>Se la tabella esiste (quindi è stata caricata), viene eseguito l’inserimento di un record. Prima viene aggiornato il file e poi aggiunto il record nella struttura della tabella a database.</p>
+<h3 id="toc_30">4.4.3 Insert Into</h3>
 
-<h3 id="toc_27">4.4.4 Selezione</h3>
+<p>Il record specificato viene aggiunto prima nel file su disco, poi nelle strutture in memoria.</p>
 
-<p>Se la tabella esiste, viene eseguita la selezione. Attraverso la funzione “querySelect” viene creata una struttura di tipo “QueryResultList” contenente il risultato della query
-Dopodichè viene generato il log della query eseguita, chiamando la funzione “generateLog”.
-Viene poi liberata la memoria contenente la struttra della “QueryResultList”.</p>
+<h3 id="toc_31">4.4.4 Selezione</h3>
 
-<h2 id="toc_28">4.5 Fase di Liberazione della memoria</h2>
+<p>Attraverso la funzione <code>querySelect()</code> viene creata una <code>struct QueryResultList</code>, che contiene il risultato della query. Il contenuto viene loggato tramite una chiamata a <code>generateLog()</code> e la struttura deallocata.</p>
 
-<p>Vengono liberate tutte le strutture utilizzate per la query in corso. Nel nostro caso solo una che rimane ancora non liberata, ossia il “ParseResult”</p>
+<h2 id="toc_32">4.5 Deallocazione della memoria</h2>
 
-<h1 id="toc_29">5. Parser</h1>
+<p>Al termine dell&#39;esecuzione vengono eliminate le strutture superflue, in questo caso la <code>struct ParseResult</code>.</p>
 
-<p>Il parser deve gestire un numero limitato di possibili query, ed ha quindi una struttura molto semplice.
-Tutta l&#39;operaIone di parsing viene eseguita in tempo lineare rispetto alla lunghezza della query.
-L&#39;entry point del parser è la funzione <code>ParseResult parseQuery (char * query)</code>, dalla quale vengono chiamate varie funzioni per capire il tipo di query e farne l&#39;analisi. Durante l&#39;esecuzione viene usato direttamente un puntatore <code>char *</code>, che segue il progresso lungo la query tramite degli incrementi.
-La funzione <code>parseQuery</code> restituisce un puntatore <code>ParseResult</code> alla <code>struct ParseResult</code>, così composta: </p>
+<h1 id="toc_33">5. Parser</h1>
+
+<p>Il parser deve gestire un numero limitato di possibili query, ha quindi una struttura molto semplice.
+Tutta l&#39;operazione di parsing viene eseguita in tempo lineare rispetto alla lunghezza della query.</p>
+
+<p>L&#39;entry point del parser è la funzione: </p>
+
+<div><pre><code class="language-c">ParseResult parseQuery (char * query);</code></pre></div>
+
+<p>Durante l&#39;esecuzione viene usato direttamente un puntatore <code>char *</code>, che segue il progresso del parsing.
+Il parser restituisce un puntatore alla <code>struct ParseResult</code>, così composta: </p>
 
 <div><pre><code class="language-c">struct ParseResult {
     bool success;
     char * tableName;
     int queryType;
-    char ** columns;
-    int nColumns;
-    char ** fieldValues;
     int querySelector;
+    int nColumns;
+    char ** columns;
+    char ** fieldValues;
     char * keyName;
     char * key;
     int order;
@@ -778,7 +803,7 @@ La funzione <code>parseQuery</code> restituisce un puntatore <code>ParseResult</
 <p>dove:</p>
 
 <ol>
-<li><p><code>bool success</code>: contiene il risultato dell&#39;analisi, e di conseguenza la validità sia della query che dei dati nella struttura</p></li>
+<li><p><code>bool success</code>: contiene l&#39;esito dell&#39;analisi.</p></li>
 <li><p><code>char * tableName</code>: contiene il nome della tabella su cui agisce la query</p></li>
 <li><p><code>int queryType</code>: contiene il codice numerico identificativo del tipo di query, tra i possibili seguenti:</p>
 
@@ -792,17 +817,17 @@ La funzione <code>parseQuery</code> restituisce un puntatore <code>ParseResult</
 <li>No Query: <code>6</code></li>
 </ul></li>
 <li><p><code>char ** columns</code>: contiene i puntatori di tipo <code>char *</code> ai nomi delle colonne interessate dalla query.</p></li>
-<li><p><code>int nColumns</code>: contiene il numero di colonne interessate dalla query, e di conseguenza anche il numero di puntatori presenti dentro il campo <code>char ** columns</code>.</p></li>
-<li><p><code>char ** fieldValues</code>: usata solo nelle query di tipo Insert Into, contiene <code>nColumns</code> puntatori di tipo <code>char *</code> alle stringhe contenenti i valori da inserire</p></li>
+<li><p><code>int nColumns</code>: contiene il numero di colonne interessate dalla query, xhe corrisponde al numero di puntatori presenti nel campo <code>char ** columns</code>.</p></li>
+<li><p><code>char ** fieldValues</code>: usata solo nelle query di tipo Insert Into. Contiene <code>nColumns</code> puntatori di tipo <code>char *</code> alle stringhe contenenti i valori da inserire.</p></li>
 <li><p><code>int querySelector</code>: usato solo in query di tipo Select con filtro Where, contiene il codice numerico identificativo dell&#39;operatore:</p>
 
 <ul>
-<li>Equal <code>0</code></li>
-<li>Greater <code>1</code></li>
-<li>Lesser <code>2</code></li>
-<li>Greater Equal <code>3</code></li>
-<li>Lesser Equal <code>4</code></li>
-<li>No Operator <code>5</code></li>
+<li>Equal: <code>0</code></li>
+<li>Greater: <code>1</code></li>
+<li>Lesser: <code>2</code></li>
+<li>Greater Equal: <code>3</code></li>
+<li>Lesser Equal: <code>4</code></li>
+<li>No Operator: <code>5</code></li>
 </ul></li>
 <li><p><code>char * keyName</code>: usato nelle query di tipo:</p>
 
@@ -811,12 +836,12 @@ La funzione <code>parseQuery</code> restituisce un puntatore <code>ParseResult</
 <li>Select con filtro Group By, per contenere il nome del campo per cui raggruppare i record.</li>
 <li>Select con filtro Order By, per contenere il nome del campo per cui ordinare i record.</li>
 </ul></li>
-<li><p><code>char * key</code>: usato solo nella query di tipo Select con filtro Where, per contenere il valore da paragonare quando si verifica la condizione della query.</p></li>
+<li><p><code>char * key</code>: usato solo nella query di tipo Select con filtro Where, per contenere il valore da paragonare quando si controlla la condizione.</p></li>
 <li><p><code>int order</code>: usato solo nelle query di tipo Select con filtro Order By, contiene l&#39;ordine desiderato. Può assumere i valori:</p>
 
 <ul>
-<li>ASC 0</li>
-<li>DESC 1</li>
+<li><code>ASC</code>: 0</li>
+<li><code>DESC</code>: 1</li>
 </ul></li>
 <li><p><code>int parseErrorCode</code>: contiene un identificativo numerico hardcoded nel sorgente, unico al punto in cui il parse ha fallito l&#39;esecuzione e terminato prematuramente. Controllando il codice si può facilmente risalire al punto in cui si è manifestato il problema. I codici di errore sono suddivisi in classi:</p>
 
@@ -831,9 +856,9 @@ La funzione <code>parseQuery</code> restituisce un puntatore <code>ParseResult</
 </ul></li>
 </ol>
 
-<h2 id="toc_30">6 Riferimenti esterni:</h2>
+<h2 id="toc_34">6 Riferimenti esterni:</h2>
 
-<p>[1] <a href="https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf">https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf</a></p>
+<p>[1] <a href="https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf"><em>A Heap-Based Concurrent Priority Queue with Mutable Priorities for Faster Parallel Algorithms</em></a>, by O. Tamir, A. Morrison e N. Rinetzky.</p>
 
 
 
