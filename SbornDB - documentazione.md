@@ -1,6 +1,21 @@
 # SbornDB – documentazione
 ---
+# Dati dei componenti del gruppo
 
+Data di consegna 05/09/2018
+
+Samuele Ceroni  0000825238
+Giacomo Aloisi  0000832933
+Ugo Baroncini   0000842092
+
+Per lo sviluppo
+IDE utilizzato: Sublime
+Compilatore utilizzato: gcc
+Sistemi Operativi utilizzati: MacOS e Linux Debian
+
+Dopo la fase di sviluppo, come da specifiche abbiamo fatto il porting del progetto su Visual Studio 2015 su Windows.
+
+# Indice
 1. **Premessa**
 2. **Gestione della memoria**
     * 2.1 Premessa
@@ -279,10 +294,53 @@ dove:
     * `601-699`: Errori durante il parsing della parte finale di una query "Select Order By"
 
 # 6 Costi Computazionali
+Di seguito si elencano i costi di esecuzioni delle query richieste, in termini di tempo e di memoria. I costi di caricamento/eliminazione di una tabella sono considerati separatamente in quanto non sempre vengono eseguiti: per ottenere il calcolo del costo nel caso di una query su una tabella non ancora presente in RAM, sarà necessario fare la somma dei costi. L'eliminazione di una tabella è un operazione che si verifica solo nel caso in cui le tabelle siano più di una e in contemporanea la memoria occupata dalle tabelle superi quella consentita dalla threshold.
+Si evita di considerare il tempo impiegato per fare il parse della query, in quanto lineare rispetto alla lunghezza dell'input e quindi di poco interesse al fine dell'analisi.
+Onde evitare ripetute espressioni prolisse saranno utilizzati questi diversi simboli:
+X = numero di tabelle presenti in memoria;
+Y = numero di record presenti nella tabella corrente;
+Z = numero di colonne presenti nella tabella corrente.
 
-1. Query `CREATE TABLE`:
-    * Tempo: **`O(log(X))`** dove `x = numero tabelle già caricate`
-    * Memoria: **`typo`**
+## 6.1 CREATE TABLE
+Per creare una tabella è solamente necessario inserirla nel database. Questa operazione è possibile farla in tempo logaritmico rispetto al numero di tabelle presenti. Il costo in termini di memoria e' costante.
+Costo tempo = O(log(X))
+Costo spazio = Θ(1)
 
-## 7 Riferimenti esterni:
+## 6.2 INSERT INTO
+Per inserire un elemento in una tabella è necessario: cercare la tabella (in tempo logaritmico rispetto al numero di tabelle), inserire il record nella lista di record (in tempo costante) e il suo indirizzo di memoria in ogni rbt associato a ogni colonna (in tempo logaritmico in base al numero di record, moltiplicato per il numero di colonne). Il costo in termini di spazio e' il record O(1) e un puntatore al record per ogni colonna O(Z).
+Costo tempo = O(log(X)) + O(Z * log(Y))
+Costo spazio = Θ(Z)
+
+## 6.3 SELECT
+Il database e' stato implementato in maniera tale da fare le select in tempo lineare rispetto al numero dei record, invece che spendere il tempo necessario all'ordinamento. In tutte le select si crea una lista (queryResultList) in cui vengono restituiti i record nell'ordine richiesto. Questa scelta è stata fatta per mantenere modularità e non mischiare il compito delle funzioni, a discapito della memoria occupata, che è lineare rispetto ai record piuttosto che costante.
+Costo spazio = Θ(Y)
+
+### 6.3.1 SENZA FILTRI
+Il costo in termini di tempo rispetto alla select senza filtri e' la somma della ricerca della tabella (logaritmico in base al numero di tabelle) e della stampa (in tempo lineare) della lista di record.
+Costo tempo = O(log(X)) + Θ(Y)
+
+### 6.3.2 ORDER BY
+Il costo in termini di tempo della select order by differisce da quella senza filtri solo per la ricerca della colonna secondo cui l'output dev'essere ordinato.
+Costo tempo = O(log(X)) + O(Z) + Θ(Y)
+
+### 6.3.3 GROUP BY
+Il group internamente chiama la funzione orderby e poi conta gli elementi che hanno lo stesso valore nella colonna di riferimento. Il costo computazionale è quindi il medesimo.
+Costo tempo = O(log(X)) + O(Z) + Θ(Y)
+
+### 6.3.4 WHERE
+La select condizionale ha un costo computazionale che dipende dalla ricerca della tabella e dallo scorrimento di tutti i record per la loro selezione.
+Costo tempo = O(log(X)) + Θ(Y)
+
+## 6.4 Caricamento ed eliminazione di una tabella
+### 6.4.1 Caricamento di una tabella da file
+Per caricare una tabella da file, il costo computazionale necessario è la somma di una CREATE TABLE e di un INSERT INTO per ogni record. Ne risulta, in termini di ordini di grandezza:
+Costo tempo = O(log(X)) + O((Z * log(Y)) Z)
+Costo spazio = Θ(Z * Y)
+
+### 6.4.2 Eliminazione di una tabella dalla memoria
+Per eliminare una tabella dalla memoria è necessario trovare la tabella nell'albero del database (in tempo logaritmico), eliminare tutti i record della lista (in tempo lineare rispetto al numero di record) e eliminare tutti i nodi degli alberi relativi agli indici(in tempo lineare rispetto al numero di record). Quindi:
+Costo tempo = O(log(X)) + Θ(Y * Z)
+Costo spazio = Θ(1)
+
+### 7 Riferimenti esterni:
 [1] <a href="https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf">_A Heap-Based Concurrent Priority Queue with Mutable Priorities for Faster Parallel Algorithms_</a>, by O. Tamir, A. Morrison e N. Rinetzky.
