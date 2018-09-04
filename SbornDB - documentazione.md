@@ -34,7 +34,14 @@
         * _4.4.4 Selezione_
     * 4.5 Fase di Liberazione della memoria
 5. **Parser**
-6. **Riferimenti Esterni**
+6. **Costi Computazionali** 
+7. **Riferimenti Esterni**
+
+
+# Studenti
+* Aloisi blq
+* ..d
+* ..
 
 
 ---
@@ -270,6 +277,12 @@ dove:
     * `401-499`: Errori durante il parsing della parte finale di una query "Select Where"
     * `501-599`: Errori durante il parsing della parte finale di una query "Select Group By"
     * `601-699`: Errori durante il parsing della parte finale di una query "Select Order By"
- 
-## 6 Riferimenti esterni:
+
+# 6 Costi Computazionali
+
+1. Query `CREATE TABLE`:
+    * Tempo: **`O(log(X))`** dove `x = numero tabelle già caricate`
+    * Memoria: **`typo`**
+
+## 7 Riferimenti esterni:
 [1] <a href="https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf">_A Heap-Based Concurrent Priority Queue with Mutable Priorities for Faster Parallel Algorithms_</a>, by O. Tamir, A. Morrison e N. Rinetzky.
