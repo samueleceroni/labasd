@@ -13,8 +13,10 @@ IDE utilizzato: Sublime
 Compilatore utilizzato: gcc
 Sistemi Operativi utilizzati: MacOS e Linux Debian
 
-Dopo la fase di sviluppo, come da specifiche abbiamo fatto il porting del progetto su Visual Studio 2015 su Windows.
+Dopo la fase di sviluppo, come da specifiche abbiamo fatto il porting del progetto su Visual Studio 2015 su Windows per la fase di test.
+Per poter lavorare in gruppo abbiamo deciso di utilizzare GIT come version control e github come sito di host dei file.
 
+---
 # Indice
 1. **Premessa**
 2. **Gestione della memoria**
@@ -52,18 +54,12 @@ Dopo la fase di sviluppo, come da specifiche abbiamo fatto il porting del proget
 6. **Costi Computazionali** 
 7. **Riferimenti Esterni**
 
-
-# Studenti
-* Aloisi blq
-* ..d
-* ..
-
-
 ---
 # 1. Premessa
 In questo file sono racchiuse tutte le specifiche sul funzionamento del database, sui suoi costi in termini di velocità e di memoria.
 Il progetto è diviso in: gestione della memoria, strutture dati, corpo centrale e parser.
-Ogni parte verrà analizzata nel dettaglio e alla fine verranni discussi i costi computazionali di tempo e spazio.
+Ogni parte verrà analizzata nel dettaglio e nella sezione finale verranni discussi i costi computazionali di tempo e spazio.
+È stato pensato di inserire nel file header del progetto solo le funzioni esterne, ovvero quelle che servono alle diverse parti del progetto per dialogare tra loro, mentre le funzioni secondarie, quelle interne, sono dichiarate nelle prime righe del file sorgente. È stato pernsato di fare come quando si lavora con diversi file, per rendere le funzioni "private" o "pubbliche", per nostra chiarezza mentale e di contenuti.
 
 ---
 # 2. Gestione della memoria
@@ -89,7 +85,7 @@ Limitare l’utilizzo di RAM per mantenere alte le prestazioni di tutto il siste
 Supponendo un utilizzo con dataset grandi, un sistema di caching ben realizzato può fornire speed-up importanti, limitando i caricamenti da disco.
 Se non gestito, il sistema di caching arriverebbe ad avere tutti i dati in RAM, senza caricare nulla da disco e potenzialmente rallentando l'intera macchina.
 Considerando un caching completo una strada non sempre percorribile, il sistema di limitazione della memoria serve a prevenire eccessivi rallentamenti, eliminando le tabelle dalla RAM secondo un criterio temporale.
-In caso di pessime prestazioni con cambi repentini di tabelle, si suggerisce di aumentare il limite di memoria.
+In caso di pessime prestazioni con cambi repentini di tabelle, si suggerisce di aumentare il limite di memoria (è possibile farlo manualmente modificando il parametro MEMORY_THRESHOLD, anche per testare il sistema implementato).
 
 ### 2.5.2 Modalità di implementazione
 Il sistema usa un heap con update dinamico per approssimare una coda di priorità con update dinamico.
@@ -293,6 +289,7 @@ dove:
     * `501-599`: Errori durante il parsing della parte finale di una query "Select Group By"
     * `601-699`: Errori durante il parsing della parte finale di una query "Select Order By"
 
+---
 # 6 Costi Computazionali
 Di seguito si elencano i costi di esecuzioni delle query richieste, in termini di tempo e di memoria. I costi di caricamento/eliminazione di una tabella sono considerati separatamente in quanto non sempre vengono eseguiti: per ottenere il calcolo del costo nel caso di una query su una tabella non ancora presente in RAM, sarà necessario fare la somma dei costi. L'eliminazione di una tabella è un operazione che si verifica solo nel caso in cui le tabelle siano più di una e in contemporanea la memoria occupata dalle tabelle superi quella consentita dalla threshold.
 Si evita di considerare il tempo impiegato per fare il parse della query, in quanto lineare rispetto alla lunghezza dell'input e quindi di poco interesse al fine dell'analisi.
@@ -342,5 +339,6 @@ Per eliminare una tabella dalla memoria è necessario trovare la tabella nell'al
 Costo tempo = O(log(X)) + Θ(Y * Z)
 Costo spazio = Θ(1)
 
+---
 ### 7 Riferimenti esterni:
 [1] <a href="https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf">_A Heap-Based Concurrent Priority Queue with Mutable Priorities for Faster Parallel Algorithms_</a>, by O. Tamir, A. Morrison e N. Rinetzky.

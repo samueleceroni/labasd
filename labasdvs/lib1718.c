@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <math.h>
 
 // Header file for this library
 #include "lib1718.h"
@@ -53,7 +52,7 @@
 #define LOG_FILE_NAME "query_results.txt"
 
 // Memory usage max threshold
-#define MEMORY_THRESHOLD 256000
+#define MEMORY_THRESHOLD 64000000
 
 
 //=================================//
@@ -104,7 +103,6 @@ int parseQueryParameter(char * query, char ** parameter, const char * forbiddenC
 int parseQueryType(char * query);
 
 // Comparison
-int compare(char * a, char * b);
 int strCompare(char * a, char * b);
 int strIsNumber(char * s);
 int strAreBothNumbers(char * a, char * b);
@@ -113,13 +111,12 @@ int strAreBothNumbers(char * a, char * b);
 int fpeek(FILE * const fp);
 
 //Memory management
-void* allocateBytes(int bytes);
 bool moreThanOneTableAllocated();
 int deallocateFurthestTable();
 void bubbleUpHeapElement(TableHeapElement el);
 void bubbleDownHeapElement(TableHeapElement el);
 void swapHeapElement(int a, int b);
-
+TableHeapElement extractMemoryHeap();
 
 //================================//
 // Main functions implementations //
@@ -380,25 +377,6 @@ TableHeapElement insertMemoryHeap(Table t) {
 	return newElement;
 }
 
-TableHeapElement extractMemoryHeap() {
-	TableHeapElement res = memoryHeap->array[1];
-	int last = memoryHeap->last;
-	if (last == 0)
-		return NULL;
-	res->position = -1;
-	if (last == 1) {
-		memoryHeap->array[1] = NULL;
-	}
-	else {
-		swapHeapElement(1, last);
-		memoryHeap->array[last] = NULL;
-		memoryHeap->last = last - 1;
-		if (last > 2)
-			bubbleDownHeapElement(memoryHeap->array[1]);
-	}
-	return res;
-}
-
 void updatePriorityMemoryHeap(TableHeapElement element, unsigned long long int priority) {
 	if (priority < element->priority) {
 		element->priority = priority;
@@ -451,6 +429,35 @@ void freeQueryResultList(QueryResultList res) {
 		free(res);
 		res = next;
 	}
+}
+
+void* allocateBytes(int bytes) {
+	//static variable that keeps track of heap size
+	static int memoryUsage = 0;
+
+	memoryUsage += bytes;
+
+	//if memory gets over the threshold and we have more than one table allocated, dellocate
+	while (memoryUsage > MEMORY_THRESHOLD && moreThanOneTableAllocated()) {
+		int tableSize = deallocateFurthestTable();
+		memoryUsage -= tableSize;
+	}
+
+	void* res = NULL;
+	res = malloc(bytes);
+
+	//same thing if OS returns NULL
+	while (res == NULL && moreThanOneTableAllocated()) {
+		int tableSize = deallocateFurthestTable();
+		memoryUsage -= tableSize;
+		res = malloc(bytes);
+	}
+
+	if (currentTableUsed) {
+		currentTableUsed->heapReference->memorySize += bytes;
+	}
+
+	return res;
 }
 
 // Checker
@@ -996,6 +1003,42 @@ bool insertIntoTableFile(char* name, char** columns, char** values, int nColumns
 	return true;
 }
 
+
+// Useful internal tools
+int compare(char * a, char * b) {
+	// compares two strings
+	double numA = 0, numB = 0;
+
+	if (strAreBothNumbers(a, b)) {
+		numA = parseDouble(a);
+		numB = parseDouble(b);
+
+		if (numA > numB) {
+			return GREATER;
+		}
+		if (numA < numB) {
+			return LESSER;
+		}
+
+		return EQUAL;
+	}
+
+	return strCompare(a, b);
+}
+
+int powd(int base, int exp){
+	if(exp == 0)
+		return 1;
+	if(exp == 1)
+		return base;
+	int remExp = 1;
+	int res = base;
+	while(remExp * 2 <= exp){
+		res *= res;
+		remExp *= 2;
+	}
+	return res * powd(base, exp - remExp);
+}
 
 //===================================//
 // Secondary Function Implementation //
@@ -2033,7 +2076,7 @@ double parseDouble(char * s) {
 		}
 
 		// char to int times the correct ten power, casted as double
-		result += (double)((s[i] - '0') * pow(10, exponent));
+		result += (double)((s[i] - '0') * powd(10, exponent));
 	}
 
 	return result * signMultiplier;
@@ -2099,27 +2142,6 @@ int parseQueryType(char * query) {
 }
 
 // Comparison
-int compare(char * a, char * b) {
-	// compares two strings
-	double numA = 0, numB = 0;
-
-	if (strAreBothNumbers(a, b)) {
-		numA = parseDouble(a);
-		numB = parseDouble(b);
-
-		if (numA > numB) {
-			return GREATER;
-		}
-		if (numA < numB) {
-			return LESSER;
-		}
-
-		return EQUAL;
-	}
-
-	return strCompare(a, b);
-}
-
 int strCompare(char * a, char * b) {
 	int res = strcmp(a, b);
 
@@ -2164,35 +2186,6 @@ int fpeek(FILE * const fp) {
 }
 
 // Memory management
-void* allocateBytes(int bytes) {
-	//static variable that keeps track of heap size
-	static int memoryUsage = 0;
-
-	memoryUsage += bytes;
-
-	//if memory gets over the threshold and we have more than one table allocated, dellocate
-	while (memoryUsage > MEMORY_THRESHOLD && moreThanOneTableAllocated()) {
-		int tableSize = deallocateFurthestTable();
-		memoryUsage -= tableSize;
-	}
-
-	void* res = NULL;
-	res = malloc(bytes);
-
-	//same thing if OS returns NULL
-	while (res == NULL && moreThanOneTableAllocated()) {
-		int tableSize = deallocateFurthestTable();
-		memoryUsage -= tableSize;
-		res = malloc(bytes);
-	}
-
-	if (currentTableUsed) {
-		currentTableUsed->heapReference->memorySize += bytes;
-	}
-
-	return res;
-}
-
 bool moreThanOneTableAllocated() {
 	return memoryHeap->last >= 2;
 }
@@ -2244,4 +2237,23 @@ void swapHeapElement(int a, int b) {
 	memoryHeap->array[b] = tmp;
 	memoryHeap->array[a]->position = a;
 	memoryHeap->array[b]->position = b;
+}
+
+TableHeapElement extractMemoryHeap() {
+	TableHeapElement res = memoryHeap->array[1];
+	int last = memoryHeap->last;
+	if (last == 0)
+		return NULL;
+	res->position = -1;
+	if (last == 1) {
+		memoryHeap->array[1] = NULL;
+	}
+	else {
+		swapHeapElement(1, last);
+		memoryHeap->array[last] = NULL;
+		memoryHeap->last = last - 1;
+		if (last > 2)
+			bubbleDownHeapElement(memoryHeap->array[1]);
+	}
+	return res;
 }

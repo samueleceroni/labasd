@@ -115,10 +115,10 @@ QueryResultList querySelect(Table t, ParseResult res);
 // Memory Part
 void initMemoryHeap();
 TableHeapElement insertMemoryHeap(Table t);
-TableHeapElement extractMemoryHeap();
 void updatePriorityMemoryHeap(TableHeapElement element, unsigned long long int priority);
 void freeParseResult(ParseResult res);
 void freeQueryResultList(QueryResultList res);
+void* allocateBytes(int bytes);
 
 //Checker
 bool checkQueryIntegrity(Table t, ParseResult res);
@@ -133,3 +133,7 @@ void generateLog(ParseResult pRes, char* query, QueryResultList records);
 bool createTableFile(char* name, char** columns, int nColumns);
 Table loadTableFromFile(char* name);
 bool insertIntoTableFile(char* name, char** columns, char** values, int nColumns);
+
+// Useful internal tools
+int compare(char * a, char * b);
+int powd(int base, int exp);// in order to avoid to use cmath.h, not explicitly allowed
