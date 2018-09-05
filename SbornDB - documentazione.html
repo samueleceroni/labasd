@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 
@@ -305,7 +306,7 @@ kbd {
 }
 
 * {
-	-webkit-print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
 }
 @media screen and (min-width: 914px) {
     body {
@@ -314,12 +315,12 @@ kbd {
     }
 }
 @media print {
-	table, pre {
-		page-break-inside: avoid;
-	}
-	pre {
-		word-wrap: break-word;
-	}
+  table, pre {
+    page-break-inside: avoid;
+  }
+  pre {
+    word-wrap: break-word;
+  }
 }
 </style>
 
@@ -332,78 +333,78 @@ kbd {
 
 code[class*="language-"],
 pre[class*="language-"] {
-	color: black;
-	background: none;
-	text-shadow: 0 1px white;
-	font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-	text-align: left;
-	white-space: pre;
-	word-spacing: normal;
-	word-break: normal;
-	word-wrap: normal;
-	line-height: 1.5;
+  color: black;
+  background: none;
+  text-shadow: 0 1px white;
+  font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+  text-align: left;
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  word-wrap: normal;
+  line-height: 1.5;
 
-	-moz-tab-size: 4;
-	-o-tab-size: 4;
-	tab-size: 4;
+  -moz-tab-size: 4;
+  -o-tab-size: 4;
+  tab-size: 4;
 
-	-webkit-hyphens: none;
-	-moz-hyphens: none;
-	-ms-hyphens: none;
-	hyphens: none;
+  -webkit-hyphens: none;
+  -moz-hyphens: none;
+  -ms-hyphens: none;
+  hyphens: none;
 }
 
 pre[class*="language-"]::-moz-selection, pre[class*="language-"] ::-moz-selection,
 code[class*="language-"]::-moz-selection, code[class*="language-"] ::-moz-selection {
-	text-shadow: none;
-	background: #b3d4fc;
+  text-shadow: none;
+  background: #b3d4fc;
 }
 
 pre[class*="language-"]::selection, pre[class*="language-"] ::selection,
 code[class*="language-"]::selection, code[class*="language-"] ::selection {
-	text-shadow: none;
-	background: #b3d4fc;
+  text-shadow: none;
+  background: #b3d4fc;
 }
 
 @media print {
-	code[class*="language-"],
-	pre[class*="language-"] {
-		text-shadow: none;
-	}
+  code[class*="language-"],
+  pre[class*="language-"] {
+    text-shadow: none;
+  }
 }
 
 /* Code blocks */
 pre[class*="language-"] {
-	padding: 1em;
-	margin: .5em 0;
-	overflow: auto;
+  padding: 1em;
+  margin: .5em 0;
+  overflow: auto;
 }
 
 :not(pre) > code[class*="language-"],
 pre[class*="language-"] {
-	background: #f5f2f0;
+  background: #f5f2f0;
 }
 
 /* Inline code */
 :not(pre) > code[class*="language-"] {
-	padding: .1em;
-	border-radius: .3em;
-	white-space: normal;
+  padding: .1em;
+  border-radius: .3em;
+  white-space: normal;
 }
 
 .token.comment,
 .token.prolog,
 .token.doctype,
 .token.cdata {
-	color: slategray;
+  color: slategray;
 }
 
 .token.punctuation {
-	color: #999;
+  color: #999;
 }
 
 .namespace {
-	opacity: .7;
+  opacity: .7;
 }
 
 .token.property,
@@ -413,7 +414,7 @@ pre[class*="language-"] {
 .token.constant,
 .token.symbol,
 .token.deleted {
-	color: #905;
+  color: #905;
 }
 
 .token.selector,
@@ -422,7 +423,7 @@ pre[class*="language-"] {
 .token.char,
 .token.builtin,
 .token.inserted {
-	color: #690;
+  color: #690;
 }
 
 .token.operator,
@@ -430,68 +431,68 @@ pre[class*="language-"] {
 .token.url,
 .language-css .token.string,
 .style .token.string {
-	color: #a67f59;
-	background: hsla(0, 0%, 100%, .5);
+  color: #a67f59;
+  background: hsla(0, 0%, 100%, .5);
 }
 
 .token.atrule,
 .token.attr-value,
 .token.keyword {
-	color: #07a;
+  color: #07a;
 }
 
 .token.function {
-	color: #DD4A68;
+  color: #DD4A68;
 }
 
 .token.regex,
 .token.important,
 .token.variable {
-	color: #e90;
+  color: #e90;
 }
 
 .token.important,
 .token.bold {
-	font-weight: bold;
+  font-weight: bold;
 }
 .token.italic {
-	font-style: italic;
+  font-style: italic;
 }
 
 .token.entity {
-	cursor: help;
+  cursor: help;
 }
 </style>
 
 <style type="text/css">
 div.prism-show-language {
-	position: relative;
+  position: relative;
 }
 
 div.prism-show-language > div.prism-show-language-label {
-	color: black;
-	background-color: #CFCFCF;
-	display: inline-block;
-	position: absolute;
-	bottom: auto;
-	left: auto;
-	top: 0;
-	right: 0;
-	width: auto;
-	height: auto;
-	font-size: 0.9em;
-	border-radius: 0 0 0 5px;
-	padding: 0 0.5em;
-	text-shadow: none;
-	z-index: 1;
-	-webkit-box-shadow: none;
-	-moz-box-shadow: none;
-	box-shadow: none;
-	-webkit-transform: none;
-	-moz-transform: none;
-	-ms-transform: none;
-	-o-transform: none;
-	transform: none;
+  color: black;
+  background-color: #CFCFCF;
+  display: inline-block;
+  position: absolute;
+  bottom: auto;
+  left: auto;
+  top: 0;
+  right: 0;
+  width: auto;
+  height: auto;
+  font-size: 0.9em;
+  border-radius: 0 0 0 5px;
+  padding: 0 0.5em;
+  text-shadow: none;
+  z-index: 1;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+  -webkit-transform: none;
+  -moz-transform: none;
+  -ms-transform: none;
+  -o-transform: none;
+  transform: none;
 }
 </style>
 
@@ -503,6 +504,49 @@ div.prism-show-language > div.prism-show-language-label {
 <h1 id="toc_0">SbornDB – documentazione</h1>
 
 <hr>
+
+<h1 id="toc_1">Dati dei componenti del gruppo</h1>
+
+<p>Consegna: 5 Settembre 2018</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: center">Studente</th>
+<th style="text-align: center">Matricola</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td style="text-align: center">Samuele Ceroni</td>
+<td style="text-align: center">0000825238</td>
+</tr>
+<tr>
+<td style="text-align: center">Giacomo Aloisi</td>
+<td style="text-align: center">0000832933</td>
+</tr>
+<tr>
+<td style="text-align: center">Ugo Baroncini</td>
+<td style="text-align: center">0000842092</td>
+</tr>
+</tbody>
+</table>
+
+<p>Per lo sviluppo abbiamo usato:</p>
+
+<ul>
+<li>IDE: <code>Sublime Text 3</code></li>
+<li>Compilatore: <code>gcc</code></li>
+<li>Sistemi Operativi: <code>Mac OS X e Linux Debian</code></li>
+</ul>
+
+<p>A sviluppo completato abbiamo fatto il porting del progetto su Visual Studio 2015 su Windows 10 per ulteriori test.
+Il lavoro di gruppo è stato gestito con un repository <code>git</code> condiviso tramite GitHub.</p>
+
+<hr>
+
+<h1 id="toc_2">Indice</h1>
 
 <ol>
 <li><strong>Premessa</strong></li>
@@ -559,26 +603,42 @@ div.prism-show-language > div.prism-show-language-label {
 <li>4.5 Fase di Liberazione della memoria</li>
 </ul></li>
 <li><strong>Parser</strong></li>
+<li><strong>Costi Computazionali</strong> 
+
+<ul>
+<li>6.1 CREATE TABLE</li>
+<li>6.2 INSERT INTO</li>
+<li>6.3 SELECT
+
+<ul>
+<li>6.3.1 Select senza filtri</li>
+<li>6.3.2 Select Order By</li>
+<li>6.3.3 Select Group By</li>
+<li>6.3.4 Select Where</li>
+</ul></li>
+<li>Caricamento ed eliminazione tabelle dalla RAM<br></li>
+</ul></li>
 <li><strong>Riferimenti Esterni</strong></li>
 </ol>
 
 <hr>
 
-<h1 id="toc_1">1. Premessa</h1>
+<h1 id="toc_3">1. Premessa</h1>
 
 <p>In questo file sono racchiuse tutte le specifiche sul funzionamento del database, sui suoi costi in termini di velocità e di memoria.
 Il progetto è diviso in: gestione della memoria, strutture dati, corpo centrale e parser.
-Ogni parte verrà analizzata nel dettaglio e alla fine verranni discussi i costi computazionali di tempo e spazio.</p>
+Ogni parte verrà analizzata nel dettaglio e nella sezione finale verranni discussi i costi computazionali di tempo e spazio.
+È stato pensato di inserire nel file header del progetto solo le funzioni esterne, ovvero quelle che servono alle diverse parti del progetto per dialogare tra loro, mentre le funzioni secondarie, quelle interne, sono dichiarate nelle prime righe del file sorgente. È stato pernsato di fare come quando si lavora con diversi file, per rendere le funzioni &quot;private&quot; o &quot;pubbliche&quot;, per nostra chiarezza mentale e di contenuti.</p>
 
 <hr>
 
-<h1 id="toc_2">2. Gestione della memoria</h1>
+<h1 id="toc_4">2. Gestione della memoria</h1>
 
-<h2 id="toc_3">2.1 Premessa</h2>
+<h2 id="toc_5">2.1 Premessa</h2>
 
 <p>Un reale database, di quelli che possiamo trovare in sistemi enterprise e di produzione, possono immagazzinare una grande quantità di dati. In fase di progettazione abbiamo deciso di emulare, per quanto possibile, le capacità di questi sistemi, cercando il miglior compromesso tra complessità di implementazione e prestazioni con dataset corposi.</p>
 
-<h2 id="toc_4">2.2 Assunzioni</h2>
+<h2 id="toc_6">2.2 Assunzioni</h2>
 
 <ol>
 <li> I file di testo devono mantenere la struttura indicata nelle specifiche del progetto.</li>
@@ -587,11 +647,11 @@ Ogni parte verrà analizzata nel dettaglio e alla fine verranni discussi i costi
 Il database mantiene i dati su disco secondo le specifiche del progetto, in RAM vengono usate strutture dati viste al corso per avere ottime prestazioni. </li>
 </ol>
 
-<h2 id="toc_5">2.3 Scopo</h2>
+<h2 id="toc_7">2.3 Scopo</h2>
 
 <p>Limitare l’utilizzo di RAM per mantenere alte le prestazioni di tutto il sistema, senza rallentare le query.</p>
 
-<h2 id="toc_6">2.4 Definizione delle caratteristiche</h2>
+<h2 id="toc_8">2.4 Definizione delle caratteristiche</h2>
 
 <ol>
 <li> Possibilità di definire una soglia di memoria, sopra la quale è necessario deallocare per avere altra memoria.</li>
@@ -599,27 +659,27 @@ Il database mantiene i dati su disco secondo le specifiche del progetto, in RAM 
 <li> Migliorare il processo di allocazione e deallocazione tramite un sistema di caching basilare.</li>
 </ol>
 
-<h2 id="toc_7">2.5 Descrizione</h2>
+<h2 id="toc_9">2.5 Descrizione</h2>
 
-<h3 id="toc_8">2.5.1 Perchè un limite di memoria</h3>
+<h3 id="toc_10">2.5.1 Perchè un limite di memoria</h3>
 
 <p>Supponendo un utilizzo con dataset grandi, un sistema di caching ben realizzato può fornire speed-up importanti, limitando i caricamenti da disco.
 Se non gestito, il sistema di caching arriverebbe ad avere tutti i dati in RAM, senza caricare nulla da disco e potenzialmente rallentando l&#39;intera macchina.
 Considerando un caching completo una strada non sempre percorribile, il sistema di limitazione della memoria serve a prevenire eccessivi rallentamenti, eliminando le tabelle dalla RAM secondo un criterio temporale.
-In caso di pessime prestazioni con cambi repentini di tabelle, si suggerisce di aumentare il limite di memoria.</p>
+In caso di pessime prestazioni con cambi repentini di tabelle, si suggerisce di aumentare il limite di memoria (è possibile farlo manualmente modificando il parametro MEMORY_THRESHOLD, anche per testare il sistema implementato).</p>
 
-<h3 id="toc_9">2.5.2 Modalità di implementazione</h3>
+<h3 id="toc_11">2.5.2 Modalità di implementazione</h3>
 
 <p>Il sistema usa un heap con update dinamico per approssimare una coda di priorità con update dinamico.
 La chiave dell&#39;heap è un intero che indica l&#39;indice dell&#39;ultima query su quella tabella. La tabella è memorizzata come valore.
 La memoria utilizzata da ogni tabella viene sommata in un contatore generale, usato per i confronti con il limite impostato.</p>
 
-<h3 id="toc_10">2.5.3 Operazioni nell&#39;heap a seguito delle query</h3>
+<h3 id="toc_12">2.5.3 Operazioni nell&#39;heap a seguito delle query</h3>
 
 <p>Ad ogni query, la chiave della tabella interessata viene aggiornata, spostando la tabella in una foglia dell&#39;heap.
 Quando la memoria raggiunge il limite impostato, il sistema procede a deallocare tabelle dalla radice dell&#39;heap, fino a quando non c&#39;è abbastanza spazio a disposizione, o rimane una sola tabella.</p>
 
-<h3 id="toc_11">2.5.4 Update Dinamico con complessità logaritmica</h3>
+<h3 id="toc_13">2.5.4 Update Dinamico con complessità logaritmica</h3>
 
 <p>Per poter effettuare l&#39;update dinamico sull&#39;heap con complessità logaritmica, è necessario un riferimento reciproco tra l&#39;elemento nell’heap e la tabella corrispondente: nel nodo dell&#39;heap è presente un puntatore alla tabella e vice versa.
 L’heap è una struttura dati vista a lezione che è stata aumentata per gestire l’update dinamico in <code>O(log n)</code>.
@@ -627,7 +687,7 @@ Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.a
 
 <hr>
 
-<h1 id="toc_12">3. Database e Strutture dati</h1>
+<h1 id="toc_14">3. Database e Strutture dati</h1>
 
 <p>Il database è accessibile da un unico puntatore dichiarato globale e statico. È stata fatta questa scelta in quanto si assume di lavorare sempre su un unico database, seguendo le linee guida del progetto. In questo modo si evita di appesantire lo stack di sistema a ogni chiamata di funzione. Segue uno schema grafico della sua struttura interna e la spiegazione di ogni elemento di cui è composto.</p>
 
@@ -641,15 +701,15 @@ Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.a
 <li> Heap con Update Dinamico</li>
 </ol>
 
-<h2 id="toc_13">3.1 Linked List</h2>
+<h2 id="toc_15">3.1 Linked List</h2>
 
 <p>Le linked list utilizzate sono implementate nel modo classico.</p>
 
-<h2 id="toc_14">3.2 Red-Black Tree</h2>
+<h2 id="toc_16">3.2 Red-Black Tree</h2>
 
 <p>I Red-Black Tree (d’ora in poi chiamati anche RBT) utilizzati sono stati modificati per l’applicazione specifica. L’implementazione delle funzioni core si è ispirata allo pseudo-codice presente sul libro di testo consigliato dal docente “Introduction to Algorithms” di Cormen, Leiserson, Rivest e Stein.</p>
 
-<h3 id="toc_15">3.2.1 Struct RBT</h3>
+<h3 id="toc_17">3.2.1 Struct RBT</h3>
 
 <p>La struct utilizzata per rappresentare l’albero contiene:</p>
 
@@ -664,7 +724,7 @@ Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.a
 </ul></li>
 </ol>
 
-<h3 id="toc_16">3.2.2 Struct RBTNode</h3>
+<h3 id="toc_18">3.2.2 Struct RBTNode</h3>
 
 <p>La struct utilizzata per rappresentare i nodi dell’albero contiene:</p>
 
@@ -677,17 +737,17 @@ Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.a
 <li> Puntatore al record o alla tabella <code>void * nodeValue</code></li>
 </ol>
 
-<h3 id="toc_17">3.2.3 Uso</h3>
+<h3 id="toc_19">3.2.3 Uso</h3>
 
 <p>La struct Database è un RBT contenente le tabelle caricate in memoria.</p>
 
-<h2 id="toc_18">3.3 Heap con Update Dinamico</h2>
+<h2 id="toc_20">3.3 Heap con Update Dinamico</h2>
 
 <p>L’Heap è stato modificato, aggiungendo la possibilità di fare Update Dinamici in tempo logaritmico, ispirandosi al paper redatto da O. Tamir, A. Morrison e N. Rinetzky [1], osservando in particolare la sezione numero 3: “A Sequential Heap with Mutable Priorities”.</p>
 
-<h2 id="toc_19">3.4 Strutture</h2>
+<h2 id="toc_21">3.4 Strutture</h2>
 
-<h3 id="toc_20">3.4.1 Struttura TableDB</h3>
+<h3 id="toc_22">3.4.1 Struttura TableDB</h3>
 
 <p>La struttura tabella (<code>struct TableDB</code>) contiene:</p>
 
@@ -701,17 +761,17 @@ Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.a
 
 <p>L’array degli RBT contiene tanti RBT quante sono le colonne della tabella, e ognuno di questi mantiene i record ordinati per quel campo.</p>
 
-<h3 id="toc_21">3.4.2 Struttura ParseResult</h3>
+<h3 id="toc_23">3.4.2 Struttura ParseResult</h3>
 
 <p><code>struct ParseResult</code> ha un campo per ogni possibile informazione di cui può essere necessario fare il parse e un campo di controllo (<code>bool success</code>) che indica se esso è andato a buon fine o meno.</p>
 
-<h3 id="toc_22">3.4.3 Struttura QueryResultElement</h3>
+<h3 id="toc_24">3.4.3 Struttura QueryResultElement</h3>
 
 <p><code>struct QueryResultElement</code> è una struttura che serve a contenere il risultato delle query. È una semplice linked list, in cui il campo “occurrence” viene utilizzato nelle query “group by” per memorizzare le occorrenze del valore e il campo “nodeValue” punta al record a cui si vuol riferire questo nodo della lista.</p>
 
 <hr>
 
-<h1 id="toc_23">4. Corpo centrale</h1>
+<h1 id="toc_25">4. Corpo centrale</h1>
 
 <p>Il corpo centrale è diviso in tre parti principali:</p>
 
@@ -729,27 +789,27 @@ Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.a
 <li>  Deallocazione della memoria <em>(dopo aver eseguito la query)</em></li>
 </ul>
 
-<h2 id="toc_24">4.1 Inizializzazione</h2>
+<h2 id="toc_26">4.1 Inizializzazione</h2>
 
 <p>Viene inizializzata la struttura che conterrà il database e l’heap per la gestione della memoria.
 Viene eseguita solo una volta, alla prima chiamata della funzione “executeQuery” e poi viene saltata.</p>
 
-<h2 id="toc_25">4.2 Parsing</h2>
+<h2 id="toc_27">4.2 Parsing</h2>
 
 <p>Il parsing viene gestito dalla funzione <code>parseQuery()</code>, che ritorna una <code>struct ParseResult</code> con tutte le informazioni contenute nella query.
 In caso quest&#39;ultima fosse malformata, l&#39;esecuzione viene interrotta e la proprietà <code>success</code> del <code>ParseResult</code> avrà valore <code>false</code>.</p>
 
-<h2 id="toc_26">4.3 Recupero della tabella</h2>
+<h2 id="toc_28">4.3 Recupero della tabella</h2>
 
 <p>La tabella richiesta dalla query viene cercata in RAM dalla funzione <code>searchTableDb()</code>. Se la ricerca ha esito positivo, viene aggiornata la chiave associata alla tabella nella coda di priorità per la gestione della memoria.
 In caso di esito negativo, la tabella viene caricata da disco tramite <code>loadTableFromFile()</code>.
 Alla fine della fase di recupero della tabella, si ottiene una <code>struct Table</code> contenente l&#39;esito dell&#39;operazione e, in caso sia positivo, la tabella.</p>
 
-<h2 id="toc_27">4.4 Esecuzione Query</h2>
+<h2 id="toc_29">4.4 Esecuzione Query</h2>
 
 <p>Viene eseguita la query.</p>
 
-<h3 id="toc_28">4.4.1 Controllo della query</h3>
+<h3 id="toc_30">4.4.1 Controllo della query</h3>
 
 <p>Ora che si hanno tutte le informazioni, si procede a un check della validità delle informazioni richieste dalla query.</p>
 
@@ -757,24 +817,24 @@ Alla fine della fase di recupero della tabella, si ottiene una <code>struct Tabl
 <p>E.g.: Le colonne richieste esistono.</p>
 </blockquote>
 
-<h3 id="toc_29">4.4.2 Create Table</h3>
+<h3 id="toc_31">4.4.2 Create Table</h3>
 
 <p>Una query <code>CREATE TABLE</code> valida prevede che non venga caricata nessuna tabella.
 Viene generato il file su disco e caricato in memoria tramite la stessa procedura applicata alle altre tabelle.</p>
 
-<h3 id="toc_30">4.4.3 Insert Into</h3>
+<h3 id="toc_32">4.4.3 Insert Into</h3>
 
 <p>Il record specificato viene aggiunto prima nel file su disco, poi nelle strutture in memoria.</p>
 
-<h3 id="toc_31">4.4.4 Selezione</h3>
+<h3 id="toc_33">4.4.4 Selezione</h3>
 
 <p>Attraverso la funzione <code>querySelect()</code> viene creata una <code>struct QueryResultList</code>, che contiene il risultato della query. Il contenuto viene loggato tramite una chiamata a <code>generateLog()</code> e la struttura deallocata.</p>
 
-<h2 id="toc_32">4.5 Deallocazione della memoria</h2>
+<h2 id="toc_34">4.5 Deallocazione della memoria</h2>
 
 <p>Al termine dell&#39;esecuzione vengono eliminate le strutture superflue, in questo caso la <code>struct ParseResult</code>.</p>
 
-<h1 id="toc_33">5. Parser</h1>
+<h1 id="toc_35">5. Parser</h1>
 
 <p>Il parser deve gestire un numero limitato di possibili query, ha quindi una struttura molto semplice.
 Tutta l&#39;operazione di parsing viene eseguita in tempo lineare rispetto alla lunghezza della query.</p>
@@ -856,7 +916,102 @@ Il parser restituisce un puntatore alla <code>struct ParseResult</code>, così c
 </ul></li>
 </ol>
 
-<h2 id="toc_34">6 Riferimenti esterni:</h2>
+<hr>
+
+<h1 id="toc_36">6 Costi Computazionali</h1>
+
+<p>I costi di caricamento ed eliminazione di una tabella dalla RAM sono considerati separatamente in quanto non sempre vengono eseguiti: per ottenere il calcolo del costo nel caso di una query su una tabella non ancora presente in RAM, sarà necessario aggiungere il costo del caricamento al costo della query. L&#39;eliminazione di una tabella è un operazione che si verifica solo nel caso in cui le tabelle siano più di una e in contemporanea la memoria occupata dalle tabelle superi quella consentita dalla threshold.
+Si evita di considerare il tempo impiegato per fare il parse della query, in quanto per forza lineare rispetto alla lunghezza dell&#39;input e di poco interesse al fine dell&#39;analisi.
+Onde evitare ripetute espressioni prolisse saranno utilizzati questi diversi simboli:</p>
+
+<div><pre><code class="language-none">X = numero delle tabelle caricate in memoria;
+Y = numero dei record nella tabella corrente;
+Z = numero di colonne nella tabella corrente.</code></pre></div>
+
+<h2 id="toc_37">6.1 CREATE TABLE</h2>
+
+<p>Per creare una tabella è necessario inserirla nel database, ovvero aggiungere un nodo al Red-Black Tree che gestisce le tabelle presenti in memoria. Il tempo dell&#39;operazione e&#39; logaritmico rispetto al numero di tabelle già caricate in memoria e la memoria è costante.</p>
+
+<ul>
+<li>Tempo: <code>O(log(X))</code></li>
+<li>Spazio: <code>Θ(1)</code></li>
+</ul>
+
+<h2 id="toc_38">6.2 INSERT INTO</h2>
+
+<p>Per inserire un elemento in una tabella è necessario: cercare la tabella nel RBT [<code>O(log(x))</code>], inserire il nuovo record nella linked list di record [<code>Θ(1)</code>] e aggiungere il suo puntatore in tutti i RBT che indicizzano le colonne. In ogni albero il tempo di inserzione è logaritmico in base al numero di record, e va ripetuto per Z alberi dando <code>O(Z * log(Y))</code>. </p>
+
+<p>Il costo in termini di spazio e&#39; il nuovo record nella lista [<code>O(1)</code>] e un puntatore al record per ogni colonna <code>[O(Z)]</code>.</p>
+
+<ul>
+<li>Tempo: <code>O(log(X)) + O(Z * log(Y))</code></li>
+<li>Spazio: <code>Θ(Z)</code></li>
+</ul>
+
+<h2 id="toc_39">6.3 SELECT</h2>
+
+<p>Ogni query &quot;Select&quot; restituisce, in tempo lineare, una linked list <code>queryResultList</code> di puntatori ai record nell&#39;ordine richiesto.
+Questo approccio abbassa il tempo a discapito di un consumo maggiore di memoria, che passa da costante (controllare solo i dati) a lineare (creare la lista di <code>Y</code> puntatori. </p>
+
+<h3 id="toc_40">6.3.1 SENZA FILTRI</h3>
+
+<p>Il costo temporale della select senza filtri e&#39; quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più la visita della lista di record con la creazione della lista di puntatori (lineare rispetto ai record) e la stampa (anch&#39;essa lineare rispetto ai record).</p>
+
+<ul>
+<li>Tempo: <code>O(log(X)) + Θ(Y)</code></li>
+<li>Spazio: <code>Θ(Y)</code></li>
+</ul>
+
+<h3 id="toc_41">6.3.2 ORDER BY</h3>
+
+<p>Il costo temporale della select order by è il costo della ricerca della tabella (logaritmico rispetto al numero di tabelle), più il costo della ricerca del RBT associato alla colonna richiesta (lineare rispetto al numero di colonne presenti nella tabella), e la creazione della lista ordinata di puntatori durante la visita completa (lineare rispetto al numero di record).</p>
+
+<ul>
+<li>Tempo: <code>O(log(X)) + O(Z) + Θ(Y)</code></li>
+<li>Spazio: <code>Θ(Y)</code></li>
+</ul>
+
+<h3 id="toc_42">6.3.3 GROUP BY</h3>
+
+<p>L&#39;esecuzione della query Group By esegue una query Order By e raggruppa gli elementi in tempo lineare. Il costo computazionale è identico.</p>
+
+<ul>
+<li>Tempo: <code>O(log(X)) + O(Z) + Θ(Y)</code></li>
+<li>Spazio: <code>Θ(Y)</code></li>
+</ul>
+
+<h3 id="toc_43">6.3.4 WHERE</h3>
+
+<p>Il costo temporale è quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più quello del controllo della condizione su ogni elemento (lineare sul numero di elementi) e la creazione della lista di puntatori (lineare sul numero di elementi).</p>
+
+<ul>
+<li>Tempo: <code>O(log(X)) + Θ(Y)</code></li>
+<li>Spazio: <code>Θ(Y)</code></li>
+</ul>
+
+<h2 id="toc_44">6.4 Caricamento ed eliminazione tabelle dalla RAM</h2>
+
+<h3 id="toc_45">6.4.1 Caricamento di una tabella da file</h3>
+
+<p>Il caricamento prevede la creazione della tabella, più l&#39;inserimento dei record. Il costo è fondamentalmente quello di una query Create Table, seguito da <code>Z</code> Insert Into.</p>
+
+<ul>
+<li>Tempo: <code>O(log(X)) + O((Z * log(Y)) Y)</code></li>
+<li>Spazio: <code>Θ(Z * Y)</code></li>
+</ul>
+
+<h3 id="toc_46">6.4.2 Eliminazione di una tabella dalla memoria</h3>
+
+<p>Per eliminare una tabella dalla memoria la si deve trovare nell&#39;albero del database (tempo logaritmico rispetto al numero di tabelle), eliminare tutti i record della lista (tempo lineare rispetto al numero di record) e eliminare tutti i nodi degli alberi relativi agli indici (tempo lineare rispetto al numero di record). Quindi:</p>
+
+<ul>
+<li>Tempo: <code>O(log(X)) + Θ(Y * Z)</code></li>
+<li>Spazio: <code>Θ(1)</code></li>
+</ul>
+
+<hr>
+
+<h3 id="toc_47">7 Riferimenti esterni:</h3>
 
 <p>[1] <a href="https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf"><em>A Heap-Based Concurrent Priority Queue with Mutable Priorities for Faster Parallel Algorithms</em></a>, by O. Tamir, A. Morrison e N. Rinetzky.</p>
 

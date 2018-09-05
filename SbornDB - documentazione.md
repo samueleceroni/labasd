@@ -2,19 +2,23 @@
 ---
 # Dati dei componenti del gruppo
 
-Data di consegna 05/09/2018
+Consegna: 5 Settembre 2018
 
-Samuele Ceroni  0000825238
-Giacomo Aloisi  0000832933
-Ugo Baroncini   0000842092
+ Studente       | Matricola  
+ :-------------:|:---------:
+ Samuele Ceroni | 0000825238 
+ Giacomo Aloisi | 0000832933 
+ Ugo Baroncini  | 0000842092 
 
-Per lo sviluppo
-IDE utilizzato: Sublime
-Compilatore utilizzato: gcc
-Sistemi Operativi utilizzati: MacOS e Linux Debian
 
-Dopo la fase di sviluppo, come da specifiche abbiamo fatto il porting del progetto su Visual Studio 2015 su Windows per la fase di test.
-Per poter lavorare in gruppo abbiamo deciso di utilizzare GIT come version control e github come sito di host dei file.
+Per lo sviluppo abbiamo usato:
+
+* IDE: `Sublime Text 3`
+* Compilatore: `gcc`
+* Sistemi Operativi: `Mac OS X e Linux Debian`
+
+A sviluppo completato abbiamo fatto il porting del progetto su Visual Studio 2015 su Windows 10 per ulteriori test.
+Il lavoro di gruppo è stato gestito con un repository `git` condiviso tramite GitHub.
 
 ---
 # Indice
@@ -52,6 +56,14 @@ Per poter lavorare in gruppo abbiamo deciso di utilizzare GIT come version contr
     * 4.5 Fase di Liberazione della memoria
 5. **Parser**
 6. **Costi Computazionali** 
+    * 6.1 CREATE TABLE
+    * 6.2 INSERT INTO
+    * 6.3 SELECT
+        * 6.3.1 Select senza filtri
+        * 6.3.2 Select Order By
+        * 6.3.3 Select Group By
+        * 6.3.4 Select Where
+    * Caricamento ed eliminazione tabelle dalla RAM  
 7. **Riferimenti Esterni**
 
 ---
@@ -257,7 +269,7 @@ dove:
     
 4. `char ** columns`: contiene i puntatori di tipo `char *` ai nomi delle colonne interessate dalla query.
 
-5. `int nColumns`: contiene il numero di colonne interessate dalla query, xhe corrisponde al numero di puntatori presenti nel campo `char ** columns`.
+5. `int nColumns`: contiene il numero di colonne interessate dalla query, che corrisponde al numero di puntatori presenti nel campo `char ** columns`.
 
 6. `char ** fieldValues`: usata solo nelle query di tipo Insert Into. Contiene `nColumns` puntatori di tipo `char *` alle stringhe contenenti i valori da inserire.
 
@@ -291,53 +303,68 @@ dove:
 
 ---
 # 6 Costi Computazionali
-Di seguito si elencano i costi di esecuzioni delle query richieste, in termini di tempo e di memoria. I costi di caricamento/eliminazione di una tabella sono considerati separatamente in quanto non sempre vengono eseguiti: per ottenere il calcolo del costo nel caso di una query su una tabella non ancora presente in RAM, sarà necessario fare la somma dei costi. L'eliminazione di una tabella è un operazione che si verifica solo nel caso in cui le tabelle siano più di una e in contemporanea la memoria occupata dalle tabelle superi quella consentita dalla threshold.
-Si evita di considerare il tempo impiegato per fare il parse della query, in quanto lineare rispetto alla lunghezza dell'input e quindi di poco interesse al fine dell'analisi.
+I costi di caricamento ed eliminazione di una tabella dalla RAM sono considerati separatamente in quanto non sempre vengono eseguiti: per ottenere il calcolo del costo nel caso di una query su una tabella non ancora presente in RAM, sarà necessario aggiungere il costo del caricamento al costo della query. L'eliminazione di una tabella è un operazione che si verifica solo nel caso in cui le tabelle siano più di una e in contemporanea la memoria occupata dalle tabelle superi quella consentita dalla threshold.
+Si evita di considerare il tempo impiegato per fare il parse della query, in quanto per forza lineare rispetto alla lunghezza dell'input e di poco interesse al fine dell'analisi.
 Onde evitare ripetute espressioni prolisse saranno utilizzati questi diversi simboli:
-X = numero di tabelle presenti in memoria;
-Y = numero di record presenti nella tabella corrente;
-Z = numero di colonne presenti nella tabella corrente.
+    
+    X = numero delle tabelle caricate in memoria;
+    Y = numero dei record nella tabella corrente;
+    Z = numero di colonne nella tabella corrente.
 
 ## 6.1 CREATE TABLE
-Per creare una tabella è solamente necessario inserirla nel database. Questa operazione è possibile farla in tempo logaritmico rispetto al numero di tabelle presenti. Il costo in termini di memoria e' costante.
-Costo tempo = O(log(X))
-Costo spazio = Θ(1)
+Per creare una tabella è necessario inserirla nel database, ovvero aggiungere un nodo al Red-Black Tree che gestisce le tabelle presenti in memoria. Il tempo dell'operazione e' logaritmico rispetto al numero di tabelle già caricate in memoria e la memoria è costante.
+
+* Tempo: `O(log(X))`
+* Spazio: `Θ(1)`
 
 ## 6.2 INSERT INTO
-Per inserire un elemento in una tabella è necessario: cercare la tabella (in tempo logaritmico rispetto al numero di tabelle), inserire il record nella lista di record (in tempo costante) e il suo indirizzo di memoria in ogni rbt associato a ogni colonna (in tempo logaritmico in base al numero di record, moltiplicato per il numero di colonne). Il costo in termini di spazio e' il record O(1) e un puntatore al record per ogni colonna O(Z).
-Costo tempo = O(log(X)) + O(Z * log(Y))
-Costo spazio = Θ(Z)
+Per inserire un elemento in una tabella è necessario: cercare la tabella nel RBT [`O(log(x))`], inserire il nuovo record nella linked list di record [`Θ(1)`] e aggiungere il suo puntatore in tutti i RBT che indicizzano le colonne. In ogni albero il tempo di inserzione è logaritmico in base al numero di record, e va ripetuto per Z alberi dando `O(Z * log(Y))`. 
+
+Il costo in termini di spazio e' il nuovo record nella lista [`O(1)`] e un puntatore al record per ogni colonna `[O(Z)]`.
+
+* Tempo: `O(log(X)) + O(Z * log(Y))`
+* Spazio: `Θ(Z)`
 
 ## 6.3 SELECT
-Il database e' stato implementato in maniera tale da fare le select in tempo lineare rispetto al numero dei record, invece che spendere il tempo necessario all'ordinamento. In tutte le select si crea una lista (queryResultList) in cui vengono restituiti i record nell'ordine richiesto. Questa scelta è stata fatta per mantenere modularità e non mischiare il compito delle funzioni, a discapito della memoria occupata, che è lineare rispetto ai record piuttosto che costante.
-Costo spazio = Θ(Y)
+Ogni query "Select" restituisce, in tempo lineare, una linked list `queryResultList` di puntatori ai record nell'ordine richiesto.
+Questo approccio abbassa il tempo a discapito di un consumo maggiore di memoria, che passa da costante (controllare solo i dati) a lineare (creare la lista di `Y` puntatori. 
 
 ### 6.3.1 SENZA FILTRI
-Il costo in termini di tempo rispetto alla select senza filtri e' la somma della ricerca della tabella (logaritmico in base al numero di tabelle) e della stampa (in tempo lineare) della lista di record.
-Costo tempo = O(log(X)) + Θ(Y)
+Il costo temporale della select senza filtri e' quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più la visita della lista di record con la creazione della lista di puntatori (lineare rispetto ai record) e la stampa (anch'essa lineare rispetto ai record).
+
+* Tempo: `O(log(X)) + Θ(Y)`
+* Spazio: `Θ(Y)`
 
 ### 6.3.2 ORDER BY
-Il costo in termini di tempo della select order by differisce da quella senza filtri solo per la ricerca della colonna secondo cui l'output dev'essere ordinato.
-Costo tempo = O(log(X)) + O(Z) + Θ(Y)
+Il costo temporale della select order by è il costo della ricerca della tabella (logaritmico rispetto al numero di tabelle), più il costo della ricerca del RBT associato alla colonna richiesta (lineare rispetto al numero di colonne presenti nella tabella), e la creazione della lista ordinata di puntatori durante la visita completa (lineare rispetto al numero di record).
+
+* Tempo: `O(log(X)) + O(Z) + Θ(Y)`
+* Spazio: `Θ(Y)`
 
 ### 6.3.3 GROUP BY
-Il group internamente chiama la funzione orderby e poi conta gli elementi che hanno lo stesso valore nella colonna di riferimento. Il costo computazionale è quindi il medesimo.
-Costo tempo = O(log(X)) + O(Z) + Θ(Y)
+L'esecuzione della query Group By esegue una query Order By e raggruppa gli elementi in tempo lineare. Il costo computazionale è identico.
+
+* Tempo: `O(log(X)) + O(Z) + Θ(Y)`
+* Spazio: `Θ(Y)`
 
 ### 6.3.4 WHERE
-La select condizionale ha un costo computazionale che dipende dalla ricerca della tabella e dallo scorrimento di tutti i record per la loro selezione.
-Costo tempo = O(log(X)) + Θ(Y)
+Il costo temporale è quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più quello del controllo della condizione su ogni elemento (lineare sul numero di elementi) e la creazione della lista di puntatori (lineare sul numero di elementi).
 
-## 6.4 Caricamento ed eliminazione di una tabella
+* Tempo: `O(log(X)) + Θ(Y)`
+* Spazio: `Θ(Y)`
+
+## 6.4 Caricamento ed eliminazione tabelle dalla RAM
 ### 6.4.1 Caricamento di una tabella da file
-Per caricare una tabella da file, il costo computazionale necessario è la somma di una CREATE TABLE e di un INSERT INTO per ogni record. Ne risulta, in termini di ordini di grandezza:
-Costo tempo = O(log(X)) + O((Z * log(Y)) Z)
-Costo spazio = Θ(Z * Y)
+Il caricamento prevede la creazione della tabella, più l'inserimento dei record. Il costo è fondamentalmente quello di una query Create Table, seguito da `Z` Insert Into.
+
+* Tempo: `O(log(X)) + O((Z * log(Y)) Y)`
+* Spazio: `Θ(Z * Y)`
 
 ### 6.4.2 Eliminazione di una tabella dalla memoria
-Per eliminare una tabella dalla memoria è necessario trovare la tabella nell'albero del database (in tempo logaritmico), eliminare tutti i record della lista (in tempo lineare rispetto al numero di record) e eliminare tutti i nodi degli alberi relativi agli indici(in tempo lineare rispetto al numero di record). Quindi:
-Costo tempo = O(log(X)) + Θ(Y * Z)
-Costo spazio = Θ(1)
+Per eliminare una tabella dalla memoria la si deve trovare nell'albero del database (tempo logaritmico rispetto al numero di tabelle), eliminare tutti i record della lista (tempo lineare rispetto al numero di record) e eliminare tutti i nodi degli alberi relativi agli indici (tempo lineare rispetto al numero di record). Quindi:
+
+* Tempo: `O(log(X)) + Θ(Y * Z)`
+* Spazio: `Θ(1)`
 
 ---
 ### 7 Riferimenti esterni:
