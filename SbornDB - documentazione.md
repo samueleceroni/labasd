@@ -304,8 +304,12 @@ dove:
 ---
 # 6 Costi Computazionali
 I costi di caricamento ed eliminazione di una tabella dalla RAM sono considerati separatamente in quanto non sempre vengono eseguiti: per ottenere il calcolo del costo nel caso di una query su una tabella non ancora presente in RAM, sarà necessario aggiungere il costo del caricamento al costo della query. L'eliminazione di una tabella è un operazione che si verifica solo nel caso in cui le tabelle siano più di una e in contemporanea la memoria occupata dalle tabelle superi quella consentita dalla threshold.
+
 Si evita di considerare il tempo impiegato per fare il parse della query, in quanto per forza lineare rispetto alla lunghezza dell'input e di poco interesse al fine dell'analisi.
-Onde evitare ripetute espressioni prolisse saranno utilizzati questi diversi simboli:
+
+Nelle query di tipo Create Table e Insert Into, il costo di scrittura su disco delle informazioni è lineare rispetto alla lunghezza della query. Abbiamo preferito tralasciarlo nell'analisi dei costi in quanto è fisso.
+
+Nelle espressioni di complessità vengono usati i seguenti simboli:
     
     X = numero delle tabelle caricate in memoria;
     Y = numero dei record nella tabella corrente;

@@ -1,8 +1,4 @@
-
-<!DOCTYPE html>
-<html>
-
-<head>
+<html><head>
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
@@ -546,7 +542,8 @@ Il lavoro di gruppo è stato gestito con un repository <code>git</code> condivis
 
 <hr>
 
-<h1 id="toc_2">Indice</h1>
+<h1 id="toc_2" style="
+">Indice</h1>
 
 <ol>
 <li><strong>Premessa</strong></li>
@@ -562,7 +559,7 @@ Il lavoro di gruppo è stato gestito con un repository <code>git</code> condivis
 <ul>
 <li><em>2.5.1 Perchè un limite di memoria</em></li>
 <li><em>2.5.2 Modalità di implementazione</em></li>
-<li><em>2.5.3 Operazioni nell&#39;heap a seguito delle query</em></li>
+<li><em>2.5.3 Operazioni nell'heap a seguito delle query</em></li>
 <li><em>2.5.4 Update Dinamico con complessità logaritmica</em></li>
 </ul></li>
 </ul></li>
@@ -623,12 +620,14 @@ Il lavoro di gruppo è stato gestito con un repository <code>git</code> condivis
 
 <hr>
 
-<h1 id="toc_3">1. Premessa</h1>
+<h1 id="toc_3" style="
+    margin-top:  500px;
+">1. Premessa</h1>
 
 <p>In questo file sono racchiuse tutte le specifiche sul funzionamento del database, sui suoi costi in termini di velocità e di memoria.
 Il progetto è diviso in: gestione della memoria, strutture dati, corpo centrale e parser.
 Ogni parte verrà analizzata nel dettaglio e nella sezione finale verranni discussi i costi computazionali di tempo e spazio.
-È stato pensato di inserire nel file header del progetto solo le funzioni esterne, ovvero quelle che servono alle diverse parti del progetto per dialogare tra loro, mentre le funzioni secondarie, quelle interne, sono dichiarate nelle prime righe del file sorgente. È stato pernsato di fare come quando si lavora con diversi file, per rendere le funzioni &quot;private&quot; o &quot;pubbliche&quot;, per nostra chiarezza mentale e di contenuti.</p>
+È stato pensato di inserire nel file header del progetto solo le funzioni esterne, ovvero quelle che servono alle diverse parti del progetto per dialogare tra loro, mentre le funzioni secondarie, quelle interne, sono dichiarate nelle prime righe del file sorgente. È stato pernsato di fare come quando si lavora con diversi file, per rendere le funzioni "private" o "pubbliche", per nostra chiarezza mentale e di contenuti.</p>
 
 <hr>
 
@@ -659,35 +658,39 @@ Il database mantiene i dati su disco secondo le specifiche del progetto, in RAM 
 <li> Migliorare il processo di allocazione e deallocazione tramite un sistema di caching basilare.</li>
 </ol>
 
-<h2 id="toc_9">2.5 Descrizione</h2>
+<h2 id="toc_9" style="
+    margin-top:  100px;
+">2.5 Descrizione</h2>
 
 <h3 id="toc_10">2.5.1 Perchè un limite di memoria</h3>
 
 <p>Supponendo un utilizzo con dataset grandi, un sistema di caching ben realizzato può fornire speed-up importanti, limitando i caricamenti da disco.
-Se non gestito, il sistema di caching arriverebbe ad avere tutti i dati in RAM, senza caricare nulla da disco e potenzialmente rallentando l&#39;intera macchina.
+Se non gestito, il sistema di caching arriverebbe ad avere tutti i dati in RAM, senza caricare nulla da disco e potenzialmente rallentando l'intera macchina.
 Considerando un caching completo una strada non sempre percorribile, il sistema di limitazione della memoria serve a prevenire eccessivi rallentamenti, eliminando le tabelle dalla RAM secondo un criterio temporale.
 In caso di pessime prestazioni con cambi repentini di tabelle, si suggerisce di aumentare il limite di memoria (è possibile farlo manualmente modificando il parametro MEMORY_THRESHOLD, anche per testare il sistema implementato).</p>
 
 <h3 id="toc_11">2.5.2 Modalità di implementazione</h3>
 
 <p>Il sistema usa un heap con update dinamico per approssimare una coda di priorità con update dinamico.
-La chiave dell&#39;heap è un intero che indica l&#39;indice dell&#39;ultima query su quella tabella. La tabella è memorizzata come valore.
+La chiave dell'heap è un intero che indica l'indice dell'ultima query su quella tabella. La tabella è memorizzata come valore.
 La memoria utilizzata da ogni tabella viene sommata in un contatore generale, usato per i confronti con il limite impostato.</p>
 
-<h3 id="toc_12">2.5.3 Operazioni nell&#39;heap a seguito delle query</h3>
+<h3 id="toc_12">2.5.3 Operazioni nell'heap a seguito delle query</h3>
 
-<p>Ad ogni query, la chiave della tabella interessata viene aggiornata, spostando la tabella in una foglia dell&#39;heap.
-Quando la memoria raggiunge il limite impostato, il sistema procede a deallocare tabelle dalla radice dell&#39;heap, fino a quando non c&#39;è abbastanza spazio a disposizione, o rimane una sola tabella.</p>
+<p>Ad ogni query, la chiave della tabella interessata viene aggiornata, spostando la tabella in una foglia dell'heap.
+Quando la memoria raggiunge il limite impostato, il sistema procede a deallocare tabelle dalla radice dell'heap, fino a quando non c'è abbastanza spazio a disposizione, o rimane una sola tabella.</p>
 
 <h3 id="toc_13">2.5.4 Update Dinamico con complessità logaritmica</h3>
 
-<p>Per poter effettuare l&#39;update dinamico sull&#39;heap con complessità logaritmica, è necessario un riferimento reciproco tra l&#39;elemento nell’heap e la tabella corrispondente: nel nodo dell&#39;heap è presente un puntatore alla tabella e vice versa.
+<p>Per poter effettuare l'update dinamico sull'heap con complessità logaritmica, è necessario un riferimento reciproco tra l'elemento nell’heap e la tabella corrispondente: nel nodo dell'heap è presente un puntatore alla tabella e vice versa.
 L’heap è una struttura dati vista a lezione che è stata aumentata per gestire l’update dinamico in <code>O(log n)</code>.
 Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf"><em>A Heap-Based Concurrent Priority Queue with Mutable Priorities for Faster Parallel Algorithms</em></a> redatto da O. Tamir, A. Morrison e N. Rinetzky [1], osservando in particolare la sezione numero 3 : <em>“A Sequential Heap with Mutable Priorities”</em>.</p>
 
 <hr>
 
-<h1 id="toc_14">3. Database e Strutture dati</h1>
+<h1 id="toc_14" style="
+    margin-top: 300px;
+">3. Database e Strutture dati</h1>
 
 <p>Il database è accessibile da un unico puntatore dichiarato globale e statico. È stata fatta questa scelta in quanto si assume di lavorare sempre su un unico database, seguendo le linee guida del progetto. In questo modo si evita di appesantire lo stack di sistema a ogni chiamata di funzione. Segue uno schema grafico della sua struttura interna e la spiegazione di ogni elemento di cui è composto.</p>
 
@@ -709,7 +712,9 @@ Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.a
 
 <p>I Red-Black Tree (d’ora in poi chiamati anche RBT) utilizzati sono stati modificati per l’applicazione specifica. L’implementazione delle funzioni core si è ispirata allo pseudo-codice presente sul libro di testo consigliato dal docente “Introduction to Algorithms” di Cormen, Leiserson, Rivest e Stein.</p>
 
-<h3 id="toc_17">3.2.1 Struct RBT</h3>
+<h3 id="toc_17" style="
+    margin-top:  100px;
+">3.2.1 Struct RBT</h3>
 
 <p>La struct utilizzata per rappresentare l’albero contiene:</p>
 
@@ -797,13 +802,13 @@ Viene eseguita solo una volta, alla prima chiamata della funzione “executeQuer
 <h2 id="toc_27">4.2 Parsing</h2>
 
 <p>Il parsing viene gestito dalla funzione <code>parseQuery()</code>, che ritorna una <code>struct ParseResult</code> con tutte le informazioni contenute nella query.
-In caso quest&#39;ultima fosse malformata, l&#39;esecuzione viene interrotta e la proprietà <code>success</code> del <code>ParseResult</code> avrà valore <code>false</code>.</p>
+In caso quest'ultima fosse malformata, l'esecuzione viene interrotta e la proprietà <code>success</code> del <code>ParseResult</code> avrà valore <code>false</code>.</p>
 
 <h2 id="toc_28">4.3 Recupero della tabella</h2>
 
 <p>La tabella richiesta dalla query viene cercata in RAM dalla funzione <code>searchTableDb()</code>. Se la ricerca ha esito positivo, viene aggiornata la chiave associata alla tabella nella coda di priorità per la gestione della memoria.
 In caso di esito negativo, la tabella viene caricata da disco tramite <code>loadTableFromFile()</code>.
-Alla fine della fase di recupero della tabella, si ottiene una <code>struct Table</code> contenente l&#39;esito dell&#39;operazione e, in caso sia positivo, la tabella.</p>
+Alla fine della fase di recupero della tabella, si ottiene una <code>struct Table</code> contenente l'esito dell'operazione e, in caso sia positivo, la tabella.</p>
 
 <h2 id="toc_29">4.4 Esecuzione Query</h2>
 
@@ -832,38 +837,40 @@ Viene generato il file su disco e caricato in memoria tramite la stessa procedur
 
 <h2 id="toc_34">4.5 Deallocazione della memoria</h2>
 
-<p>Al termine dell&#39;esecuzione vengono eliminate le strutture superflue, in questo caso la <code>struct ParseResult</code>.</p>
+<p>Al termine dell'esecuzione vengono eliminate le strutture superflue, in questo caso la <code>struct ParseResult</code>.</p>
 
-<h1 id="toc_35">5. Parser</h1>
+<h1 id="toc_35" style="
+    margin-top:  500px;
+">5. Parser</h1>
 
 <p>Il parser deve gestire un numero limitato di possibili query, ha quindi una struttura molto semplice.
-Tutta l&#39;operazione di parsing viene eseguita in tempo lineare rispetto alla lunghezza della query.</p>
+Tutta l'operazione di parsing viene eseguita in tempo lineare rispetto alla lunghezza della query.</p>
 
-<p>L&#39;entry point del parser è la funzione: </p>
+<p>L'entry point del parser è la funzione: </p>
 
-<div><pre><code class="language-c">ParseResult parseQuery (char * query);</code></pre></div>
+<div><div class="prism-show-language"><div class="prism-show-language-label">C</div></div><pre class=" language-c"><code class=" language-c">ParseResult parseQuery <span class="token punctuation">(</span><span class="token keyword">char</span> <span class="token operator">*</span> query<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre></div>
 
-<p>Durante l&#39;esecuzione viene usato direttamente un puntatore <code>char *</code>, che segue il progresso del parsing.
+<p>Durante l'esecuzione viene usato direttamente un puntatore <code>char *</code>, che segue il progresso del parsing.
 Il parser restituisce un puntatore alla <code>struct ParseResult</code>, così composta: </p>
 
-<div><pre><code class="language-c">struct ParseResult {
-    bool success;
-    char * tableName;
-    int queryType;
-    int querySelector;
-    int nColumns;
-    char ** columns;
-    char ** fieldValues;
-    char * keyName;
-    char * key;
-    int order;
-    int parseErrorCode;
-};</code></pre></div>
+<div><div class="prism-show-language"><div class="prism-show-language-label">C</div></div><pre class=" language-c"><code class=" language-c"><span class="token keyword">struct</span> ParseResult <span class="token punctuation">{</span>
+    bool success<span class="token punctuation">;</span>
+    <span class="token keyword">char</span> <span class="token operator">*</span> tableName<span class="token punctuation">;</span>
+    <span class="token keyword">int</span> queryType<span class="token punctuation">;</span>
+    <span class="token keyword">int</span> querySelector<span class="token punctuation">;</span>
+    <span class="token keyword">int</span> nColumns<span class="token punctuation">;</span>
+    <span class="token keyword">char</span> <span class="token operator">*</span><span class="token operator">*</span> columns<span class="token punctuation">;</span>
+    <span class="token keyword">char</span> <span class="token operator">*</span><span class="token operator">*</span> fieldValues<span class="token punctuation">;</span>
+    <span class="token keyword">char</span> <span class="token operator">*</span> keyName<span class="token punctuation">;</span>
+    <span class="token keyword">char</span> <span class="token operator">*</span> key<span class="token punctuation">;</span>
+    <span class="token keyword">int</span> order<span class="token punctuation">;</span>
+    <span class="token keyword">int</span> parseErrorCode<span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span></code></pre></div>
 
 <p>dove:</p>
 
 <ol>
-<li><p><code>bool success</code>: contiene l&#39;esito dell&#39;analisi.</p></li>
+<li><p><code>bool success</code>: contiene l'esito dell'analisi.</p></li>
 <li><p><code>char * tableName</code>: contiene il nome della tabella su cui agisce la query</p></li>
 <li><p><code>int queryType</code>: contiene il codice numerico identificativo del tipo di query, tra i possibili seguenti:</p>
 
@@ -877,9 +884,9 @@ Il parser restituisce un puntatore alla <code>struct ParseResult</code>, così c
 <li>No Query: <code>6</code></li>
 </ul></li>
 <li><p><code>char ** columns</code>: contiene i puntatori di tipo <code>char *</code> ai nomi delle colonne interessate dalla query.</p></li>
-<li><p><code>int nColumns</code>: contiene il numero di colonne interessate dalla query, xhe corrisponde al numero di puntatori presenti nel campo <code>char ** columns</code>.</p></li>
+<li><p><code>int nColumns</code>: contiene il numero di colonne interessate dalla query, che corrisponde al numero di puntatori presenti nel campo <code>char ** columns</code>.</p></li>
 <li><p><code>char ** fieldValues</code>: usata solo nelle query di tipo Insert Into. Contiene <code>nColumns</code> puntatori di tipo <code>char *</code> alle stringhe contenenti i valori da inserire.</p></li>
-<li><p><code>int querySelector</code>: usato solo in query di tipo Select con filtro Where, contiene il codice numerico identificativo dell&#39;operatore:</p>
+<li><p><code>int querySelector</code>: usato solo in query di tipo Select con filtro Where, contiene il codice numerico identificativo dell'operatore:</p>
 
 <ul>
 <li>Equal: <code>0</code></li>
@@ -897,40 +904,46 @@ Il parser restituisce un puntatore alla <code>struct ParseResult</code>, così c
 <li>Select con filtro Order By, per contenere il nome del campo per cui ordinare i record.</li>
 </ul></li>
 <li><p><code>char * key</code>: usato solo nella query di tipo Select con filtro Where, per contenere il valore da paragonare quando si controlla la condizione.</p></li>
-<li><p><code>int order</code>: usato solo nelle query di tipo Select con filtro Order By, contiene l&#39;ordine desiderato. Può assumere i valori:</p>
+<li><p><code>int order</code>: usato solo nelle query di tipo Select con filtro Order By, contiene l'ordine desiderato. Può assumere i valori:</p>
 
 <ul>
 <li><code>ASC</code>: 0</li>
 <li><code>DESC</code>: 1</li>
 </ul></li>
-<li><p><code>int parseErrorCode</code>: contiene un identificativo numerico hardcoded nel sorgente, unico al punto in cui il parse ha fallito l&#39;esecuzione e terminato prematuramente. Controllando il codice si può facilmente risalire al punto in cui si è manifestato il problema. I codici di errore sono suddivisi in classi:</p>
+<li><p><code>int parseErrorCode</code>: contiene un identificativo numerico hardcoded nel sorgente, unico al punto in cui il parse ha fallito l'esecuzione e terminato prematuramente. Controllando il codice si può facilmente risalire al punto in cui si è manifestato il problema. I codici di errore sono suddivisi in classi:</p>
 
 <ul>
 <li><code>0-99</code>: Errori Generali</li>
-<li><code>101-199</code>: Errori durante il parsing di una query &quot;Create Table&quot;</li>
-<li><code>201-299</code>: Errori durante il parsing di una query &quot;Insert Into&quot;</li>
-<li><code>301-399</code>: Errori durante il parsing della parte senza filtri di una query &quot;Select&quot;</li>
-<li><code>401-499</code>: Errori durante il parsing della parte finale di una query &quot;Select Where&quot;</li>
-<li><code>501-599</code>: Errori durante il parsing della parte finale di una query &quot;Select Group By&quot;</li>
-<li><code>601-699</code>: Errori durante il parsing della parte finale di una query &quot;Select Order By&quot;</li>
+<li><code>101-199</code>: Errori durante il parsing di una query "Create Table"</li>
+<li><code>201-299</code>: Errori durante il parsing di una query "Insert Into"</li>
+<li><code>301-399</code>: Errori durante il parsing della parte senza filtri di una query "Select"</li>
+<li><code>401-499</code>: Errori durante il parsing della parte finale di una query "Select Where"</li>
+<li><code>501-599</code>: Errori durante il parsing della parte finale di una query "Select Group By"</li>
+<li><code>601-699</code>: Errori durante il parsing della parte finale di una query "Select Order By"</li>
 </ul></li>
 </ol>
 
 <hr>
 
-<h1 id="toc_36">6 Costi Computazionali</h1>
+<h1 id="toc_36" style="
+    margin-top:  300px;
+">6 Costi Computazionali</h1>
 
-<p>I costi di caricamento ed eliminazione di una tabella dalla RAM sono considerati separatamente in quanto non sempre vengono eseguiti: per ottenere il calcolo del costo nel caso di una query su una tabella non ancora presente in RAM, sarà necessario aggiungere il costo del caricamento al costo della query. L&#39;eliminazione di una tabella è un operazione che si verifica solo nel caso in cui le tabelle siano più di una e in contemporanea la memoria occupata dalle tabelle superi quella consentita dalla threshold.
-Si evita di considerare il tempo impiegato per fare il parse della query, in quanto per forza lineare rispetto alla lunghezza dell&#39;input e di poco interesse al fine dell&#39;analisi.
-Onde evitare ripetute espressioni prolisse saranno utilizzati questi diversi simboli:</p>
+<p>I costi di caricamento ed eliminazione di una tabella dalla RAM sono considerati separatamente in quanto non sempre vengono eseguiti: per ottenere il calcolo del costo nel caso di una query su una tabella non ancora presente in RAM, sarà necessario aggiungere il costo del caricamento al costo della query. L'eliminazione di una tabella è un operazione che si verifica solo nel caso in cui le tabelle siano più di una e in contemporanea la memoria occupata dalle tabelle superi quella consentita dalla threshold.</p>
 
-<div><pre><code class="language-none">X = numero delle tabelle caricate in memoria;
+<p>Si evita di considerare il tempo impiegato per fare il parse della query, in quanto per forza lineare rispetto alla lunghezza dell'input e di poco interesse al fine dell'analisi.</p>
+
+<p>Nelle query di tipo Create Table e Insert Into, il costo di scrittura su disco delle informazioni è lineare rispetto alla lunghezza della query. Abbiamo preferito tralasciarlo nell'analisi dei costi in quanto è fisso.</p>
+
+<p>Nelle espressioni di complessità vengono usati i seguenti simboli:</p>
+
+<div><pre class=" language-none"><code class=" language-none">X = numero delle tabelle caricate in memoria;
 Y = numero dei record nella tabella corrente;
 Z = numero di colonne nella tabella corrente.</code></pre></div>
 
 <h2 id="toc_37">6.1 CREATE TABLE</h2>
 
-<p>Per creare una tabella è necessario inserirla nel database, ovvero aggiungere un nodo al Red-Black Tree che gestisce le tabelle presenti in memoria. Il tempo dell&#39;operazione e&#39; logaritmico rispetto al numero di tabelle già caricate in memoria e la memoria è costante.</p>
+<p>Per creare una tabella è necessario inserirla nel database, ovvero aggiungere un nodo al Red-Black Tree che gestisce le tabelle presenti in memoria. Il tempo dell'operazione e' logaritmico rispetto al numero di tabelle già caricate in memoria e la memoria è costante.</p>
 
 <ul>
 <li>Tempo: <code>O(log(X))</code></li>
@@ -941,21 +954,23 @@ Z = numero di colonne nella tabella corrente.</code></pre></div>
 
 <p>Per inserire un elemento in una tabella è necessario: cercare la tabella nel RBT [<code>O(log(x))</code>], inserire il nuovo record nella linked list di record [<code>Θ(1)</code>] e aggiungere il suo puntatore in tutti i RBT che indicizzano le colonne. In ogni albero il tempo di inserzione è logaritmico in base al numero di record, e va ripetuto per Z alberi dando <code>O(Z * log(Y))</code>. </p>
 
-<p>Il costo in termini di spazio e&#39; il nuovo record nella lista [<code>O(1)</code>] e un puntatore al record per ogni colonna <code>[O(Z)]</code>.</p>
+<p>Il costo in termini di spazio e' il nuovo record nella lista [<code>O(1)</code>] e un puntatore al record per ogni colonna <code>[O(Z)]</code>.</p>
 
 <ul>
 <li>Tempo: <code>O(log(X)) + O(Z * log(Y))</code></li>
 <li>Spazio: <code>Θ(Z)</code></li>
 </ul>
 
-<h2 id="toc_39">6.3 SELECT</h2>
+<h2 id="toc_39" style="
+    margin-top:  200px;
+">6.3 SELECT</h2>
 
-<p>Ogni query &quot;Select&quot; restituisce, in tempo lineare, una linked list <code>queryResultList</code> di puntatori ai record nell&#39;ordine richiesto.
+<p>Ogni query "Select" restituisce, in tempo lineare, una linked list <code>queryResultList</code> di puntatori ai record nell'ordine richiesto.
 Questo approccio abbassa il tempo a discapito di un consumo maggiore di memoria, che passa da costante (controllare solo i dati) a lineare (creare la lista di <code>Y</code> puntatori. </p>
 
 <h3 id="toc_40">6.3.1 SENZA FILTRI</h3>
 
-<p>Il costo temporale della select senza filtri e&#39; quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più la visita della lista di record con la creazione della lista di puntatori (lineare rispetto ai record) e la stampa (anch&#39;essa lineare rispetto ai record).</p>
+<p>Il costo temporale della select senza filtri e' quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più la visita della lista di record con la creazione della lista di puntatori (lineare rispetto ai record) e la stampa (anch'essa lineare rispetto ai record).</p>
 
 <ul>
 <li>Tempo: <code>O(log(X)) + Θ(Y)</code></li>
@@ -973,7 +988,7 @@ Questo approccio abbassa il tempo a discapito di un consumo maggiore di memoria,
 
 <h3 id="toc_42">6.3.3 GROUP BY</h3>
 
-<p>L&#39;esecuzione della query Group By esegue una query Order By e raggruppa gli elementi in tempo lineare. Il costo computazionale è identico.</p>
+<p>L'esecuzione della query Group By esegue una query Order By e raggruppa gli elementi in tempo lineare. Il costo computazionale è identico.</p>
 
 <ul>
 <li>Tempo: <code>O(log(X)) + O(Z) + Θ(Y)</code></li>
@@ -989,11 +1004,13 @@ Questo approccio abbassa il tempo a discapito di un consumo maggiore di memoria,
 <li>Spazio: <code>Θ(Y)</code></li>
 </ul>
 
-<h2 id="toc_44">6.4 Caricamento ed eliminazione tabelle dalla RAM</h2>
+<h2 id="toc_44" style="
+    margin-top:  400px;
+">6.4 Caricamento ed eliminazione tabelle dalla RAM</h2>
 
 <h3 id="toc_45">6.4.1 Caricamento di una tabella da file</h3>
 
-<p>Il caricamento prevede la creazione della tabella, più l&#39;inserimento dei record. Il costo è fondamentalmente quello di una query Create Table, seguito da <code>Z</code> Insert Into.</p>
+<p>Il caricamento prevede la creazione della tabella, più l'inserimento dei record. Il costo è fondamentalmente quello di una query Create Table, seguito da <code>Z</code> Insert Into.</p>
 
 <ul>
 <li>Tempo: <code>O(log(X)) + O((Z * log(Y)) Y)</code></li>
@@ -1002,7 +1019,7 @@ Questo approccio abbassa il tempo a discapito di un consumo maggiore di memoria,
 
 <h3 id="toc_46">6.4.2 Eliminazione di una tabella dalla memoria</h3>
 
-<p>Per eliminare una tabella dalla memoria la si deve trovare nell&#39;albero del database (tempo logaritmico rispetto al numero di tabelle), eliminare tutti i record della lista (tempo lineare rispetto al numero di record) e eliminare tutti i nodi degli alberi relativi agli indici (tempo lineare rispetto al numero di record). Quindi:</p>
+<p>Per eliminare una tabella dalla memoria la si deve trovare nell'albero del database (tempo logaritmico rispetto al numero di tabelle), eliminare tutti i record della lista (tempo lineare rispetto al numero di record) e eliminare tutti i nodi degli alberi relativi agli indici (tempo lineare rispetto al numero di record). Quindi:</p>
 
 <ul>
 <li>Tempo: <code>O(log(X)) + Θ(Y * Z)</code></li>
@@ -1034,6 +1051,7 @@ Prism.languages.c=Prism.languages.extend("clike",{keyword:/\b(asm|typeof|inline|
 </script>
 
 
-</body>
 
-</html>
+
+
+</body></html>
