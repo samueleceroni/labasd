@@ -1585,7 +1585,7 @@ ParseResult parseQuerySelect(char * query, ParseResult result) {
 			}
 
 			// closed bracket, no more column names
-			if (*query == ')' {
+			if (*query == ')') {
 				i++;
 
 				// now we can shrink the column list to fit, and save memory
