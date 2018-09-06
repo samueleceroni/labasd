@@ -1585,7 +1585,7 @@ ParseResult parseQuerySelect(char * query, ParseResult result) {
 			}
 
 			// closed bracket, no more column names
-			if (*query == ' ') {
+			if (*query == ')' {
 				i++;
 
 				// now we can shrink the column list to fit, and save memory
@@ -1908,8 +1908,21 @@ ParseResult parseQueryInsertInto(char * query, ParseResult result) {
 		if (*query == ')' && *(query + 1) == ';') {
 			if (result->nColumns == contFieldsValues)
 				result->success = true;
-			else
+			else {
+				int i;
+				for (i = 0; i < result->nColumns; i++) {
+					free(result->columns[i]);
+				}
+				free(result->columns);
+				result->columns = NULL;
+				for (i = 0; i < contFieldsValues; i++) {
+					free(result->fieldValues[i]);
+				}
+				free(result->fieldValues);
+				result->fieldValues = NULL;
+				result->nColumns = 0;
 				result->success = false;
+			}
 			return result;
 		}
 	}

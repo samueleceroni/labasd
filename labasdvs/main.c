@@ -21,7 +21,7 @@ int main() {
 	//while (!exit) {
 	for(i=0; i<12000; i++){
 		char buffer[201];
-		fgets(buffer, 200, f);
+		fgets(buffer, 200, stdin);
 		removeReturn(buffer);
 		bool res = executeQuery(buffer);
 		if (i % 100 == 0) printf("%d\n", i);
@@ -51,8 +51,9 @@ int main() {
 	res = executeQuery("SELECT * FROM huge ORDER BY a ASC;");
 	if (i % 100 == 0) printf("%d\n", i);
 	if (!res) { nFalse++; printf("%d:FALSE:%s\n", i, "SELECT * FROM huge;"); }
-	*/
+	
 	printf("%d\n", nFalse);
+	*/
 	system("pause");
 	return 0;
 }
