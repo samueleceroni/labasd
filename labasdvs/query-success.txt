@@ -1,0 +1,12 @@
+CREATE TABLE rubrica (nome,cognome);
+INSERT INTO hamburger (pane,carne,insalata) VALUES (,,);
+INSERT INTO hamburger (pane,carne,insalata) VALUES (,mele,banane);
+INSERT INTO hamburger (pane,carne,insalata) VALUES (pere,,);
+INSERT INTO hamburger (pane,carne,insalata) VALUES (pere,,banane);
+INSERT INTO hamburger (pane,carne,insalata) VALUES (pere,mele,);
+INSERT INTO hamburger (pane,carne,insalata) VALUES (pere,mele,banane);
+SELECT * FROM rubrica;
+SELECT banana FROM frutta;
+SELECT banana,mela FROM cacciaviti;
+SELECT martello FROM attrezzi WHERE peso > 10;
+SELECT martello,pinze FROM attrezzi WHERE peso > 10;
