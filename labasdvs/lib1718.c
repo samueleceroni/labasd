@@ -131,6 +131,8 @@ bool executeQuery(char* query) {
 		initMemoryHeap();
 	}
 	ParseResult pRes = parseQuery(query);
+	if (pRes == NULL)
+		return false;
 	if (!pRes->success) {
 		freeParseResult(pRes);
 		return false;
@@ -145,7 +147,7 @@ bool executeQuery(char* query) {
 		currentTableUsed = t;
 	}
 
-	if (t != NULL && !checkQueryIntegrity(t, pRes)) {
+	if (!checkQueryIntegrity(t, pRes)) {
 		freeParseResult(pRes);
 		return false;
 	}
@@ -462,11 +464,28 @@ void* allocateBytes(int bytes) {
 
 // Checker
 bool checkQueryIntegrity(Table t, ParseResult res) {
-	if (!t || !res) { return false; }
+	if (!res) { return false; }
+
 	int qt = res->queryType, i, j;
 	bool isIntact = true, tempFound;
 
-	if (compare(t->name, res->tableName) != EQUAL) { isIntact = false; }
+	if(t != NULL)
+		if (compare(t->name, res->tableName) != EQUAL) { return false; }
+	
+	if (strlen(res->tableName) == 0) { return false; }
+
+	//check that columns and fields are not empty
+	if (res->columns != NULL)
+		for (i = 0; i < res->nColumns; i++)
+			if (strlen(res->columns[i]) == 0)
+				return false;
+	/*if (res->fieldValues != NULL)
+		for (i = 0; i < res->nColumns; i++)
+			if (strlen(res->fieldValues[i]) == 0)
+				return false;*/
+
+	if (t == NULL)
+		return true;
 
 	switch (res->queryType) {
 	case(INSERT_INTO):
@@ -486,6 +505,8 @@ bool checkQueryIntegrity(Table t, ParseResult res) {
 					break;
 				}
 			}
+			if (!isIntact)
+				break;
 		}
 	case(GROUP_BY):
 		if (res->queryType == GROUP_BY) {
@@ -1545,7 +1566,7 @@ ParseResult parseQuerySelect(char * query, ParseResult result) {
 	}
 	else {
 		// arbitrary number of columns
-		result->nColumns = 128;
+		result->nColumns = 1;
 
 		result->columns = (char **)malloc(result->nColumns * sizeof(char *));
 
@@ -1566,6 +1587,7 @@ ParseResult parseQuerySelect(char * query, ParseResult result) {
 
 				if (!newColumns) {
 					unsuccessfulParse(result, 305);
+					result->columns = NULL;
 					return result;
 				}
 
@@ -1575,8 +1597,23 @@ ParseResult parseQuerySelect(char * query, ParseResult result) {
 
 			// now there is space for sure
 			// and we parse the next parameter
-			query += parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars);
-			// shifting the pointer @ the same time
+			int offset = parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars);
+
+			if (offset == -1) {
+				unsuccessfulParse(result, 111);
+				//free every columns read this far
+				int k;
+				for (k = 0; k < i; k++) {
+					free(result->columns[k]);
+					result->columns[k] = NULL;
+				}
+				free(result->columns);
+				result->columns = NULL;
+				return result;
+			}
+			else {
+				query += offset;
+			}
 
 			// comma = gotta read another column name
 			if (*query == ',') {
@@ -1584,8 +1621,8 @@ ParseResult parseQuerySelect(char * query, ParseResult result) {
 				continue;
 			}
 
-			// closed bracket, no more column names
-			if (*query == ')') {
+			// end of names
+			if (*query == ' ') {
 				i++;
 
 				// now we can shrink the column list to fit, and save memory
@@ -1593,17 +1630,26 @@ ParseResult parseQuerySelect(char * query, ParseResult result) {
 
 				if (!reallocation) {
 					unsuccessfulParse(result, 306);
+					result->columns = NULL;
 					return result;
 				}
 
 				result->columns = reallocation;
 				result->nColumns = i;
+				break;
 			}
 			else {
 				unsuccessfulParse(result, 307);
+				//free every columns read this far
+				int k;
+				for (k = 0; k < i; k++) {
+					free(result->columns[k]);
+					result->columns[k] = NULL;
+				}
+				free(result->columns);
+				result->columns = NULL;
 				return result;
 			}
-			break;
 		}
 	}
 
@@ -1705,7 +1751,7 @@ ParseResult parseQueryCreateTable(char * query, ParseResult result) {
 	}
 	query++;
 
-	result->nColumns = 128;
+	result->nColumns = 1;
 
 	result->columns = (char **)malloc(result->nColumns * sizeof(char *));
 
@@ -1721,6 +1767,7 @@ ParseResult parseQueryCreateTable(char * query, ParseResult result) {
 
 			if (!newColumns) {
 				unsuccessfulParse(result, 106);
+				result->columns = NULL;
 				return result;
 			}
 
@@ -1732,6 +1779,14 @@ ParseResult parseQueryCreateTable(char * query, ParseResult result) {
 
 		if (offset == -1) {
 			unsuccessfulParse(result, 111);
+			//free every columns read this far
+			int k;
+			for (k = 0; k < i; k++) {
+				free(result->columns[k]);
+				result->columns[k] = NULL;
+			}
+			free(result->columns);
+			result->columns = NULL;
 			return result;
 		}
 		else {
@@ -1743,7 +1798,7 @@ ParseResult parseQueryCreateTable(char * query, ParseResult result) {
 			continue;
 		}
 
-		if (*query == ')' && *(query + 1) == ';') {
+		if (*query == ')') {
 			i++;
 
 			// shrink columns name array to save space
@@ -1751,22 +1806,33 @@ ParseResult parseQueryCreateTable(char * query, ParseResult result) {
 
 			if (!reallocation) {
 				unsuccessfulParse(result, 107);
+				result->columns = NULL;
 				return result;
 			}
 
 			result->columns = reallocation;
 			result->nColumns = i;
-			result->success = true;
-
+			break;
 		}
 		else {
 			unsuccessfulParse(result, 108);
+			//free every columns read this far
+			int k;
+			for (k = 0; k < i; k++) {
+				free(result->columns[k]);
+				result->columns[k] = NULL;
+			}
+			free(result->columns);
+			result->columns = NULL;
+			return result;
 		}
-
-		return result;
 	}
 
-	unsuccessfulParse(result, 112);
+	query++;
+	if (*query != ';')
+		unsuccessfulParse(result, 109);
+	else
+		result->success = true;
 	return result;
 }
 
@@ -1809,7 +1875,7 @@ ParseResult parseQueryInsertInto(char * query, ParseResult result) {
 	query++;
 
 	// arbitrary number of columns
-	result->nColumns = 128;
+	result->nColumns = 1;
 
 	result->columns = (char **)malloc(result->nColumns * sizeof(char *));
 
@@ -1830,6 +1896,7 @@ ParseResult parseQueryInsertInto(char * query, ParseResult result) {
 
 			if (!newColumns) {
 				unsuccessfulParse(result, 206);
+				result->columns = NULL;
 				return result;
 			}
 
@@ -1839,8 +1906,24 @@ ParseResult parseQueryInsertInto(char * query, ParseResult result) {
 
 		// now there is space for sure
 		// and we parse the next parameter
-		query += parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars);
-		// shifting the pointer @ the same time
+
+		int offset = parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars);
+
+		if (offset == -1) {
+			unsuccessfulParse(result, 207);
+			//free every columns read this far
+			int k;
+			for (k = 0; k < i; k++) {
+				free(result->columns[k]);
+				result->columns[k] = NULL;
+			}
+			free(result->columns);
+			result->columns = NULL;
+			return result;
+		}
+		else {
+			query += offset;
+		}
 
 		// comma = gotta read another column name
 		if (*query == ',') {
@@ -1857,17 +1940,26 @@ ParseResult parseQueryInsertInto(char * query, ParseResult result) {
 
 			if (!reallocation) {
 				unsuccessfulParse(result, 207);
+				result->columns = NULL;
 				return result;
 			}
 
 			result->columns = reallocation;
 			result->nColumns = i;
+			break;
 		}
 		else {
 			unsuccessfulParse(result, 208);
+			//free every columns read this far
+			int k;
+			for (k = 0; k < i; k++) {
+				free(result->columns[k]);
+				result->columns[k] = NULL;
+			}
+			free(result->columns);
+			result->columns = NULL;
+			return result;
 		}
-
-		break;
 	}
 	query++;
 
@@ -1896,37 +1988,81 @@ ParseResult parseQueryInsertInto(char * query, ParseResult result) {
 
 	for (i = 0; i<result->nColumns; i++) {
 		contFieldsValues++;
-		query += parseQueryParameter(query, &(result->fieldValues[i]), paramForbiddenChars);
+
+		int offset = parseQueryParameter(query, &(result->fieldValues[i]), paramForbiddenChars);
+
+		if (offset == -1) {
+			unsuccessfulParse(result, 207);
+			//free every field read this far
+			int k;
+			for (k = 0; k < contFieldsValues; k++) {
+				free(result->fieldValues[i]);
+				result->fieldValues[i] = NULL;
+			}
+			free(result->fieldValues);
+			result->fieldValues = NULL;
+			unsuccessfulParse(result, 212);
+			return result;
+		}
+		else {
+			query += offset;
+		}
 
 		// comma = gotta read another value
 		if (*query == ',') {
+			if (i == result->nColumns - 1) {
+				//free every field read this far
+				int k;
+				for (k = 0; k < contFieldsValues; k++) {
+					free(result->fieldValues[i]);
+					result->fieldValues[i] = NULL;
+				}
+				free(result->fieldValues);
+				result->fieldValues = NULL;
+				unsuccessfulParse(result, 212);
+				return result;
+			}
 			query++;
 			continue;
 		}
 
 		// closed bracket, no more values
-		if (*query == ')' && *(query + 1) == ';') {
-			if (result->nColumns == contFieldsValues)
+		if (*query == ')') {
+			if (result->nColumns == contFieldsValues) {
 				result->success = true;
+			}
 			else {
-				int i;
-				for (i = 0; i < result->nColumns; i++) {
-					free(result->columns[i]);
-				}
-				free(result->columns);
-				result->columns = NULL;
-				for (i = 0; i < contFieldsValues; i++) {
+				//free every field read this far
+				int k;
+				for (k = 0; k < contFieldsValues; k++) {
 					free(result->fieldValues[i]);
+					result->fieldValues[i] = NULL;
 				}
 				free(result->fieldValues);
 				result->fieldValues = NULL;
-				result->nColumns = 0;
-				result->success = false;
+				unsuccessfulParse(result, 210);
+				return result;
 			}
+		}
+		else {
+			//free every field read this far
+			int k;
+			for (k = 0; k < contFieldsValues; k++) {
+				free(result->fieldValues[i]);
+				result->fieldValues[i] = NULL;
+			}
+			free(result->fieldValues);
+			result->fieldValues = NULL;
+			unsuccessfulParse(result, 210);
 			return result;
 		}
 	}
-	unsuccessfulParse(result, 211);
+
+	query++;
+	if (*query != ';')
+		unsuccessfulParse(result, 211);
+	else
+		result->success = true;
 	return result;
 }
 
@@ -1947,6 +2083,11 @@ ParseResult parseQuerySelectWHERE(char * query, ParseResult result) {
 	}
 
 	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars);
+
+	if (!result->keyName) {
+		unsuccessfulParse(result, 402);
+		return result;
+	}
 
 	const char operators[][5] = {
 		" < ",
@@ -1982,18 +2123,21 @@ ParseResult parseQuerySelectWHERE(char * query, ParseResult result) {
 	}
 
 	if (result->querySelector == NO_OPERATOR) {
-		unsuccessfulParse(result, 402);
+		unsuccessfulParse(result, 403);
 		return result;
 	}
 
 	query += parseQueryParameter(query, &(result->key), paramForbiddenChars);
 
-	if (query[0] == ';') {
-		result->success = true;
+	if (!result->key) {
+		unsuccessfulParse(result, 404);
 		return result;
 	}
 
-	unsuccessfulParse(result, 403);
+	if (*query != ';')
+		unsuccessfulParse(result, 405);
+	else
+		result->success = true;
 	return result;
 }
 
@@ -2015,6 +2159,11 @@ ParseResult parseQuerySelectORDERBY(char * query, ParseResult result) {
 
 	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars);
 
+	if (!result->keyName) {
+		unsuccessfulParse(result, 602);
+		return result;
+	}
+
 	// SELECT * FROM banana ORDER BY giovanni ASC
 	//                                       ^
 
@@ -2033,7 +2182,7 @@ ParseResult parseQuerySelectORDERBY(char * query, ParseResult result) {
 		return result;
 	}
 
-	unsuccessfulParse(result, 602);
+	unsuccessfulParse(result, 603);
 	return result;
 }
 
@@ -2055,12 +2204,15 @@ ParseResult parseQuerySelectGROUPBY(char * query, ParseResult result) {
 
 	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars);
 
-	if (*query == ';') {
-		result->success = true;
+	if (!result->keyName) {
+		unsuccessfulParse(result, 502);
 		return result;
 	}
 
-	unsuccessfulParse(result, 502);
+	if (*query != ';')
+		unsuccessfulParse(result, 503);
+	else
+		result->success = true;
 	return result;
 }
 
