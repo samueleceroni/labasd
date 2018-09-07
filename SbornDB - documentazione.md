@@ -336,13 +336,13 @@ Ogni query "Select" restituisce, in tempo lineare, una linked list `queryResultL
 Questo approccio abbassa il tempo a discapito di un consumo maggiore di memoria, che passa da costante (controllare solo i dati) a lineare (creare la lista di `Y` puntatori. 
 
 ### 6.3.1 SENZA FILTRI
-Il costo temporale della select senza filtri e' quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più la visita della lista di record con la creazione della lista di puntatori (lineare rispetto ai record) e la stampa (anch'essa lineare rispetto ai record).
+Il costo computazionale della select senza filtri e' quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più la visita della lista di record con la creazione della lista di puntatori (lineare rispetto ai record) e la stampa (anch'essa lineare rispetto ai record).
 
 * Tempo: `O(log(X)) + Θ(Y)`
 * Spazio: `Θ(Y)`
 
 ### 6.3.2 ORDER BY
-Il costo temporale della select order by è il costo della ricerca della tabella (logaritmico rispetto al numero di tabelle), più il costo della ricerca del RBT associato alla colonna richiesta (lineare rispetto al numero di colonne presenti nella tabella), e la creazione della lista ordinata di puntatori durante la visita completa (lineare rispetto al numero di record).
+Il costo computazionale della select order by è il costo della ricerca della tabella (logaritmico rispetto al numero di tabelle), più il costo della ricerca del RBT associato alla colonna richiesta (lineare rispetto al numero di colonne presenti nella tabella), e la creazione della lista ordinata di puntatori durante la visita completa (lineare rispetto al numero di record).
 
 * Tempo: `O(log(X)) + O(Z) + Θ(Y)`
 * Spazio: `Θ(Y)`
@@ -354,16 +354,15 @@ L'esecuzione della query Group By esegue una query Order By e raggruppa gli elem
 * Spazio: `Θ(Y)`
 
 ### 6.3.4 WHERE
-Il costo temporale è quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più quello del controllo della condizione su ogni elemento (lineare sul numero di elementi) e la creazione della lista di puntatori (lineare sul numero di elementi).
+Il costo computazionale è quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più quello del controllo della condizione su ogni elemento (lineare sul numero di elementi) e la creazione della lista di puntatori (lineare sul numero di elementi).
 
 * Tempo: `O(log(X)) + O(Y)`
 * Spazio: `Θ(numero di nodi che soddisfano la select)`
 
 #### 6.3.4.1 WHERE PUNTUALE (==)
-Nel solo caso della SELECT WHERE puntuale l'operazione ha costi differenti, grazie al raggruppamento di piu record nello stesso albero del RBT.
+Nel solo caso della SELECT WHERE puntuale l'operazione ha costo computazionale differente, grazie al raggruppamento di piu record nello stesso albero del RBT.
 
 * Tempo: `O(log(X)) + O(log(Y)) + Θ(numero di nodi che soddisfano la select)`
-* Spazio: `Θ(numero di nodi che soddisfano la select)`
 
 ## 6.4 Caricamento ed eliminazione tabelle dalla RAM
 ### 6.4.1 Caricamento di una tabella da file
