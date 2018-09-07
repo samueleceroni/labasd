@@ -19,7 +19,7 @@ int main() {
 	FILE *f = fopen("queries.txt", "r");
 	bool exit = false;
 	//while (!exit) {
-	for(i=0; i<12000; i++){
+	for(i=0; i<100; i++){
 		char buffer[201];
 		fgets(buffer, 200, stdin);
 		removeReturn(buffer);

@@ -117,7 +117,7 @@ Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.a
 # 3. Database e Strutture dati
 Il database è accessibile da un unico puntatore dichiarato globale e statico. È stata fatta questa scelta in quanto si assume di lavorare sempre su un unico database, seguendo le linee guida del progetto. In questo modo si evita di appesantire lo stack di sistema a ogni chiamata di funzione. Segue uno schema grafico della sua struttura interna e la spiegazione di ogni elemento di cui è composto.
 
-<img src="database-scheme.jpg" alt="schema del database">
+<img src="database-scheme.png" alt="schema del database">
 
 Nel database vengono utilizzate:
 
@@ -149,9 +149,11 @@ La struct utilizzata per rappresentare i nodi dell’albero contiene:
 4.	Puntatore al nodo destro ```struct RBTree * r```
 5.	Puntatore al nodo sinistro ```struct RBTree * l```
 6.	Puntatore al record o alla tabella ```void * nodeValue```
+7.  Puntatore a puntatori di record ``` NodeRecord* allValues;```
+8.  Numero di nodi con la stessa chiave ```int occurrences;```
 
 ### 3.2.3 Uso
-La struct Database è un RBT contenente le tabelle caricate in memoria.
+La struct Database è un RBT contenente le tabelle caricate in memoria. Ogni tabella ha un vettore di RBT in cui ci sono salvati gli indirizzi dei record in base al suo indice, ovvero in base a ogni colonna. Nel caso in cui più nodi abbiano la stessa chiave, il campo occurrences viene incrementato e vengono salvati nell'array dinamico di puntatori a record. Si ricorda che questo può accadere solo per i record, in quanto le tabelle devono avere nomi univoci.
 
 ## 3.3 Heap con Update Dinamico
 L’Heap è stato modificato, aggiungendo la possibilità di fare Update Dinamici in tempo logaritmico, ispirandosi al paper redatto da O. Tamir, A. Morrison e N. Rinetzky [1], osservando in particolare la sezione numero 3: “A Sequential Heap with Mutable Priorities”.
@@ -354,8 +356,14 @@ L'esecuzione della query Group By esegue una query Order By e raggruppa gli elem
 ### 6.3.4 WHERE
 Il costo temporale è quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più quello del controllo della condizione su ogni elemento (lineare sul numero di elementi) e la creazione della lista di puntatori (lineare sul numero di elementi).
 
-* Tempo: `O(log(X)) + Θ(Y)`
-* Spazio: `Θ(Y)`
+* Tempo: `O(log(X)) + O(Y)`
+* Spazio: `Θ(numero di nodi che soddisfano la select)`
+
+#### 6.3.4.1 WHERE PUNTUALE (==)
+Nel solo caso della SELECT WHERE puntuale l'operazione ha costi differenti, grazie al raggruppamento di piu record nello stesso albero del RBT.
+
+* Tempo: `O(log(X)) + O(log(Y)) + Θ(numero di nodi che soddisfano la select)`
+* Spazio: `Θ(numero di nodi che soddisfano la select)`
 
 ## 6.4 Caricamento ed eliminazione tabelle dalla RAM
 ### 6.4.1 Caricamento di una tabella da file
