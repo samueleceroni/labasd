@@ -99,7 +99,7 @@ ParseResult parseQuerySelectORDERBY(char * query, ParseResult result);
 ParseResult parseQuerySelectGROUPBY(char * query, ParseResult result);
 double parseDouble(char * s);
 void unsuccessfulParse(ParseResult result, int errorCode);
-int parseQueryParameter(char * query, char ** parameter, const char * forbiddenCharSet);
+int parseQueryParameter(char * query, char ** parameter, const char * forbiddenCharSet, bool isFieldValue);
 int parseQueryType(char * query);
 
 // Comparison
@@ -1597,7 +1597,7 @@ ParseResult parseQuerySelect(char * query, ParseResult result) {
 
 			// now there is space for sure
 			// and we parse the next parameter
-			int offset = parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars);
+			int offset = parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars, 0);
 
 			if (offset == -1) {
 				unsuccessfulParse(result, 111);
@@ -1670,7 +1670,7 @@ ParseResult parseQuerySelect(char * query, ParseResult result) {
 	query += 6; // shift that pointer!
 
 	// parse table name
-	query += parseQueryParameter(query, &(result->tableName), paramForbiddenChars);
+	query += parseQueryParameter(query, &(result->tableName), paramForbiddenChars, 0);
 
 	if (!result->tableName) {
 		unsuccessfulParse(result, 309);
@@ -1732,7 +1732,7 @@ ParseResult parseQueryCreateTable(char * query, ParseResult result) {
 	query++; // first char of tableName
 
 			 // parsing table name and shifting forward the pointer
-	query += parseQueryParameter(query, &(result->tableName), paramForbiddenChars);
+	query += parseQueryParameter(query, &(result->tableName), paramForbiddenChars, 0);
 
 	if (!result->tableName) {
 		unsuccessfulParse(result, 102);
@@ -1775,7 +1775,7 @@ ParseResult parseQueryCreateTable(char * query, ParseResult result) {
 			result->columns = newColumns;
 		}
 
-		int offset = parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars);
+		int offset = parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars, 0);
 
 		if (offset == -1) {
 			unsuccessfulParse(result, 111);
@@ -1855,7 +1855,7 @@ ParseResult parseQueryInsertInto(char * query, ParseResult result) {
 	query++;
 
 	// parsing table name and shifting forward the pointer
-	query += parseQueryParameter(query, &(result->tableName), paramForbiddenChars);
+	query += parseQueryParameter(query, &(result->tableName), paramForbiddenChars, 0);
 
 	if (!result->tableName) {
 		unsuccessfulParse(result, 202);
@@ -1907,7 +1907,7 @@ ParseResult parseQueryInsertInto(char * query, ParseResult result) {
 		// now there is space for sure
 		// and we parse the next parameter
 
-		int offset = parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars);
+		int offset = parseQueryParameter(query, &(result->columns[i]), paramForbiddenChars, 0);
 
 		if (offset == -1) {
 			unsuccessfulParse(result, 207);
@@ -1989,7 +1989,7 @@ ParseResult parseQueryInsertInto(char * query, ParseResult result) {
 	for (i = 0; i<result->nColumns; i++) {
 		contFieldsValues++;
 
-		int offset = parseQueryParameter(query, &(result->fieldValues[i]), paramForbiddenChars);
+		int offset = parseQueryParameter(query, &(result->fieldValues[i]), paramForbiddenChars, 1);
 
 		if (offset == -1) {
 			unsuccessfulParse(result, 207);
@@ -2082,7 +2082,7 @@ ParseResult parseQuerySelectWHERE(char * query, ParseResult result) {
 		}
 	}
 
-	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars);
+	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars, 0);
 
 	if (!result->keyName) {
 		unsuccessfulParse(result, 402);
@@ -2127,7 +2127,7 @@ ParseResult parseQuerySelectWHERE(char * query, ParseResult result) {
 		return result;
 	}
 
-	query += parseQueryParameter(query, &(result->key), paramForbiddenChars);
+	query += parseQueryParameter(query, &(result->key), paramForbiddenChars, 1);
 
 	if (!result->key) {
 		unsuccessfulParse(result, 404);
@@ -2157,7 +2157,7 @@ ParseResult parseQuerySelectORDERBY(char * query, ParseResult result) {
 		}
 	}
 
-	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars);
+	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars, 0);
 
 	if (!result->keyName) {
 		unsuccessfulParse(result, 602);
@@ -2202,7 +2202,7 @@ ParseResult parseQuerySelectGROUPBY(char * query, ParseResult result) {
 		}
 	}
 
-	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars);
+	query += parseQueryParameter(query, &(result->keyName), paramForbiddenChars, 0);
 
 	if (!result->keyName) {
 		unsuccessfulParse(result, 502);
@@ -2253,7 +2253,7 @@ void unsuccessfulParse(ParseResult result, int errorCode) {
 	result->parseErrorCode = errorCode;
 }
 
-int parseQueryParameter(char * query, char ** parameter, const char * forbiddenCharSet) {
+int parseQueryParameter(char * query, char ** parameter, const char * forbiddenCharSet, bool isFieldValue) {
 	const int paramSize = 1024;
 	int i;
 
@@ -2263,7 +2263,7 @@ int parseQueryParameter(char * query, char ** parameter, const char * forbiddenC
 	if (!*parameter) return -1;
 	
 	for (i = 0; query[i] && i<paramSize - 1; i++) {
-		if ((i!=0 && query[i] == ' ' && charIsAllowed(query[i+1], forbiddenCharSet)) || charIsAllowed(query[i], forbiddenCharSet)) {
+		if ((isFieldValue && i!=0 && query[i] == ' ' && charIsAllowed(query[i+1], forbiddenCharSet)) || charIsAllowed(query[i], forbiddenCharSet)) {
 			// add it to the parsed parameter
 			(*parameter)[i] = query[i];
 		}
