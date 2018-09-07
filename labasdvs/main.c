@@ -51,9 +51,9 @@ int main() {
 	res = executeQuery("SELECT * FROM huge ORDER BY a ASC;");
 	if (i % 100 == 0) printf("%d\n", i);
 	if (!res) { nFalse++; printf("%d:FALSE:%s\n", i, "SELECT * FROM huge;"); }
-	
-	printf("%d\n", nFalse);
 	*/
+	printf("%d\n", nFalse);
+	
 	system("pause");
 	return 0;
 }

@@ -469,9 +469,9 @@ bool checkQueryIntegrity(Table t, ParseResult res) {
 	int qt = res->queryType, i, j;
 	bool isIntact = true, tempFound;
 
-	if(t != NULL)
-		if (compare(t->name, res->tableName) != EQUAL) { return false; }
-	
+	if (t && compare(t->name, res->tableName) != EQUAL) { return false; }
+	if (compare(res->tableName, "query_results") == EQUAL) { return false; }
+
 	if (strlen(res->tableName) == 0) { return false; }
 
 	//check that columns and fields are not empty
@@ -2263,7 +2263,7 @@ int parseQueryParameter(char * query, char ** parameter, const char * forbiddenC
 	if (!*parameter) return -1;
 	
 	for (i = 0; query[i] && i<paramSize - 1; i++) {
-		if (charIsAllowed(query[i], forbiddenCharSet)) {
+		if ((i!=0 && query[i] == ' ' && charIsAllowed(query[i+1], forbiddenCharSet)) || charIsAllowed(query[i], forbiddenCharSet)) {
 			// add it to the parsed parameter
 			(*parameter)[i] = query[i];
 		}
