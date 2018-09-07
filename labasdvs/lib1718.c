@@ -1064,18 +1064,25 @@ int compare(char * a, char * b) {
 	return strCompare(a, b);
 }
 
-int powd(int base, int exp){
-	if(exp == 0)
+int powd(int base, int exp) {
+	if (exp == 0)
 		return 1;
-	if(exp == 1)
+	if (exp == 1)
 		return base;
-	int remExp = 1;
-	int res = base;
-	while(remExp * 2 <= exp){
-		res *= res;
-		remExp *= 2;
+	int remExp;
+	int res;
+	int tmp = 1;
+	while (exp > 0) {
+		res = base;
+		remExp = 1;
+		while (remExp * 2 <= exp) {
+			res *= res;
+			remExp *= 2;
+		}
+		tmp *= res;
+		exp -= remExp;
 	}
-	return res * powd(base, exp - remExp);
+	return tmp;
 }
 
 //===================================//
