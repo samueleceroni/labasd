@@ -817,6 +817,7 @@ Table loadTableFromFile(char* name) {
 		return t;
 	}
 
+
 	do {
 		//Check row header
 		buffer = (char*)realloc(buffer, sizeof(char) * (strlen(rowHeader) + 1));
@@ -830,7 +831,7 @@ Table loadTableFromFile(char* name) {
 
 		row = (char**)malloc(sizeof(char*) * nColumns);
 
-		//Reding row
+		//Reading row
 		for (i = 0; i < nColumns; i++) {
 			char* value = NULL;
 			int size = 0;
@@ -878,8 +879,10 @@ Table loadTableFromFile(char* name) {
 		int i;
 		for (i = 0; i < nColumns; i++) {
 			free(row[i]);
+			row[i] = NULL;
 		}
 		free(row);
+		row = NULL;
 
 		c = fgetc(f);
 		if (c != '\n' && c == EOF)
@@ -1079,7 +1082,9 @@ bool insertNodeTree(Tree T, Node z) {
 	Node y = NULL;
 	Node x = T->root;
 
+	int cont = 0;
 	while (x) {
+		cont++;
 		y = x;
 		if (nodeCompare(T->key, z->nodeValue, y->nodeValue) == LESSER) {
 			x = x->left;
