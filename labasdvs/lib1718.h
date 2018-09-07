@@ -61,6 +61,8 @@ typedef struct RBTree* Database;
 struct RBTNode {	// Node of a RedBlackTree
 	bool color;
 	void * nodeValue;	// can be table or record
+	int occurrences;
+	NodeRecord* allValues;
 	struct RBTree* head;
 	struct RBTNode* p;
 	struct RBTNode* right;

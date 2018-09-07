@@ -52,7 +52,7 @@
 #define LOG_FILE_NAME "query_results.txt"
 
 // Memory usage max threshold
-#define MEMORY_THRESHOLD 64000000
+#define MEMORY_THRESHOLD 100
 
 
 //=================================//
@@ -70,7 +70,7 @@ static Table currentTableUsed = NULL;
 //================================//
 
 // Database
-Node createNodeRBT(void * r);
+Node createNodeRBT(void * r, int key);
 bool insertNodeTree(Tree T, Node z);
 bool rbtInsertFixup(Tree T, Node z);
 void removeNodeRBT(Tree T, Node z);
@@ -87,6 +87,7 @@ void countForGroupBy(int key, QueryResultList queryToGet);
 void deleteAllTreeRecordNodes(Node x);
 void deleteAllRecords(NodeRecord n, int nColumns);
 Node searchNodeTableDb(Node currentTableNode, char* tableName);
+Node searchNodeRecordDb(Node currentRecordNode, char* nodeValue, int columnIndex);
 int searchColumnIndex(Table T, char* key);
 
 // Parser
@@ -254,7 +255,7 @@ Table createTableDb(char* tableName, char** columns, int nColumns) {
 		newTable->treeList[i].root = NULL;
 	}
 
-	Node newTableNode = createNodeRBT((void*)newTable);
+	Node newTableNode = createNodeRBT((void*)newTable, TABLE);
 	if (insertNodeTree(database, newTableNode) == false) { return NULL; }
 	newTable->recordList = NULL;
 	return newTable;
@@ -311,7 +312,16 @@ bool insertRecordDb(Table t, NodeRecord r) {
 
 	// insert the element in each tree
 	for (i = 0; i < t->nColumns; i++) {
-		if (!(insertNodeTree(&(t->treeList[i]), createNodeRBT(r)))) { return false; }
+		Node found = searchNodeRecordDb(t->treeList[i].root, r->values[i], i);
+		if (found != NULL && found->nodeValue != NULL) {
+			//trovato!
+			found->occurrences++;
+			found->allValues = (NodeRecord*)realloc(found->allValues, found->occurrences * sizeof(NodeRecord));
+			found->allValues[found->occurrences - 1] = r;
+		}
+		else {
+			if (!(insertNodeTree(&(t->treeList[i]), createNodeRBT(r, 0)))) { return false; }
+		}
 	}
 	return true;
 }
@@ -1069,10 +1079,17 @@ int powd(int base, int exp){
 //===================================//
 
 // Database
-Node createNodeRBT(void* r) {
+Node createNodeRBT(void* r, int key) {
 	Node x;
 	if (!(x = (Node)allocateBytes(sizeof(struct RBTNode)))) { return NULL; }
 	x->nodeValue = r;
+	if (key != TABLE) {
+		x->occurrences = 1;
+		x->allValues = (NodeRecord*)malloc(sizeof(NodeRecord));
+		if (x->allValues == NULL)
+			return NULL;
+		*(x->allValues) = (NodeRecord)r;
+	}
 	return x;
 }
 
@@ -1378,12 +1395,21 @@ void selectOrderBy(Node x, QueryResultList* queryToGet, int order) {
 		selectOrderBy(x->left, queryToGet, order);
 	}
 
-	QueryResultList newElement;
+	int i;
+	for (i = 0; i < x->occurrences; i++) {
+		QueryResultList newElement;
+		if (!(newElement = (QueryResultList)malloc(sizeof(struct QueryResultElement)))) { return; }
+		newElement->next = (*queryToGet);
+		newElement->nodeValue = (NodeRecord)(x->allValues[i]);
+		newElement->occurrence = 1;
+		*queryToGet = newElement;
+	}
+	/*QueryResultList newElement;
 	if (!(newElement = (QueryResultList)malloc(sizeof(struct QueryResultElement)))) { return; }
 	newElement->next = (*queryToGet);
 	newElement->nodeValue = (NodeRecord)(x->nodeValue);
 	newElement->occurrence = 1;
-	*queryToGet = newElement;
+	*queryToGet = newElement;*/
 
 	if (order == ASC) {
 		selectOrderBy(x->left, queryToGet, order);
@@ -1465,6 +1491,8 @@ void countForGroupBy(int key, QueryResultList queryToGet) {
 
 void deleteAllTreeRecordNodes(Node x) {
 	if (!x) { return; }                 // specifically for RecordNodes because the nodeValue in this
+	if (x->allValues != NULL)
+		free(x->allValues);
 	deleteAllTreeRecordNodes(x->left);  // case is not allocated but contains an address, while if you need
 	deleteAllTreeRecordNodes(x->right); // to deallocate all TableNodes you should deallocate the table itself
 	free(x);
@@ -1498,6 +1526,24 @@ Node searchNodeTableDb(Node currentTableNode, char* tableName) {
 		return searchNodeTableDb(currentTableNode->left, tableName);
 	case(GREATER):
 		return searchNodeTableDb(currentTableNode->right, tableName);
+	default:
+		return NULL;
+	}
+}
+
+Node searchNodeRecordDb(Node currentRecordNode, char* nodeValue, int columnIndex) {
+	if (currentRecordNode == NULL || currentRecordNode->nodeValue == NULL) {
+		return NULL;
+	}
+	NodeRecord currentRecord = (NodeRecord)currentRecordNode->nodeValue;
+
+	switch (compare(nodeValue, currentRecord->values[columnIndex])) {
+	case(EQUAL):
+		return currentRecordNode;
+	case(LESSER):
+		return searchNodeRecordDb(currentRecordNode->left, nodeValue, columnIndex);
+	case(GREATER):
+		return searchNodeRecordDb(currentRecordNode->right, nodeValue, columnIndex);
 	default:
 		return NULL;
 	}
