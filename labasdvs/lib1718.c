@@ -1110,9 +1110,7 @@ bool insertNodeTree(Tree T, Node z) {
 	Node y = NULL;
 	Node x = T->root;
 
-	int cont = 0;
 	while (x) {
-		cont++;
 		y = x;
 		if (nodeCompare(T->key, z->nodeValue, y->nodeValue) == LESSER) {
 			x = x->left;
