@@ -542,8 +542,7 @@ Il lavoro di gruppo è stato gestito con un repository <code>git</code> condivis
 
 <hr>
 
-<h1 id="toc_2" style="
-">Indice</h1>
+<h1 id="toc_2">Indice</h1>
 
 <ol>
 <li><strong>Premessa</strong></li>
@@ -621,7 +620,7 @@ Il lavoro di gruppo è stato gestito con un repository <code>git</code> condivis
 <hr>
 
 <h1 id="toc_3" style="
-    margin-top:  500px;
+    margin-top:  600px;
 ">1. Premessa</h1>
 
 <p>In questo file sono racchiuse tutte le specifiche sul funzionamento del database, sui suoi costi in termini di velocità e di memoria.
@@ -694,7 +693,7 @@ Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.a
 
 <p>Il database è accessibile da un unico puntatore dichiarato globale e statico. È stata fatta questa scelta in quanto si assume di lavorare sempre su un unico database, seguendo le linee guida del progetto. In questo modo si evita di appesantire lo stack di sistema a ogni chiamata di funzione. Segue uno schema grafico della sua struttura interna e la spiegazione di ogni elemento di cui è composto.</p>
 
-<p><img src="database-scheme.jpg" alt="schema del database"></p>
+<p><img src="dataStructureScheme.png" alt="schema del database"></p>
 
 <p>Nel database vengono utilizzate:</p>
 
@@ -704,17 +703,19 @@ Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.a
 <li> Heap con Update Dinamico</li>
 </ol>
 
-<h2 id="toc_15">3.1 Linked List</h2>
+<h2 id="toc_15" style="
+    margin-top: 100px;
+">3.1 Linked List</h2>
 
 <p>Le linked list utilizzate sono implementate nel modo classico.</p>
 
-<h2 id="toc_16">3.2 Red-Black Tree</h2>
+<h2 id="toc_16" style="
+    margin-top:  200px;
+">3.2 Red-Black Tree</h2>
 
 <p>I Red-Black Tree (d’ora in poi chiamati anche RBT) utilizzati sono stati modificati per l’applicazione specifica. L’implementazione delle funzioni core si è ispirata allo pseudo-codice presente sul libro di testo consigliato dal docente “Introduction to Algorithms” di Cormen, Leiserson, Rivest e Stein.</p>
 
-<h3 id="toc_17" style="
-    margin-top:  100px;
-">3.2.1 Struct RBT</h3>
+<h3 id="toc_17">3.2.1 Struct RBT</h3>
 
 <p>La struct utilizzata per rappresentare l’albero contiene:</p>
 
@@ -740,17 +741,21 @@ Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.a
 <li> Puntatore al nodo destro <code>struct RBTree * r</code></li>
 <li> Puntatore al nodo sinistro <code>struct RBTree * l</code></li>
 <li> Puntatore al record o alla tabella <code>void * nodeValue</code></li>
+<li> Puntatore a puntatori di record <code>NodeRecord* allValues;</code></li>
+<li> Numero di nodi con la stessa chiave <code>int occurrences;</code></li>
 </ol>
 
 <h3 id="toc_19">3.2.3 Uso</h3>
 
-<p>La struct Database è un RBT contenente le tabelle caricate in memoria.</p>
+<p>La struct Database è un RBT contenente le tabelle caricate in memoria. Ogni tabella ha un vettore di RBT in cui ci sono salvati gli indirizzi dei record in base al suo indice, ovvero in base a ogni colonna. Nel caso in cui più nodi abbiano la stessa chiave, il campo occurrences viene incrementato e vengono salvati nell'array dinamico di puntatori a record. Si ricorda che questo può accadere solo per i record, in quanto le tabelle devono avere nomi univoci.</p>
 
 <h2 id="toc_20">3.3 Heap con Update Dinamico</h2>
 
 <p>L’Heap è stato modificato, aggiungendo la possibilità di fare Update Dinamici in tempo logaritmico, ispirandosi al paper redatto da O. Tamir, A. Morrison e N. Rinetzky [1], osservando in particolare la sezione numero 3: “A Sequential Heap with Mutable Priorities”.</p>
 
-<h2 id="toc_21">3.4 Strutture</h2>
+<h2 id="toc_21" style="
+    margin-top: 100px;
+">3.4 Strutture</h2>
 
 <h3 id="toc_22">3.4.1 Struttura TableDB</h3>
 
@@ -776,7 +781,9 @@ Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.a
 
 <hr>
 
-<h1 id="toc_25">4. Corpo centrale</h1>
+<h1 id="toc_25" style="
+    margin-top:  600px;
+">4. Corpo centrale</h1>
 
 <p>Il corpo centrale è diviso in tre parti principali:</p>
 
@@ -822,7 +829,9 @@ Alla fine della fase di recupero della tabella, si ottiene una <code>struct Tabl
 <p>E.g.: Le colonne richieste esistono.</p>
 </blockquote>
 
-<h3 id="toc_31">4.4.2 Create Table</h3>
+<h3 id="toc_31" style="
+    margin-top:  100px;
+">4.4.2 Create Table</h3>
 
 <p>Una query <code>CREATE TABLE</code> valida prevede che non venga caricata nessuna tabella.
 Viene generato il file su disco e caricato in memoria tramite la stessa procedura applicata alle altre tabelle.</p>
@@ -840,7 +849,7 @@ Viene generato il file su disco e caricato in memoria tramite la stessa procedur
 <p>Al termine dell'esecuzione vengono eliminate le strutture superflue, in questo caso la <code>struct ParseResult</code>.</p>
 
 <h1 id="toc_35" style="
-    margin-top:  500px;
+    margin-top:  600px;
 ">5. Parser</h1>
 
 <p>Il parser deve gestire un numero limitato di possibili query, ha quindi una struttura molto semplice.
@@ -970,7 +979,7 @@ Questo approccio abbassa il tempo a discapito di un consumo maggiore di memoria,
 
 <h3 id="toc_40">6.3.1 SENZA FILTRI</h3>
 
-<p>Il costo temporale della select senza filtri e' quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più la visita della lista di record con la creazione della lista di puntatori (lineare rispetto ai record) e la stampa (anch'essa lineare rispetto ai record).</p>
+<p>Il costo computazionale della select senza filtri e' quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più la visita della lista di record con la creazione della lista di puntatori (lineare rispetto ai record) e la stampa (anch'essa lineare rispetto ai record).</p>
 
 <ul>
 <li>Tempo: <code>O(log(X)) + Θ(Y)</code></li>
@@ -979,7 +988,7 @@ Questo approccio abbassa il tempo a discapito di un consumo maggiore di memoria,
 
 <h3 id="toc_41">6.3.2 ORDER BY</h3>
 
-<p>Il costo temporale della select order by è il costo della ricerca della tabella (logaritmico rispetto al numero di tabelle), più il costo della ricerca del RBT associato alla colonna richiesta (lineare rispetto al numero di colonne presenti nella tabella), e la creazione della lista ordinata di puntatori durante la visita completa (lineare rispetto al numero di record).</p>
+<p>Il costo computazionale della select order by è il costo della ricerca della tabella (logaritmico rispetto al numero di tabelle), più il costo della ricerca del RBT associato alla colonna richiesta (lineare rispetto al numero di colonne presenti nella tabella), e la creazione della lista ordinata di puntatori durante la visita completa (lineare rispetto al numero di record).</p>
 
 <ul>
 <li>Tempo: <code>O(log(X)) + O(Z) + Θ(Y)</code></li>
@@ -997,18 +1006,24 @@ Questo approccio abbassa il tempo a discapito di un consumo maggiore di memoria,
 
 <h3 id="toc_43">6.3.4 WHERE</h3>
 
-<p>Il costo temporale è quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più quello del controllo della condizione su ogni elemento (lineare sul numero di elementi) e la creazione della lista di puntatori (lineare sul numero di elementi).</p>
+<p>Il costo computazionale è quello della ricerca della tabella (logaritmico rispetto al numero di tabelle), più quello del controllo della condizione su ogni elemento (lineare sul numero di elementi) e la creazione della lista di puntatori (lineare sul numero di elementi).</p>
 
 <ul>
-<li>Tempo: <code>O(log(X)) + Θ(Y)</code></li>
-<li>Spazio: <code>Θ(Y)</code></li>
+<li>Tempo: <code>O(log(X)) + O(Y)</code></li>
+<li>Spazio: <code>Θ(numero di nodi che soddisfano la select)</code></li>
 </ul>
 
-<h2 id="toc_44" style="
-    margin-top:  400px;
-">6.4 Caricamento ed eliminazione tabelle dalla RAM</h2>
+<h4 id="toc_44">6.3.4.1 WHERE PUNTUALE (==)</h4>
 
-<h3 id="toc_45">6.4.1 Caricamento di una tabella da file</h3>
+<p>Nel solo caso della SELECT WHERE puntuale l'operazione ha costo computazionale differente, grazie al raggruppamento di piu record nello stesso albero del RBT.</p>
+
+<ul>
+<li>Tempo: <code>O(log(X)) + O(log(Y)) + Θ(numero di nodi che soddisfano la select)</code></li>
+</ul>
+
+<h2 id="toc_45">6.4 Caricamento ed eliminazione tabelle dalla RAM</h2>
+
+<h3 id="toc_46">6.4.1 Caricamento di una tabella da file</h3>
 
 <p>Il caricamento prevede la creazione della tabella, più l'inserimento dei record. Il costo è fondamentalmente quello di una query Create Table, seguito da <code>Z</code> Insert Into.</p>
 
@@ -1017,7 +1032,7 @@ Questo approccio abbassa il tempo a discapito di un consumo maggiore di memoria,
 <li>Spazio: <code>Θ(Z * Y)</code></li>
 </ul>
 
-<h3 id="toc_46">6.4.2 Eliminazione di una tabella dalla memoria</h3>
+<h3 id="toc_47">6.4.2 Eliminazione di una tabella dalla memoria</h3>
 
 <p>Per eliminare una tabella dalla memoria la si deve trovare nell'albero del database (tempo logaritmico rispetto al numero di tabelle), eliminare tutti i record della lista (tempo lineare rispetto al numero di record) e eliminare tutti i nodi degli alberi relativi agli indici (tempo lineare rispetto al numero di record). Quindi:</p>
 
@@ -1028,7 +1043,9 @@ Questo approccio abbassa il tempo a discapito di un consumo maggiore di memoria,
 
 <hr>
 
-<h3 id="toc_47">7 Riferimenti esterni:</h3>
+<h3 id="toc_48" style="
+    margin-top: 150px;
+">7 Riferimenti esterni:</h3>
 
 <p>[1] <a href="https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf"><em>A Heap-Based Concurrent Priority Queue with Mutable Priorities for Faster Parallel Algorithms</em></a>, by O. Tamir, A. Morrison e N. Rinetzky.</p>
 
