@@ -52,7 +52,7 @@
 #define LOG_FILE_NAME "query_results.txt"
 
 // Memory usage max threshold
-#define MEMORY_THRESHOLD 100
+#define MEMORY_THRESHOLD 64000000
 
 
 //=================================//
@@ -82,6 +82,7 @@ bool rightRotate(Tree T, Node x);
 bool nodeCompare(int columnIndex, void * nodeA, void * nodeB);
 void selectOrderBy(Node T, QueryResultList* queryToGet, int order);
 void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int querySelector, char* keyName);
+void selectWhereEqual(QueryResultList* queryToGet, Node root, char* key, int index);
 void selectNoFilter(NodeRecord r, QueryResultList* queryToGet);
 void countForGroupBy(int key, QueryResultList queryToGet);
 void deleteAllTreeRecordNodes(Node x);
@@ -345,7 +346,10 @@ QueryResultList querySelect(Table t, ParseResult res) {
 		countForGroupBy(keyIndex, (*queryToGet));
 		break;
 	case(WHERE):
-		selectWhere(t->recordList, queryToGet, keyIndex, res->querySelector, res->key);
+		if (res->querySelector == EQUAL)
+			selectWhereEqual(queryToGet, t->treeList[keyIndex].root, res->key, keyIndex);
+		else
+			selectWhere(t->recordList, queryToGet, keyIndex, res->querySelector, res->key);
 		break;
 	case(SELECT_WITHOUT_FILTERS):
 		selectNoFilter(t->recordList, queryToGet);
@@ -1458,6 +1462,20 @@ void selectWhere(NodeRecord r, QueryResultList* queryToGet, int keyIndex, int qu
 			newElement->nodeValue = r;
 		}
 		r = r->next;
+	}
+}
+
+void selectWhereEqual(QueryResultList* queryToGet, Node root, char* key, int index) {
+	Node x = searchNodeRecordDb(root, key, index);
+	if (x == NULL) return;
+	int i;
+	for (i = x->occurrences-1; i >= 0; i--) {
+		QueryResultList newElement;
+		if (!(newElement = (QueryResultList)malloc(sizeof(struct QueryResultElement)))) { return; }
+		newElement->next = (*queryToGet);
+		newElement->nodeValue = (NodeRecord)(x->allValues[i]);
+		newElement->occurrence = 1;
+		*queryToGet = newElement;
 	}
 }
 
