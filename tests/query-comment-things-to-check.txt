@@ -1,0 +1,77 @@
+corretta
+due nomi tabella
+extra space in nome tabella
+missing ;
+missing spaces
+missing spaces
+double spaces
+missing column name
+missing column
+space before ;
+no column names
+missing table name
+missing table name w/ double space
+missing table name w/ triple space
+missing space in query name
+missing query w/ double space
+missing query w/ space
+missing query
+missing query and ;
+missing query and ; w/ space
+missing query and ; w/ double space
+missing query and ; w/ triple space
+incomplete query and ;
+incomplete query and ; w/ space
+incomplete query
+incomplete query w/ space
+wrong query
+missing bracket
+incomplete query
+incomplete query
+leading spaces in column names
+trailing spaces in column names
+leading and trailing spaces in column names
+corretta
+missing space
+missing space
+extra space
+extra comma
+double space
+double space
+double space
+leading space
+trailing space
+leading and trailing space
+missing column name
+missing column name
+missing column name
+missing column name
+missing column name
+missing column name
+missing column name
+VAL
+missing VALUES
+missing VALUES
+missing VALUES
+missing VALUES
+missing field values
+missing field values
+missing field values
+missing field values
+missing field values
+missing field values
+missing brackets ()
+unfinished query
+unfinished query
+unfinished query
+unfinished query
+unfinished query
+unfinished query
+unfinished query
+missing ) and wrong field names
+missing ) and wrong field names
+
+
+
+
+
