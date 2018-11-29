@@ -117,7 +117,8 @@ Per la implementazione si è preso spunto dal paper <a src="https://www.cs.tau.a
 # 3. Database e Strutture dati
 Il database è accessibile da un unico puntatore dichiarato globale e statico. È stata fatta questa scelta in quanto si assume di lavorare sempre su un unico database, seguendo le linee guida del progetto. In questo modo si evita di appesantire lo stack di sistema a ogni chiamata di funzione. Segue uno schema grafico della sua struttura interna e la spiegazione di ogni elemento di cui è composto.
 
-<img src="database-scheme.png" alt="schema del database">
+![Diagram](https://raw.githubusercontent.com/samueleceroni/labasd/master/dataStructureScheme.svg)
+
 
 Nel database vengono utilizzate:
 
